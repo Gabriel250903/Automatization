@@ -1,0 +1,84 @@
+using System.IO;
+using System.Text.Json;
+using System.Windows.Input;
+using Automatization.Hotkeys;
+using Automatization.Types;
+using Point = System.Windows.Point;
+
+namespace Automatization.Settings;
+public class AppSettings
+{
+    public Dictionary<PowerupType, double> PowerupDelays { get; set; } = [];
+    public Dictionary<PowerupType, Key> PowerupKeys { get; set; } = new()
+    {
+        { PowerupType.RepairKit, Key.D1 },
+        { PowerupType.DoubleArmor, Key.D2 },
+        { PowerupType.DoubleDamage, Key.D3 },
+        { PowerupType.SpeedBoost, Key.D4 },
+        { PowerupType.Mine, Key.D5 }
+    };
+
+    public HotKey GlobalHotKey { get; set; } = new(Key.F6, ModifierKeys.None);
+    public HotKey RedTeamHotKey { get; set; } = new(Key.F7, ModifierKeys.None);
+    public HotKey BlueTeamHotKey { get; set; } = new(Key.F8, ModifierKeys.None);
+    public ThemeType Theme { get; set; } = ThemeType.Dark;
+    public string? GameExecutablePath { get; set; } = null;
+    public double ClickSpeed { get; set; } = 10;
+    public bool HotkeysPaused { get; set; } = false;
+    public string GameProcessName { get; set; } = "ProTanki";
+
+    public Point RedTeamCoordinates { get; set; } = new(1186, 1017);
+    public Point BlueTeamCoordinates { get; set; } = new(1544, 1009);
+
+    public string? GetActionForHotKey(HotKey hotKey)
+    {
+        return hotKey == GlobalHotKey ? "ToggleAll" : hotKey == RedTeamHotKey ? "RedTeam" : hotKey == BlueTeamHotKey ? "BlueTeam" : null;
+    }
+
+    public static AppSettings Load()
+    {
+        try
+        {
+            string settingsPath = GetSettingsPath();
+            if (File.Exists(settingsPath))
+            {
+                string json = File.ReadAllText(settingsPath);
+                JsonSerializerOptions options = new() { PropertyNameCaseInsensitive = true };
+                return JsonSerializer.Deserialize<AppSettings>(json, options) ?? new AppSettings();
+            }
+        }
+        catch (Exception)
+        {
+        }
+        return new AppSettings();
+    }
+
+    public void Save()
+    {
+        try
+        {
+            string settingsPath = GetSettingsPath();
+            JsonSerializerOptions options = new() { WriteIndented = true };
+            string json = JsonSerializer.Serialize(this, options);
+            File.WriteAllText(settingsPath, json);
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+    private static string GetSettingsPath()
+    {
+        string settingsDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "TankAutomation"
+        );
+
+        if (!Directory.Exists(settingsDir))
+        {
+            _ = Directory.CreateDirectory(settingsDir);
+        }
+
+        return Path.Combine(settingsDir, "appsettings.json");
+    }
+}
