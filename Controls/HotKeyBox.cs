@@ -8,7 +8,7 @@ namespace Automatization.Controls
 {
     public class HotKeyBox : TextBox
     {
-        public static readonly DependencyProperty HotKeyProperty =
+        public static DependencyProperty HotKeyProperty =
             DependencyProperty.Register(nameof(HotKey), typeof(HotKey), typeof(HotKeyBox),
                 new FrameworkPropertyMetadata(new HotKey(), FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, OnHotKeyChanged));
 
@@ -69,10 +69,10 @@ namespace Automatization.Controls
 
         private static bool IsValidKey(Key key)
         {
-            return key is >= Key.F1 and <= Key.F24 or
-                   >= Key.D0 and <= Key.D9 or
-                   >= Key.A and <= Key.Z or
-                   >= Key.NumPad0 and <= Key.NumPad9 or
+            return key is (>= Key.F1 and <= Key.F24) or
+                   (>= Key.D0 and <= Key.D9) or
+                   (>= Key.A and <= Key.Z) or
+                   (>= Key.NumPad0 and <= Key.NumPad9) or
                    Key.Tab or Key.Enter or Key.Space or
                    Key.OemTilde or Key.OemMinus or Key.OemPlus or
                    Key.OemOpenBrackets or Key.OemCloseBrackets or

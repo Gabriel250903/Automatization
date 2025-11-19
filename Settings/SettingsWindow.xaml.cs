@@ -1,6 +1,8 @@
-﻿using Automatization.Hotkeys;
+using Automatization.Hotkeys;
+using Automatization.Services;
 using Automatization.Settings;
 using Automatization.Types;
+using Automatization.UI;
 using Automatization.UI.Coordinate;
 using System.Globalization;
 using System.Windows;
@@ -13,16 +15,13 @@ namespace Automatization
     public partial class SettingsWindow : Window
     {
         private AppSettings _settings;
+        private bool _isGameProcessNameUnlocked = false;
 
         public SettingsWindow()
         {
             InitializeComponent();
             _settings = App.Settings ?? AppSettings.Load();
             LoadSettings();
-
-            GlobalHotKeyBox.LostFocus += HotKeyBox_LostFocus;
-            RedTeamHotKeyBox.LostFocus += HotKeyBox_LostFocus;
-            BlueTeamHotKeyBox.LostFocus += HotKeyBox_LostFocus;
         }
 
         private void LoadSettings()
@@ -30,19 +29,19 @@ namespace Automatization
             ClickSpeedTextBox.Text = _settings.ClickSpeed.ToString(CultureInfo.InvariantCulture);
 
             GameProcessNameTextBox.Text = _settings.GameProcessName;
+            GameProcessNameTextBox.IsReadOnly = !_isGameProcessNameUnlocked;
+            UnlockGameProcessNameButton.Visibility = _isGameProcessNameUnlocked ? Visibility.Collapsed : Visibility.Visible;
 
             GlobalHotKeyBox.HotKey = _settings.GlobalHotKey;
             RedTeamHotKeyBox.HotKey = _settings.RedTeamHotKey;
             BlueTeamHotKeyBox.HotKey = _settings.BlueTeamHotKey;
             GamePathTextBox.Text = _settings.GameExecutablePath;
 
-            // Load Clicker Coordinates
             RedTeamXTextBox.Text = _settings.RedTeamCoordinates.X.ToString(CultureInfo.InvariantCulture);
             RedTeamYTextBox.Text = _settings.RedTeamCoordinates.Y.ToString(CultureInfo.InvariantCulture);
             BlueTeamXTextBox.Text = _settings.BlueTeamCoordinates.X.ToString(CultureInfo.InvariantCulture);
             BlueTeamYTextBox.Text = _settings.BlueTeamCoordinates.Y.ToString(CultureInfo.InvariantCulture);
 
-            // Load Powerup Keys
             RepairKitKeyBox.HotKey = new HotKey(_settings.PowerupKeys.GetValueOrDefault(PowerupType.RepairKit, Key.D1), ModifierKeys.None);
             DoubleArmorKeyBox.HotKey = new HotKey(_settings.PowerupKeys.GetValueOrDefault(PowerupType.DoubleArmor, Key.D2), ModifierKeys.None);
             DoubleDamageKeyBox.HotKey = new HotKey(_settings.PowerupKeys.GetValueOrDefault(PowerupType.DoubleDamage, Key.D3), ModifierKeys.None);
@@ -58,9 +57,23 @@ namespace Automatization
                 DarkRadio.IsChecked = true;
             }
 
-            UpdateHotKeyConflictWarnings(true);
+            RegisterSettingsHotkeys();
         }
 
+        private void RegisterSettingsHotkeys()
+        {
+            GlobalHotKeyManager.UnregisterAll();
+
+            _ = GlobalHotKeyManager.Register(_settings.GlobalHotKey);
+            _ = GlobalHotKeyManager.Register(_settings.RedTeamHotKey);
+            _ = GlobalHotKeyManager.Register(_settings.BlueTeamHotKey);
+
+            foreach (KeyValuePair<PowerupType, Key> entry in _settings.PowerupKeys)
+            {
+                HotKey powerupHotKey = new(entry.Value, ModifierKeys.None);
+                _ = GlobalHotKeyManager.Register(powerupHotKey);
+            }
+        }
         private void ThemeRadio_Checked(object? sender, RoutedEventArgs e)
         {
             if (DarkRadio.IsChecked == true)
@@ -91,11 +104,10 @@ namespace Automatization
         {
             FocusManager.SetFocusedElement(this, SaveButton);
 
-            if (GlobalHotKeyConflictWarning.IsVisible || RedTeamHotKeyConflictWarning.IsVisible || BlueTeamHotKeyConflictWarning.IsVisible)
-            {
-                return;
-            }
-
+            HotKey originalGlobalHotKey = _settings.GlobalHotKey;
+            HotKey originalRedTeamHotKey = _settings.RedTeamHotKey;
+            HotKey originalBlueTeamHotKey = _settings.BlueTeamHotKey;
+            Dictionary<PowerupType, Key> originalPowerupKeys = new(_settings.PowerupKeys);
 
             if (double.TryParse(ClickSpeedTextBox.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out double clickSpeed) && clickSpeed >= 1)
             {
@@ -103,6 +115,7 @@ namespace Automatization
             }
             else
             {
+                LogService.LogError("Click speed must be a number greater than or equal to 1.");
                 return;
             }
             _settings.GameProcessName = !string.IsNullOrWhiteSpace(GameProcessNameTextBox.Text) ? GameProcessNameTextBox.Text.Trim() : "ProTanki";
@@ -113,13 +126,13 @@ namespace Automatization
             _settings.RedTeamHotKey = RedTeamHotKeyBox.HotKey;
             _settings.BlueTeamHotKey = BlueTeamHotKeyBox.HotKey;
 
-            // Save Clicker Coordinates
             if (double.TryParse(RedTeamXTextBox.Text, out double rX) && double.TryParse(RedTeamYTextBox.Text, out double rY))
             {
                 _settings.RedTeamCoordinates = new Point(rX, rY);
             }
             else
             {
+                LogService.LogError("Invalid Red Team coordinates.");
                 return;
             }
 
@@ -129,79 +142,81 @@ namespace Automatization
             }
             else
             {
+                LogService.LogError("Invalid Blue Team coordinates.");
                 return;
             }
 
 
-            // Save Powerup Keys
-            _settings.PowerupKeys[PowerupType.RepairKit] = RepairKitKeyBox.HotKey.Key; // Ignores modifiers
-            _settings.PowerupKeys[PowerupType.DoubleArmor] = DoubleArmorKeyBox.HotKey.Key; // Ignores modifiers
-            _settings.PowerupKeys[PowerupType.DoubleDamage] = DoubleDamageKeyBox.HotKey.Key; // Ignores modifiers
-            _settings.PowerupKeys[PowerupType.SpeedBoost] = SpeedBoostKeyBox.HotKey.Key; // Ignores modifiers
-            _settings.PowerupKeys[PowerupType.Mine] = MineKeyBox.HotKey.Key; // Ignores modifiers
+            _settings.PowerupKeys[PowerupType.RepairKit] = RepairKitKeyBox.HotKey.Key;
+            _settings.PowerupKeys[PowerupType.DoubleArmor] = DoubleArmorKeyBox.HotKey.Key;
+            _settings.PowerupKeys[PowerupType.DoubleDamage] = DoubleDamageKeyBox.HotKey.Key;
+            _settings.PowerupKeys[PowerupType.SpeedBoost] = SpeedBoostKeyBox.HotKey.Key;
+            _settings.PowerupKeys[PowerupType.Mine] = MineKeyBox.HotKey.Key;
 
             _settings.Theme = DarkRadio.IsChecked == true ? ThemeType.Dark : ThemeType.Light;
+
+            GlobalHotKeyManager.UnregisterAll();
+
+            bool registrationFailed = false;
+
+            if (!GlobalHotKeyManager.Register(_settings.GlobalHotKey))
+            {
+                LogService.LogError($"Failed to register Global Hotkey: {_settings.GlobalHotKey}");
+                registrationFailed = true;
+            }
+            if (!GlobalHotKeyManager.Register(_settings.RedTeamHotKey))
+            {
+                LogService.LogError($"Failed to register Red Team Hotkey: {_settings.RedTeamHotKey}");
+                registrationFailed = true;
+            }
+            if (!GlobalHotKeyManager.Register(_settings.BlueTeamHotKey))
+            {
+                LogService.LogError($"Failed to register Blue Team Hotkey: {_settings.BlueTeamHotKey}");
+                registrationFailed = true;
+            }
+
+            foreach (KeyValuePair<PowerupType, Key> entry in _settings.PowerupKeys)
+            {
+                HotKey powerupHotKey = new(entry.Value, ModifierKeys.None);
+                if (!GlobalHotKeyManager.Register(powerupHotKey))
+                {
+                    LogService.LogError($"Failed to register Powerup Hotkey {entry.Key}: {powerupHotKey}");
+                    registrationFailed = true;
+                }
+            }
+
+
+            if (registrationFailed)
+            {
+                LogService.LogError("One or more hotkeys could not be registered. They might be in use by another application. Reverting to previous hotkeys.");
+
+                _settings.GlobalHotKey = originalGlobalHotKey;
+                _settings.RedTeamHotKey = originalRedTeamHotKey;
+                _settings.BlueTeamHotKey = originalBlueTeamHotKey;
+                _settings.PowerupKeys = originalPowerupKeys;
+
+                GlobalHotKeyManager.UnregisterAll();
+                _ = GlobalHotKeyManager.Register(_settings.GlobalHotKey);
+                _ = GlobalHotKeyManager.Register(_settings.RedTeamHotKey);
+                _ = GlobalHotKeyManager.Register(_settings.BlueTeamHotKey);
+                foreach (KeyValuePair<PowerupType, Key> entry in _settings.PowerupKeys)
+                {
+                    _ = GlobalHotKeyManager.Register(new HotKey(entry.Value, ModifierKeys.None));
+                }
+
+                LoadSettings();
+                return;
+            }
+
 
             _settings.Save();
 
             Close();
         }
-
-        private void HotKeyBox_LostFocus(object? sender, RoutedEventArgs e)
-        {
-            UpdateHotKeyConflictWarnings(false);
-        }
-
-        private void UpdateHotKeyConflictWarnings(bool isInitializing)
-        {
-            HotKey global = GlobalHotKeyBox.HotKey;
-            HotKey red = RedTeamHotKeyBox.HotKey;
-            HotKey blue = BlueTeamHotKeyBox.HotKey;
-
-            GlobalHotKeyConflictWarning.Visibility = Visibility.Collapsed;
-            RedTeamHotKeyConflictWarning.Visibility = Visibility.Collapsed;
-            BlueTeamHotKeyConflictWarning.Visibility = Visibility.Collapsed;
-
-            bool hasConflict = false;
-
-            if (!global.IsEmpty)
-            {
-                if (global == red)
-                {
-                    hasConflict = true;
-                    GlobalHotKeyConflictWarning.Visibility = Visibility.Visible;
-                    RedTeamHotKeyConflictWarning.Visibility = Visibility.Visible;
-                }
-                if (global == blue)
-                {
-                    hasConflict = true;
-                    GlobalHotKeyConflictWarning.Visibility = Visibility.Visible;
-                    BlueTeamHotKeyConflictWarning.Visibility = Visibility.Visible;
-                }
-            }
-
-            if (!red.IsEmpty && red == blue)
-            {
-                hasConflict = true;
-                RedTeamHotKeyConflictWarning.Visibility = Visibility.Visible;
-                BlueTeamHotKeyConflictWarning.Visibility = Visibility.Visible;
-            }
-
-            if (hasConflict && !isInitializing)
-            {
-                GlobalHotKeyBox.HotKey = _settings.GlobalHotKey;
-                RedTeamHotKeyBox.HotKey = _settings.RedTeamHotKey;
-                BlueTeamHotKeyBox.HotKey = _settings.BlueTeamHotKey;
-
-                UpdateHotKeyConflictWarnings(true);
-
-            }
-        }
-
         private void LogsButton_Click(object sender, RoutedEventArgs e)
         {
-            var logViewer = new LogViewerWindow { Owner = this };
-            logViewer.ShowDialog();
+            LogViewerWindow logViewer = new() { Owner = this };
+            _ = logViewer.ShowDialog();
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
@@ -234,5 +249,25 @@ namespace Automatization
             }
         }
 
+        private void UnlockGameProcessNameButton_Click(object sender, RoutedEventArgs e)
+        {
+            InputDialog inputDialog = new()
+            {
+                Owner = this
+            };
+
+            if (inputDialog.ShowDialog() == true)
+            {
+                _isGameProcessNameUnlocked = true;
+                GameProcessNameTextBox.IsReadOnly = false;
+                _ = GameProcessNameTextBox.Focus();
+                UnlockGameProcessNameButton.Visibility = Visibility.Collapsed;
+                LogService.LogInfo("Game Process Name unlocked for editing.");
+            }
+            else
+            {
+                LogService.LogInfo("Game Process Name unlock cancelled or incorrect password entered.");
+            }
+        }
     }
 }

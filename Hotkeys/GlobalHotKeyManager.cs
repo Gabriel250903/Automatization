@@ -43,6 +43,7 @@ namespace Automatization.Hotkeys
         {
             if (_source == null || hotKey.IsEmpty || HotKeyToIdMap.ContainsKey(hotKey))
             {
+                LogService.LogWarning($"Skipping registration for hotkey {hotKey}. Either source is null, hotkey is empty, or hotkey is already mapped.");
                 return false;
             }
 
@@ -62,17 +63,58 @@ namespace Automatization.Hotkeys
             return true;
         }
 
-        public static void Unregister(HotKey hotKey)
+        public static bool TryUnregister(HotKey hotKey)
         {
             if (_source == null || !HotKeyToIdMap.TryGetValue(hotKey, out int id))
+            {
+                LogService.LogWarning($"Failed to unregister hotkey {hotKey}: Not found in map or source is null.");
+                return false;
+            }
+
+            if (UnregisterHotKey(_source.Handle, id))
+            {
+                LogService.LogInfo($"Successfully unregistered hotkey from OS: {hotKey}");
+            }
+            else
+            {
+                LogService.LogWarning($"Failed to unregister hotkey from OS: {hotKey}");
+            }
+
+            _ = IdToHotKeyMap.Remove(id);
+            _ = HotKeyToIdMap.Remove(hotKey);
+            LogService.LogInfo($"Unregistered hotkey from manager: {hotKey}");
+            return true;
+        }
+
+        public static void UnregisterAll()
+        {
+            if (_source == null)
             {
                 return;
             }
 
-            _ = UnregisterHotKey(_source.Handle, id);
-            _ = IdToHotKeyMap.Remove(id);
-            _ = HotKeyToIdMap.Remove(hotKey);
-            LogService.LogInfo($"Unregistered hotkey: {hotKey}");
+            LogService.LogInfo("Unregistering all hotkeys.");
+
+            foreach (KeyValuePair<int, HotKey> entry in IdToHotKeyMap.ToList())
+            {
+                if (UnregisterHotKey(_source.Handle, entry.Key))
+                {
+                    LogService.LogInfo($"Successfully unregistered hotkey from OS: {entry.Value}");
+                }
+                else
+                {
+                    LogService.LogWarning($"Failed to unregister hotkey from OS: {entry.Value}");
+                }
+            }
+
+            IdToHotKeyMap.Clear();
+            HotKeyToIdMap.Clear();
+            LogService.LogInfo("All hotkeys unregistered from manager.");
+        }
+
+        public static IEnumerable<HotKey> GetCurrentRegisteredHotkeys()
+        {
+            return HotKeyToIdMap.Keys.ToList();
         }
 
         private static IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -101,13 +143,7 @@ namespace Automatization.Hotkeys
 
             LogService.LogInfo("Shutting down GlobalHotKeyManager.");
 
-            foreach (int id in IdToHotKeyMap.Keys)
-            {
-                _ = UnregisterHotKey(_source.Handle, id);
-            }
-
-            IdToHotKeyMap.Clear();
-            HotKeyToIdMap.Clear();
+            UnregisterAll();
 
             _source.RemoveHook(WndProc);
             _source.Dispose();

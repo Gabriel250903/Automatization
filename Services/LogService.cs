@@ -1,5 +1,4 @@
 using Serilog;
-using System;
 using System.IO;
 
 namespace Automatization.Services
@@ -16,7 +15,7 @@ namespace Automatization.Services
 
             if (!Directory.Exists(settingsDir))
             {
-                Directory.CreateDirectory(settingsDir);
+                _ = Directory.CreateDirectory(settingsDir);
             }
 
             return settingsDir;

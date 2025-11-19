@@ -1,6 +1,4 @@
-using System;
 using System.IO;
-using System.Linq;
 using System.Windows;
 
 namespace Automatization.Settings
@@ -18,8 +16,8 @@ namespace Automatization.Settings
             try
             {
                 string logDirectory = GetLogDirectory();
-                var directory = new DirectoryInfo(logDirectory);
-                var logFile = directory.GetFiles("*.txt")
+                DirectoryInfo directory = new(logDirectory);
+                FileInfo? logFile = directory.GetFiles("*.txt")
                                        .OrderByDescending(f => f.LastWriteTime)
                                        .FirstOrDefault();
 

@@ -54,27 +54,12 @@ namespace Automatization.Hotkeys
 
         public bool Equals(HotKey? other)
         {
-            if (other is null)
-            {
-                return false;
-            }
-
-            return ReferenceEquals(this, other) || Key == other.Key && Modifiers == other.Modifiers;
+            return other is not null && (ReferenceEquals(this, other) || (Key == other.Key && Modifiers == other.Modifiers));
         }
 
         public override bool Equals(object? obj)
         {
-            if (obj is null)
-            {
-                return false;
-            }
-
-            if (ReferenceEquals(this, obj))
-            {
-                return true;
-            }
-
-            return obj.GetType() == GetType() && Equals((HotKey)obj);
+            return obj is not null && (ReferenceEquals(this, obj) || (obj.GetType() == GetType() && Equals((HotKey)obj)));
         }
 
         public override int GetHashCode()

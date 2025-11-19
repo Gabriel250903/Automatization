@@ -31,7 +31,7 @@ namespace Automatization.Services
             {
                 Interval = TimeSpan.FromMilliseconds(ClickSpeed)
             };
-            timer.Tick += (s, e) => action(clickType);
+            timer.Tick += async (s, e) => await Task.Run(() => action(clickType));
             timer.Start();
 
             Guid id = Guid.NewGuid();
@@ -46,6 +46,7 @@ namespace Automatization.Services
             {
                 timerInfo.Timer.Stop();
                 _ = _timers.Remove(id);
+
                 LogService.LogInfo($"Clicker unregistered with ID: {id}");
             }
         }

@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:Automatization"
         xmlns:controls="clr-namespace:Automatization.Controls"
         xmlns:utils="clr-namespace:Automatization.Utils"
+        xmlns:viewmodels="clr-namespace:Automatization.ViewModels"
         mc:Ignorable="d"
         Title="Automatization" Height="750" Width="400" 
         Icon="Settings/icon.ico"
@@ -15,6 +16,20 @@
         FontFamily="Segoe UI">
 
     <Window.Resources>
+        <!-- DataTemplate for PowerupViewModel -->
+        <DataTemplate DataType="{x:Type viewmodels:PowerupViewModel}">
+            <StackPanel Orientation="Horizontal" Margin="5">
+                <Button Content="{Binding ButtonContent}" 
+                        Command="{Binding TogglePowerupCommand}"
+                        Width="120" Height="30" Margin="0,0,10,0"/>
+                <Slider Width="100" Minimum="1" Maximum="5000" Value="{Binding Delay, Mode=TwoWay}"
+                        Tag="{Binding PowerupType}"
+                        TickFrequency="10" IsSnapToTickEnabled="True"/>
+                <TextBlock Text="{Binding DelayText}" 
+                           VerticalAlignment="Center" Margin="5,0,0,0"/>
+            </StackPanel>
+        </DataTemplate>
+
         <!-- Modern Control Styles -->
         <Style TargetType="Button">
             <Setter Property="Background" Value="{DynamicResource ButtonBackground}" />
@@ -298,11 +313,11 @@
                 <!-- Powerups -->
                 <GroupBox Header="Powerups" Margin="0,10" x:Name="PowerupsGroup">
                     <ScrollViewer x:Name="PowerupsScrollViewer" Height="200" VerticalScrollBarVisibility="Auto">
-                        <StackPanel x:Name="PowerupsPanel"/>
+                        <ItemsControl ItemsSource="{Binding Powerups}"/>
                     </ScrollViewer>
                 </GroupBox>
 
-                <Button x:Name="ToggleAllButton" Content="Toggle All" Height="25" Margin="0,5" Visibility="Collapsed"/>
+                <Button x:Name="ToggleAllButton" Content="Toggle All" Height="25" Margin="0,5" />
 
                 <!-- Team Clickers -->
                 <GroupBox Header="Team Auto-Clickers" Margin="0,10">

@@ -23,11 +23,19 @@
 
                 <TextBlock Text="Game Process Name (e.g., ProTanki)" Margin="0,15,10,8" FontWeight="SemiBold"
                            Foreground="{DynamicResource Foreground}" ToolTip="The executable name of the game process without the .exe extension."/>
-                <TextBox x:Name="GameProcessNameTextBox" Height="30" Margin="0,0,10,8"
-                         Background="{DynamicResource TextBoxBackground}"
-                         Foreground="{DynamicResource TextBoxForeground}"
-                         BorderBrush="{DynamicResource TextBoxBorder}"/>
-
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0" x:Name="GameProcessNameTextBox" Height="30" Margin="0,0,10,0"
+                             Background="{DynamicResource TextBoxBackground}"
+                             Foreground="{DynamicResource TextBoxForeground}"
+                             BorderBrush="{DynamicResource TextBoxBorder}"
+                             IsReadOnly="True"/>
+                    <Button Grid.Column="1" x:Name="UnlockGameProcessNameButton" Content="Unlock" Margin="0,0,10,0" Width="80"
+                            Click="UnlockGameProcessNameButton_Click"/>
+                </Grid>
                 <TextBlock Text="Game Executable Path (Optional)" Margin="0,15,0,8" FontWeight="SemiBold"
                            Foreground="{DynamicResource Foreground}"/>
                 <Grid Margin="0,0,0,8">
@@ -42,7 +50,6 @@
                     <Button Grid.Column="1" Content="Browse" Margin="5,0,10,0" Width="80"
                             Click="BrowseGamePathButton_Click"/>
                 </Grid>
-
                 <TextBlock Text="Clicker Coordinates" Margin="0,15,0,8" FontWeight="SemiBold"
                            Foreground="{DynamicResource Foreground}"/>
 
@@ -96,9 +103,7 @@
                                         Background="{DynamicResource TextBoxBackground}"
                                         Foreground="{DynamicResource TextBoxForeground}"
                                         BorderBrush="{DynamicResource TextBoxBorder}"/>
-                    <TextBlock Grid.Row="0" Grid.Column="2" x:Name="GlobalHotKeyConflictWarning" Text="!"
-                               Foreground="Red" FontWeight="Bold" VerticalAlignment="Center" Visibility="Collapsed"
-                               ToolTip="Hotkey conflict."/>
+
 
                     <TextBlock Grid.Row="1" Grid.Column="0" Text="Red Team:" VerticalAlignment="Center" Margin="0,0,10,8"
                                Foreground="{DynamicResource Foreground}"/>
@@ -106,9 +111,6 @@
                                         Background="{DynamicResource TextBoxBackground}"
                                         Foreground="{DynamicResource TextBoxForeground}"
                                         BorderBrush="{DynamicResource TextBoxBorder}"/>
-                    <TextBlock Grid.Row="1" Grid.Column="2" x:Name="RedTeamHotKeyConflictWarning" Text="!"
-                               Foreground="Red" FontWeight="Bold" VerticalAlignment="Center" Visibility="Collapsed"
-                               ToolTip="Hotkey conflict."/>
 
                     <TextBlock Grid.Row="2" Grid.Column="0" Text="Blue Team:" VerticalAlignment="Center" Margin="0,0,10,8"
                                Foreground="{DynamicResource Foreground}"/>
@@ -116,9 +118,6 @@
                                         Background="{DynamicResource TextBoxBackground}"
                                         Foreground="{DynamicResource TextBoxForeground}"
                                         BorderBrush="{DynamicResource TextBoxBorder}"/>
-                    <TextBlock Grid.Row="2" Grid.Column="2" x:Name="BlueTeamHotKeyConflictWarning" Text="!"
-                               Foreground="Red" FontWeight="Bold" VerticalAlignment="Center" Visibility="Collapsed"
-                               ToolTip="Hotkey conflict."/>
                 </Grid>
 
                 <TextBlock Text="Powerup Keys" Margin="0,15,0,8" FontWeight="SemiBold"

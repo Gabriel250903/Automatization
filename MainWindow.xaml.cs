@@ -1,4 +1,4 @@
-﻿using Automatization.Hotkeys;
+using Automatization.Hotkeys;
 using Automatization.Services;
 using Automatization.Settings;
 using Automatization.Types;
@@ -49,7 +49,8 @@ namespace Automatization
             InitializeComponent();
             LogService.LogInfo("Initializing main window.");
             _settings = AppSettings.Load();
-            _powerupUtils = new PowerupUtils(_settings, PowerupsPanel, ToggleAllButton);
+            _powerupUtils = new PowerupUtils(_settings);
+            DataContext = _powerupUtils;
 
             ClickTypeComboBox.ItemsSource = Enum.GetValues(typeof(ClickType));
             ClickTypeComboBox.SelectedIndex = 0;
@@ -96,9 +97,7 @@ namespace Automatization
 
         private void RegisterHotkeysFromSettings()
         {
-            GlobalHotKeyManager.Unregister(_settings.GlobalHotKey);
-            GlobalHotKeyManager.Unregister(_settings.RedTeamHotKey);
-            GlobalHotKeyManager.Unregister(_settings.BlueTeamHotKey);
+            GlobalHotKeyManager.UnregisterAll();
 
             _ = GlobalHotKeyManager.Register(_settings.GlobalHotKey);
             _ = GlobalHotKeyManager.Register(_settings.RedTeamHotKey);
@@ -211,7 +210,7 @@ namespace Automatization
 
         private async Task GameCheckAsync()
         {
-            Process? game = await Task.Run(() => Process.GetProcessesByName("ProTanki").FirstOrDefault());
+            Process? game = await Task.Run(() => Process.GetProcessesByName(_settings.GameProcessName).FirstOrDefault());
 
             if (game != null)
             {
@@ -237,7 +236,6 @@ namespace Automatization
         #region Automation UI
         private void EnableAutomation()
         {
-            _powerupUtils?.Initialize();
             PowerupsGroup.Visibility = Visibility.Visible;
             ToggleAllButton.Visibility = Visibility.Visible;
             LaunchButton.Visibility = Visibility.Collapsed;
@@ -248,7 +246,6 @@ namespace Automatization
         private void DisableAutomation()
         {
             _powerupUtils?.StopAll();
-            PowerupsPanel.Children.Clear();
             PowerupsGroup.Visibility = Visibility.Collapsed;
             ToggleAllButton.Visibility = Visibility.Collapsed;
             LaunchButton.Visibility = Visibility.Visible;
@@ -260,9 +257,9 @@ namespace Automatization
         #region Game Launch / Installation
         private void CheckGameInstallation()
         {
-            if (!string.IsNullOrEmpty(_settings.GameExecutablePath) && File.Exists(Path.Combine(_settings.GameExecutablePath, "ProTanki.exe")))
+            if (!string.IsNullOrEmpty(_settings.GameExecutablePath) && File.Exists(Path.Combine(_settings.GameExecutablePath, _settings.GameProcessName + ".exe")))
             {
-                _gameExecutablePath = Path.Combine(_settings.GameExecutablePath, "ProTanki.exe");
+                _gameExecutablePath = Path.Combine(_settings.GameExecutablePath, _settings.GameProcessName + ".exe");
             }
             else
             {
@@ -278,6 +275,7 @@ namespace Automatization
 
         private static string? FindExecutableFromUninstallRegistry()
         {
+            string gameProcessName = AppSettings.Load().GameProcessName;
             string[] registryPaths =
             [
                 @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
@@ -303,12 +301,12 @@ namespace Automatization
                         }
 
                         string? displayName = subKey.GetValue("DisplayName")?.ToString();
-                        if (displayName != null && displayName.Contains("ProTanki Online", StringComparison.OrdinalIgnoreCase))
+                        if (displayName != null && displayName.Contains(gameProcessName + " Online", StringComparison.OrdinalIgnoreCase))
                         {
                             string? installLocation = subKey.GetValue("InstallLocation")?.ToString();
                             if (!string.IsNullOrEmpty(installLocation))
                             {
-                                string executablePath = Path.Combine(installLocation, "ProTanki.exe");
+                                string executablePath = Path.Combine(installLocation, gameProcessName + ".exe");
                                 if (File.Exists(executablePath))
                                 {
                                     return executablePath;
@@ -323,6 +321,7 @@ namespace Automatization
 
         private static string? SearchCommonInstallDirectories()
         {
+            string gameProcessName = AppSettings.Load().GameProcessName;
             List<string> commonPaths =
             [
                 Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
@@ -332,19 +331,19 @@ namespace Automatization
 
             foreach (string basePath in commonPaths)
             {
-                string directPath = Path.Combine(basePath, "ProTanki.exe");
+                string directPath = Path.Combine(basePath, gameProcessName + ".exe");
                 if (File.Exists(directPath))
                 {
                     return directPath;
                 }
 
-                string subDirPath = Path.Combine(basePath, "ProTanki Online", "ProTanki.exe");
+                string subDirPath = Path.Combine(basePath, gameProcessName + " Online", gameProcessName + ".exe");
                 if (File.Exists(subDirPath))
                 {
                     return subDirPath;
                 }
 
-                subDirPath = Path.Combine(basePath, "ProTanki", "ProTanki.exe");
+                subDirPath = Path.Combine(basePath, gameProcessName, gameProcessName + ".exe");
                 if (File.Exists(subDirPath))
                 {
                     return subDirPath;
@@ -365,7 +364,7 @@ namespace Automatization
                     OpenFileDialog dlg = new()
                     {
                         Filter = "Executable files (*.exe)|*.exe",
-                        Title = "Select Pro Tanki Online executable"
+                        Title = $"Select {_settings.GameProcessName} Online executable"
                     };
 
                     if (dlg.ShowDialog() == true)
@@ -417,6 +416,7 @@ namespace Automatization
             if (_powerupUtils != null)
             {
                 _powerupUtils.Settings = _settings;
+                _powerupUtils.Initialize();
             }
 
             App.ApplyTheme(_settings.Theme);
@@ -459,13 +459,12 @@ namespace Automatization
         {
             _notifyIcon = new NotifyIcon
             {
-                Visible = false, // Initially hidden
+                Visible = false,
                 Text = "Automatization"
             };
 
             try
             {
-                // Make sure you have an 'icon.ico' file in the 'Settings' folder of your project
                 _notifyIcon.Icon = new Icon("Settings/icon.ico");
             }
             catch (Exception ex)
