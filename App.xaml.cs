@@ -1,6 +1,7 @@
-﻿using System.Windows;
+﻿using Automatization.Services;
 using Automatization.Settings;
 using Automatization.Types;
+using System.Windows;
 
 namespace Automatization;
 public partial class App : System.Windows.Application
@@ -11,12 +12,23 @@ public partial class App : System.Windows.Application
 
     private void Application_Startup(object sender, StartupEventArgs e)
     {
+        LogService.Initialize();
+        LogService.LogInfo("Application starting.");
+
         Settings = AppSettings.Load();
 
         ApplyTheme(Settings.Theme);
 
         MainWindow mainWindow = new();
         mainWindow.Show();
+
+        LogService.LogInfo("Main window shown.");
+    }
+
+    private void Application_Exit(object sender, ExitEventArgs e)
+    {
+        LogService.LogInfo("Application shutting down.");
+        LogService.Shutdown();
     }
 
     public static void ApplyTheme(ThemeType mode)
@@ -27,18 +39,21 @@ public partial class App : System.Windows.Application
 
         try
         {
-            var dict = new ResourceDictionary { Source = new Uri(themePath, UriKind.Relative) };
+            ResourceDictionary dict = new() { Source = new Uri(themePath, UriKind.Relative) };
 
             if (_currentThemeDictionary != null)
             {
-                Current.Resources.MergedDictionaries.Remove(_currentThemeDictionary);
+                _ = Current.Resources.MergedDictionaries.Remove(_currentThemeDictionary);
             }
 
             Current.Resources.MergedDictionaries.Add(dict);
             _currentThemeDictionary = dict;
+
+            LogService.LogInfo($"Theme changed to {mode}.");
         }
         catch (Exception)
         {
+            LogService.LogWarning($"Failed to apply theme: {themePath}");
         }
     }
 }

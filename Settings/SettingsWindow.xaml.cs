@@ -1,10 +1,10 @@
-using System.Globalization;
-using System.Windows;
-using System.Windows.Input;
-using Automatization.Hotkeys;
+﻿using Automatization.Hotkeys;
 using Automatization.Settings;
 using Automatization.Types;
 using Automatization.UI.Coordinate;
+using System.Globalization;
+using System.Windows;
+using System.Windows.Input;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using Point = System.Windows.Point;
 
@@ -198,6 +198,12 @@ namespace Automatization
             }
         }
 
+        private void LogsButton_Click(object sender, RoutedEventArgs e)
+        {
+            var logViewer = new LogViewerWindow { Owner = this };
+            logViewer.ShowDialog();
+        }
+
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
             FocusManager.SetFocusedElement(this, CloseButton);
@@ -210,7 +216,7 @@ namespace Automatization
 
         private void PickRedTeamButton_Click(object sender, RoutedEventArgs e)
         {
-            var picker = new CoordinatePickerWindow();
+            CoordinatePickerWindow picker = new();
             if (picker.ShowDialog() == true)
             {
                 RedTeamXTextBox.Text = picker.SelectedPoint.X.ToString(CultureInfo.InvariantCulture);
@@ -220,7 +226,7 @@ namespace Automatization
 
         private void PickBlueTeamButton_Click(object sender, RoutedEventArgs e)
         {
-            var picker = new CoordinatePickerWindow();
+            CoordinatePickerWindow picker = new();
             if (picker.ShowDialog() == true)
             {
                 BlueTeamXTextBox.Text = picker.SelectedPoint.X.ToString(CultureInfo.InvariantCulture);

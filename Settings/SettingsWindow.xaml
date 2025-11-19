@@ -177,6 +177,11 @@
                     Background="{DynamicResource ButtonBackground}"
                     Foreground="{DynamicResource ButtonForeground}"
                     BorderBrush="{DynamicResource ButtonBorder}"/>
+            <Button x:Name="LogsButton" Content="View Logs" Width="80" Margin="0,0,10,0"
+                    Click="LogsButton_Click"
+                    Background="{DynamicResource ButtonBackground}"
+                    Foreground="{DynamicResource ButtonForeground}"
+                    BorderBrush="{DynamicResource ButtonBorder}"/>
             <Button x:Name="CloseButton" Content="Close" Width="80" IsCancel="True"
                     Click="CloseButton_Click"
                     Background="{DynamicResource ButtonBackground}"

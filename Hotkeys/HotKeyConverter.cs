@@ -12,23 +12,27 @@ namespace Automatization.Hotkeys
             {
                 if (reader.TokenType == JsonTokenType.StartObject)
                 {
-                    var tempReader = reader;
+                    Utf8JsonReader tempReader = reader;
                     Key key = Key.None;
                     ModifierKeys mod = ModifierKeys.None;
                     while (tempReader.Read())
                     {
-                        if (tempReader.TokenType == JsonTokenType.EndObject) break;
+                        if (tempReader.TokenType == JsonTokenType.EndObject)
+                        {
+                            break;
+                        }
+
                         if (tempReader.TokenType == JsonTokenType.PropertyName)
                         {
-                            var propName = tempReader.GetString();
-                            tempReader.Read();
+                            string? propName = tempReader.GetString();
+                            _ = tempReader.Read();
                             if (string.Equals(propName, "Key", StringComparison.OrdinalIgnoreCase))
                             {
-                                Enum.TryParse<Key>(tempReader.GetString(), out key);
+                                _ = Enum.TryParse<Key>(tempReader.GetString(), out key);
                             }
                             else if (string.Equals(propName, "Modifiers", StringComparison.OrdinalIgnoreCase))
                             {
-                                Enum.TryParse<ModifierKeys>(tempReader.GetString(), out mod);
+                                _ = Enum.TryParse<ModifierKeys>(tempReader.GetString(), out mod);
                             }
                         }
                     }
@@ -45,14 +49,14 @@ namespace Automatization.Hotkeys
                 return new HotKey();
             }
 
-            var parts = value.Split('+');
+            string[] parts = value.Split('+');
             Key parsedKey = Key.None;
             ModifierKeys parsedModifiers = ModifierKeys.None;
 
-            foreach (var part in parts)
+            foreach (string part in parts)
             {
-                var trimmedPart = part.Trim();
-                if (Enum.TryParse<Key>(trimmedPart, true, out var key))
+                string trimmedPart = part.Trim();
+                if (Enum.TryParse<Key>(trimmedPart, true, out Key key))
                 {
                     parsedKey = key;
                 }

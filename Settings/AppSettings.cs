@@ -1,8 +1,9 @@
+using Automatization.Hotkeys;
+using Automatization.Services;
+using Automatization.Types;
 using System.IO;
 using System.Text.Json;
 using System.Windows.Input;
-using Automatization.Hotkeys;
-using Automatization.Types;
 using Point = System.Windows.Point;
 
 namespace Automatization.Settings;
@@ -47,8 +48,9 @@ public class AppSettings
                 return JsonSerializer.Deserialize<AppSettings>(json, options) ?? new AppSettings();
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            LogService.LogError("Failed to load settings.", ex);
         }
         return new AppSettings();
     }
@@ -62,8 +64,9 @@ public class AppSettings
             string json = JsonSerializer.Serialize(this, options);
             File.WriteAllText(settingsPath, json);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            LogService.LogError("Failed to save settings.", ex);
         }
     }
 

@@ -1,6 +1,6 @@
+using Automatization.Hotkeys;
 using System.Windows;
 using System.Windows.Input;
-using Automatization.Hotkeys;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using TextBox = System.Windows.Controls.TextBox;
 
@@ -22,7 +22,7 @@ namespace Automatization.Controls
         {
             if (d is HotKeyBox box)
             {
-                var newHotKey = e.NewValue as HotKey ?? new HotKey();
+                HotKey newHotKey = e.NewValue as HotKey ?? new HotKey();
                 box.Text = newHotKey.ToString();
             }
         }
@@ -37,23 +37,23 @@ namespace Automatization.Controls
         {
             e.Handled = true;
 
-            var modifiers = Keyboard.Modifiers;
-            var key = e.Key;
+            ModifierKeys modifiers = Keyboard.Modifiers;
+            Key key = e.Key;
 
             if (key == Key.System)
             {
                 key = e.SystemKey;
             }
 
-            if (key == Key.LeftCtrl || key == Key.RightCtrl ||
-                key == Key.LeftShift || key == Key.RightShift ||
-                key == Key.LeftAlt || key == Key.RightAlt ||
-                key == Key.LWin || key == Key.RWin)
+            if (key is Key.LeftCtrl or Key.RightCtrl or
+                Key.LeftShift or Key.RightShift or
+                Key.LeftAlt or Key.RightAlt or
+                Key.LWin or Key.RWin)
             {
                 return;
             }
 
-            if (key == Key.Back || key == Key.Delete)
+            if (key is Key.Back or Key.Delete)
             {
                 HotKey = new HotKey();
                 return;
@@ -64,20 +64,20 @@ namespace Automatization.Controls
                 HotKey = new HotKey(key, modifiers);
             }
 
-            Keyboard.Focus(this);
+            _ = Keyboard.Focus(this);
         }
 
         private static bool IsValidKey(Key key)
         {
-            return key >= Key.F1 && key <= Key.F24 ||
-                   key >= Key.D0 && key <= Key.D9 ||
-                   key >= Key.A && key <= Key.Z ||
-                   key >= Key.NumPad0 && key <= Key.NumPad9 ||
-                   key == Key.Tab || key == Key.Enter || key == Key.Space ||
-                   key == Key.OemTilde || key == Key.OemMinus || key == Key.OemPlus ||
-                   key == Key.OemOpenBrackets || key == Key.OemCloseBrackets ||
-                   key == Key.OemPipe || key == Key.OemSemicolon || key == Key.OemQuotes ||
-                   key == Key.OemComma || key == Key.OemPeriod || key == Key.OemQuestion;
+            return key is >= Key.F1 and <= Key.F24 or
+                   >= Key.D0 and <= Key.D9 or
+                   >= Key.A and <= Key.Z or
+                   >= Key.NumPad0 and <= Key.NumPad9 or
+                   Key.Tab or Key.Enter or Key.Space or
+                   Key.OemTilde or Key.OemMinus or Key.OemPlus or
+                   Key.OemOpenBrackets or Key.OemCloseBrackets or
+                   Key.OemPipe or Key.OemSemicolon or Key.OemQuotes or
+                   Key.OemComma or Key.OemPeriod or Key.OemQuestion;
         }
 
         protected override void OnGotKeyboardFocus(KeyboardFocusChangedEventArgs e)

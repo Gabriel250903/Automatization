@@ -1,3 +1,4 @@
+using Automatization.Services;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
@@ -28,9 +29,11 @@ namespace Automatization.Hotkeys
         {
             if (_source != null)
             {
+                LogService.LogWarning("GlobalHotKeyManager already initialized.");
                 return;
             }
 
+            LogService.LogInfo("Initializing GlobalHotKeyManager.");
             nint windowHandle = new WindowInteropHelper(window).Handle;
             _source = HwndSource.FromHwnd(windowHandle);
             _source?.AddHook(WndProc);
@@ -49,11 +52,13 @@ namespace Automatization.Hotkeys
             int id = _nextId++;
             if (!RegisterHotKey(_source.Handle, id, fsModifiers, (uint)vk))
             {
+                LogService.LogWarning($"Failed to register hotkey: {hotKey}");
                 return false;
             }
 
             IdToHotKeyMap[id] = hotKey;
             HotKeyToIdMap[hotKey] = id;
+            LogService.LogInfo($"Registered hotkey: {hotKey}");
             return true;
         }
 
@@ -67,6 +72,7 @@ namespace Automatization.Hotkeys
             _ = UnregisterHotKey(_source.Handle, id);
             _ = IdToHotKeyMap.Remove(id);
             _ = HotKeyToIdMap.Remove(hotKey);
+            LogService.LogInfo($"Unregistered hotkey: {hotKey}");
         }
 
         private static IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -79,6 +85,7 @@ namespace Automatization.Hotkeys
             int id = wParam.ToInt32();
             if (IdToHotKeyMap.TryGetValue(id, out HotKey? hotKey))
             {
+                LogService.LogInfo($"Hotkey pressed: {hotKey}");
                 HotKeyPressed?.Invoke(hotKey);
                 handled = true;
             }
@@ -91,6 +98,8 @@ namespace Automatization.Hotkeys
             {
                 return;
             }
+
+            LogService.LogInfo("Shutting down GlobalHotKeyManager.");
 
             foreach (int id in IdToHotKeyMap.Keys)
             {

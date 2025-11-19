@@ -31,40 +31,50 @@ namespace Automatization.Hotkeys
                 return "None";
             }
 
-            var sb = new StringBuilder();
+            StringBuilder sb = new();
             if (Modifiers.HasFlag(ModifierKeys.Control))
             {
-                sb.Append("Ctrl + ");
+                _ = sb.Append("Ctrl + ");
             }
             if (Modifiers.HasFlag(ModifierKeys.Shift))
             {
-                sb.Append("Shift + ");
+                _ = sb.Append("Shift + ");
             }
             if (Modifiers.HasFlag(ModifierKeys.Alt))
             {
-                sb.Append("Alt + ");
+                _ = sb.Append("Alt + ");
             }
             if (Modifiers.HasFlag(ModifierKeys.Windows))
             {
-                sb.Append("Win + ");
+                _ = sb.Append("Win + ");
             }
-            sb.Append(Key);
+            _ = sb.Append(Key);
             return sb.ToString();
         }
 
         public bool Equals(HotKey? other)
         {
-            if (ReferenceEquals(null, other)) return false;
-            if (ReferenceEquals(this, other)) return true;
-            return Key == other.Key && Modifiers == other.Modifiers;
+            if (other is null)
+            {
+                return false;
+            }
+
+            return ReferenceEquals(this, other) || Key == other.Key && Modifiers == other.Modifiers;
         }
 
         public override bool Equals(object? obj)
         {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != this.GetType()) return false;
-            return Equals((HotKey)obj);
+            if (obj is null)
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, obj))
+            {
+                return true;
+            }
+
+            return obj.GetType() == GetType() && Equals((HotKey)obj);
         }
 
         public override int GetHashCode()
