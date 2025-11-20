@@ -1,7 +1,4 @@
-﻿using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Windows.Threading;
-using Point = System.Windows.Point;
+﻿using System.Runtime.InteropServices;
 
 namespace Automatization.Utils
 {
