@@ -1,13 +1,17 @@
 using Automatization.Hotkeys;
+using Automatization.Listeners;
 using Automatization.Services;
 using Automatization.Settings;
 using Automatization.Types;
 using Automatization.Utils;
 using Microsoft.Win32;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Forms;
+using System.Windows.Input;
 using System.Windows.Threading;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 
@@ -27,6 +31,8 @@ namespace Automatization
 
         private Dictionary<string, Action> _hotkeyActions = [];
         private NotifyIcon? _notifyIcon;
+        private bool _isPowerupsPaused;
+        private KeyboardListener? _keyboardListener;
 
         #region Win32
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
@@ -62,7 +68,7 @@ namespace Automatization
             ToggleAllButton.Click += (_, _) => _powerupUtils?.ToggleAll();
 
             DisableAutomation();
-            _ = GameCheckAsync();
+            GameCheckAsync();
 
             PauseHotkeysCheckBox.IsChecked = GlobalHotKeyManager.IsPaused;
 
@@ -75,8 +81,11 @@ namespace Automatization
             InitializeTeamClickers();
             _powerupUtils?.Initialize();
 
-            GlobalHotKeyManager.Initialize(this);
+            GlobalHotKeyManager.Initialize();
             GlobalHotKeyManager.HotKeyPressed += OnHotKeyPressed;
+
+            _keyboardListener = new KeyboardListener();
+            _keyboardListener.KeyDown += OnKeyDown;
 
             _hotkeyActions["ToggleAll"] = () => _powerupUtils?.ToggleAll();
             _hotkeyActions["RedTeam"] = () => RedTeamButton_Click(RedTeamButton, null);
@@ -85,13 +94,65 @@ namespace Automatization
             RegisterHotkeysFromSettings();
         }
 
+        private void OnKeyDown(Key key)
+        {
+            if (key == Key.Enter)
+            {
+                _isPowerupsPaused = !_isPowerupsPaused;
+                if (_isPowerupsPaused)
+                {
+                    _powerupUtils?.PauseAll();
+                }
+                else
+                {
+                    _powerupUtils?.ResumeAll();
+                }
+            }
+        }
+
         private void OnHotKeyPressed(HotKey hotKey)
         {
             LogService.LogInfo($"Hotkey pressed: {hotKey}");
+
             string? actionEntry = _settings.GetActionForHotKey(hotKey);
+
             if (actionEntry != null && _hotkeyActions.TryGetValue(actionEntry, out Action? action))
             {
-                action.Invoke();
+                if (actionEntry == "ToggleAll")
+                {
+                    if (WindowUtils.IsGameWindowInForeground(_gameProcess) || IsActive)
+                    {
+                        action.Invoke();
+                    }
+                    else
+                    {
+                        LogService.LogWarning("ToggleAll hotkey pressed, but neither game nor app window is in the foreground.");
+                    }
+                }
+                else
+                {
+                    action.Invoke();
+                }
+                return;
+            }
+
+            if (WindowUtils.IsGameWindowInForeground(_gameProcess) || IsActive)
+            {
+                var powerupMapping = _settings.PowerupKeys.FirstOrDefault(kvp => kvp.Value == hotKey.Key);
+                if (powerupMapping.Key != default)
+                {
+                    var viewModel = _powerupUtils?.Powerups.FirstOrDefault(p => p.PowerupType == powerupMapping.Key);
+                    
+                    if (viewModel != null)
+                    {
+                        viewModel.IsActive = !viewModel.IsActive;
+                        LogService.LogInfo($"Toggled powerup {viewModel.PowerupType} to {viewModel.IsActive} via hotkey.");
+                    }
+                }
+            }
+            else
+            {
+                LogService.LogWarning("Powerup hotkey pressed, but neither game nor app window is in the foreground.");
             }
         }
 
@@ -99,9 +160,14 @@ namespace Automatization
         {
             GlobalHotKeyManager.UnregisterAll();
 
-            _ = GlobalHotKeyManager.Register(_settings.GlobalHotKey);
-            _ = GlobalHotKeyManager.Register(_settings.RedTeamHotKey);
-            _ = GlobalHotKeyManager.Register(_settings.BlueTeamHotKey);
+            GlobalHotKeyManager.Register(_settings.GlobalHotKey);
+            GlobalHotKeyManager.Register(_settings.RedTeamHotKey);
+            GlobalHotKeyManager.Register(_settings.BlueTeamHotKey);
+
+            foreach (var powerupKey in _settings.PowerupKeys.Values)
+            {
+                GlobalHotKeyManager.Register(new HotKey(powerupKey, ModifierKeys.None));
+            }
         }
 
         #region Team Auto-Clickers
@@ -126,22 +192,22 @@ namespace Automatization
             switch (clickType)
             {
                 case ClickType.Left:
-                    _ = PostMessage(_gameProcess.MainWindowHandle, WM_LBUTTONDOWN, 1, lParam);
-                    _ = PostMessage(_gameProcess.MainWindowHandle, WM_LBUTTONUP, 0, lParam);
+                    PostMessage(_gameProcess.MainWindowHandle, WM_LBUTTONDOWN, 1, lParam);
+                    PostMessage(_gameProcess.MainWindowHandle, WM_LBUTTONUP, 0, lParam);
                     break;
                 case ClickType.Right:
-                    _ = PostMessage(_gameProcess.MainWindowHandle, WM_RBUTTONDOWN, 1, lParam);
-                    _ = PostMessage(_gameProcess.MainWindowHandle, WM_RBUTTONUP, 0, lParam);
+                    PostMessage(_gameProcess.MainWindowHandle, WM_RBUTTONDOWN, 1, lParam);
+                    PostMessage(_gameProcess.MainWindowHandle, WM_RBUTTONUP, 0, lParam);
                     break;
                 case ClickType.Middle:
-                    _ = PostMessage(_gameProcess.MainWindowHandle, WM_MBUTTONDOWN, 1, lParam);
-                    _ = PostMessage(_gameProcess.MainWindowHandle, WM_MBUTTONUP, 0, lParam);
+                    PostMessage(_gameProcess.MainWindowHandle, WM_MBUTTONDOWN, 1, lParam);
+                    PostMessage(_gameProcess.MainWindowHandle, WM_MBUTTONUP, 0, lParam);
                     break;
                 case ClickType.DoubleClick:
-                    _ = PostMessage(_gameProcess.MainWindowHandle, WM_LBUTTONDOWN, 1, lParam);
-                    _ = PostMessage(_gameProcess.MainWindowHandle, WM_LBUTTONUP, 0, lParam);
-                    _ = PostMessage(_gameProcess.MainWindowHandle, WM_LBUTTONDOWN, 1, lParam);
-                    _ = PostMessage(_gameProcess.MainWindowHandle, WM_LBUTTONUP, 0, lParam);
+                    PostMessage(_gameProcess.MainWindowHandle, WM_LBUTTONDOWN, 1, lParam);
+                    PostMessage(_gameProcess.MainWindowHandle, WM_LBUTTONUP, 0, lParam);
+                    PostMessage(_gameProcess.MainWindowHandle, WM_LBUTTONDOWN, 1, lParam);
+                    PostMessage(_gameProcess.MainWindowHandle, WM_LBUTTONUP, 0, lParam);
                     break;
             }
         }
@@ -159,12 +225,15 @@ namespace Automatization
             else
             {
                 ClickType clickType = (ClickType)ClickTypeComboBox.SelectedItem;
+
                 _redClickerId = _clickerService?.Register(
                     (ct) => ClickTeamButton((int)_settings.RedTeamCoordinates.X, (int)_settings.RedTeamCoordinates.Y, ct),
                     clickType
                 );
+
                 RedTeamButton.Content = "Stop Red Team";
                 Status = "Red Team auto-clicker started";
+
                 LogService.LogInfo("Red Team auto-clicker started.");
             }
         }
@@ -174,20 +243,26 @@ namespace Automatization
             if (_blueClickerId.HasValue)
             {
                 _clickerService?.Unregister(_blueClickerId.Value);
+
                 _blueClickerId = null;
+
                 BlueTeamButton.Content = "Auto Blue Team";
                 Status = "Blue Team auto-clicker stopped";
+
                 LogService.LogInfo("Blue Team auto-clicker stopped.");
             }
             else
             {
                 ClickType clickType = (ClickType)ClickTypeComboBox.SelectedItem;
+
                 _blueClickerId = _clickerService?.Register(
                     (ct) => ClickTeamButton((int)_settings.BlueTeamCoordinates.X, (int)_settings.BlueTeamCoordinates.Y, ct),
                     clickType
                 );
+
                 BlueTeamButton.Content = "Stop Blue Team";
                 Status = "Blue Team auto-clicker started";
+
                 LogService.LogInfo("Blue Team auto-clicker started.");
             }
         }
@@ -217,8 +292,10 @@ namespace Automatization
                 if (_gameProcess == null || _gameProcess.Id != game.Id)
                 {
                     _gameProcess = game;
-                    LogService.LogInfo("Game process found.");
+                    if (_powerupUtils != null) _powerupUtils.GameProcess = _gameProcess;
                     EnableAutomation();
+
+                    LogService.LogInfo("Game process found.");
                 }
             }
             else
@@ -226,8 +303,10 @@ namespace Automatization
                 if (_gameProcess != null)
                 {
                     _gameProcess = null;
-                    LogService.LogInfo("Game process lost.");
+                    if (_powerupUtils != null) _powerupUtils.GameProcess = _gameProcess;
                     DisableAutomation();
+
+                    LogService.LogInfo("Game process lost.");
                 }
             }
         }
@@ -240,6 +319,7 @@ namespace Automatization
             ToggleAllButton.Visibility = Visibility.Visible;
             LaunchButton.Visibility = Visibility.Collapsed;
             Status = "Game is running!";
+
             LogService.LogInfo("Automation enabled.");
         }
 
@@ -250,6 +330,7 @@ namespace Automatization
             ToggleAllButton.Visibility = Visibility.Collapsed;
             LaunchButton.Visibility = Visibility.Visible;
             Status = "Game not running. Click Launch to start.";
+
             LogService.LogInfo("Automation disabled.");
         }
         #endregion
@@ -361,6 +442,7 @@ namespace Automatization
                 {
                     Status = "Game executable not found. Please select it.";
                     LogService.LogWarning("Game executable not found.");
+
                     OpenFileDialog dlg = new()
                     {
                         Filter = "Executable files (*.exe)|*.exe",
@@ -372,16 +454,16 @@ namespace Automatization
                         _gameExecutablePath = dlg.FileName;
                         _settings.GameExecutablePath = Path.GetDirectoryName(dlg.FileName);
                         _settings.Save();
+
                         LogService.LogInfo($"Game executable path set to: {_gameExecutablePath}");
                     }
-                    else
-                    {
-                        return;
-                    }
+                    else return;
                 }
 
                 LogService.LogInfo("Launching game.");
+
                 _gameProcess = Process.Start(new ProcessStartInfo { FileName = _gameExecutablePath, UseShellExecute = true });
+
                 if (_gameProcess != null)
                 {
                     EnableAutomation();
@@ -405,8 +487,9 @@ namespace Automatization
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
         {
             LogService.LogInfo("Settings button clicked.");
+
             SettingsWindow wnd = new() { Owner = this };
-            _ = wnd.ShowDialog();
+            wnd.ShowDialog();
 
             _settings = AppSettings.Load();
             if (_clickerService != null)
@@ -443,10 +526,12 @@ namespace Automatization
         protected override void OnClosed(EventArgs e)
         {
             LogService.LogInfo("Main window closing.");
+
             _gameCheckTimer?.Stop();
             _powerupUtils?.StopAll();
             _clickerService?.Dispose();
             GlobalHotKeyManager.Shutdown();
+            _keyboardListener?.Dispose();
             _notifyIcon?.Dispose();
 
             base.OnClosed(e);
@@ -475,9 +560,9 @@ namespace Automatization
             _notifyIcon.DoubleClick += (s, args) => ShowWindow();
 
             ContextMenuStrip contextMenu = new();
-            _ = contextMenu.Items.Add("Show", null, (s, e) => ShowWindow());
-            _ = contextMenu.Items.Add("Toggle All", null, (s, e) => _powerupUtils?.ToggleAll());
-            _ = contextMenu.Items.Add("Exit", null, (s, e) => Close());
+            contextMenu.Items.Add("Show", null, (s, e) => ShowWindow());
+            contextMenu.Items.Add("Toggle All", null, (s, e) => _powerupUtils?.ToggleAll());
+            contextMenu.Items.Add("Exit", null, (s, e) => Close());
             _notifyIcon.ContextMenuStrip = contextMenu;
         }
 
@@ -487,8 +572,10 @@ namespace Automatization
             {
                 Hide();
                 _notifyIcon.Visible = true;
+
                 LogService.LogInfo("Window minimized to tray.");
             }
+
             base.OnStateChanged(e);
         }
 
@@ -496,12 +583,14 @@ namespace Automatization
         {
             Show();
             WindowState = WindowState.Normal;
+
             if (_notifyIcon != null)
             {
                 _notifyIcon.Visible = false;
             }
 
-            _ = Activate();
+            Activate();
+            
             LogService.LogInfo("Window restored from tray.");
         }
         #endregion

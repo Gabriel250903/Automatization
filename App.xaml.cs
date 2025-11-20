@@ -2,6 +2,7 @@
 using Automatization.Settings;
 using Automatization.Types;
 using System.Windows;
+using MessageBox = System.Windows.MessageBox;
 
 namespace Automatization;
 public partial class App : System.Windows.Application
@@ -10,7 +11,7 @@ public partial class App : System.Windows.Application
 
     private static ResourceDictionary? _currentThemeDictionary;
 
-    private void Application_Startup(object sender, StartupEventArgs e)
+    private async void Application_Startup(object sender, StartupEventArgs e)
     {
         LogService.Initialize();
         LogService.LogInfo("Application starting.");
@@ -19,10 +20,26 @@ public partial class App : System.Windows.Application
 
         ApplyTheme(Settings.Theme);
 
+        await PerformStartupUpdateCheckAsync();
+
         MainWindow mainWindow = new();
         mainWindow.Show();
 
         LogService.LogInfo("Main window shown.");
+    }
+
+    private static async Task PerformStartupUpdateCheckAsync()
+    {
+#if !DEBUG
+        var updateService = new UpdateService(Settings);
+        var release = await updateService.CheckForUpdatesAsync();
+        if (release != null)
+        {
+            MessageBox.Show("A new version of the application is available. Please update from the settings screen.", "Update Available", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+#else
+        await Task.CompletedTask;
+#endif
     }
 
     private void Application_Exit(object sender, ExitEventArgs e)

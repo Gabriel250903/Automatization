@@ -31,12 +31,15 @@ namespace Automatization.Services
             {
                 Interval = TimeSpan.FromMilliseconds(ClickSpeed)
             };
+
             timer.Tick += async (s, e) => await Task.Run(() => action(clickType));
             timer.Start();
 
             Guid id = Guid.NewGuid();
             _timers[id] = (timer, clickType);
+
             LogService.LogInfo($"Clicker registered with ID: {id}");
+            
             return id;
         }
 
@@ -45,7 +48,7 @@ namespace Automatization.Services
             if (_timers.TryGetValue(id, out (DispatcherTimer Timer, ClickType ClickType) timerInfo))
             {
                 timerInfo.Timer.Stop();
-                _ = _timers.Remove(id);
+                _timers.Remove(id);
 
                 LogService.LogInfo($"Clicker unregistered with ID: {id}");
             }
@@ -57,17 +60,21 @@ namespace Automatization.Services
             {
                 timerInfo.Timer.Stop();
             }
+
             _timers.Clear();
+
             LogService.LogInfo("Clicker service disposed.");
         }
 
         private void UpdateTimersInterval()
         {
             TimeSpan newInterval = TimeSpan.FromMilliseconds(ClickSpeed);
+
             foreach ((DispatcherTimer Timer, ClickType ClickType) timerInfo in _timers.Values)
             {
                 timerInfo.Timer.Interval = newInterval;
             }
+
             LogService.LogInfo($"Click speed updated to: {ClickSpeed}ms");
         }
     }

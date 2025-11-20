@@ -14,7 +14,7 @@ namespace Automatization.UI
         {
             InitializeComponent();
             _adminPassword = AdminSecret.GetAdminPassword();
-            _ = PasswordInput.Focus();
+            PasswordInput.Focus();
             Result = PasswordDialogResult.Cancelled;
         }
 

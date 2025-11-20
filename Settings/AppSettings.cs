@@ -27,6 +27,7 @@ public class AppSettings
     public double ClickSpeed { get; set; } = 10;
     public bool HotkeysPaused { get; set; } = false;
     public string GameProcessName { get; set; } = "ProTanki";
+    public string UpdateUrl { get; set; } = "https://api.github.com/repos/Gabriel250903/Automatization/releases";
 
     public Point RedTeamCoordinates { get; set; } = new(1186, 1017);
     public Point BlueTeamCoordinates { get; set; } = new(1544, 1009);
@@ -45,6 +46,7 @@ public class AppSettings
             {
                 string json = File.ReadAllText(settingsPath);
                 JsonSerializerOptions options = new() { PropertyNameCaseInsensitive = true };
+                
                 return JsonSerializer.Deserialize<AppSettings>(json, options) ?? new AppSettings();
             }
         }
@@ -79,7 +81,7 @@ public class AppSettings
 
         if (!Directory.Exists(settingsDir))
         {
-            _ = Directory.CreateDirectory(settingsDir);
+            Directory.CreateDirectory(settingsDir);
         }
 
         return Path.Combine(settingsDir, "appsettings.json");

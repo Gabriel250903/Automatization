@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Threading;
 
 namespace Automatization.Hotkeys
 {
@@ -16,7 +17,7 @@ namespace Automatization.Hotkeys
         [DllImport("user32.dll", SetLastError = true)]
         private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
-        private static HwndSource? _source;
+        private static bool _isInitialized = false;
         private static int _nextId;
         private static Dictionary<int, HotKey> IdToHotKeyMap = [];
         private static Dictionary<HotKey, int> HotKeyToIdMap = [];
@@ -25,25 +26,24 @@ namespace Automatization.Hotkeys
 
         public static event Action<HotKey>? HotKeyPressed;
 
-        public static void Initialize(Window window)
+        public static void Initialize()
         {
-            if (_source != null)
+            if (_isInitialized)
             {
                 LogService.LogWarning("GlobalHotKeyManager already initialized.");
                 return;
             }
 
             LogService.LogInfo("Initializing GlobalHotKeyManager.");
-            nint windowHandle = new WindowInteropHelper(window).Handle;
-            _source = HwndSource.FromHwnd(windowHandle);
-            _source?.AddHook(WndProc);
+            ComponentDispatcher.ThreadFilterMessage += OnThreadFilterMessage;
+            _isInitialized = true;
         }
 
         public static bool Register(HotKey hotKey)
         {
-            if (_source == null || hotKey.IsEmpty || HotKeyToIdMap.ContainsKey(hotKey))
+            if (!_isInitialized || hotKey.IsEmpty || HotKeyToIdMap.ContainsKey(hotKey))
             {
-                LogService.LogWarning($"Skipping registration for hotkey {hotKey}. Either source is null, hotkey is empty, or hotkey is already mapped.");
+                LogService.LogWarning($"Skipping registration for hotkey {hotKey}. Manager not initialized, hotkey is empty, or hotkey is already mapped.");
                 return false;
             }
 
@@ -51,7 +51,7 @@ namespace Automatization.Hotkeys
             uint fsModifiers = (uint)hotKey.Modifiers;
 
             int id = _nextId++;
-            if (!RegisterHotKey(_source.Handle, id, fsModifiers, (uint)vk))
+            if (!RegisterHotKey(IntPtr.Zero, id, fsModifiers, (uint)vk))
             {
                 LogService.LogWarning($"Failed to register hotkey: {hotKey}");
                 return false;
@@ -65,13 +65,13 @@ namespace Automatization.Hotkeys
 
         public static bool TryUnregister(HotKey hotKey)
         {
-            if (_source == null || !HotKeyToIdMap.TryGetValue(hotKey, out int id))
+            if (!_isInitialized || !HotKeyToIdMap.TryGetValue(hotKey, out int id))
             {
-                LogService.LogWarning($"Failed to unregister hotkey {hotKey}: Not found in map or source is null.");
+                LogService.LogWarning($"Failed to unregister hotkey {hotKey}: Not found in map or manager not initialized.");
                 return false;
             }
 
-            if (UnregisterHotKey(_source.Handle, id))
+            if (UnregisterHotKey(IntPtr.Zero, id))
             {
                 LogService.LogInfo($"Successfully unregistered hotkey from OS: {hotKey}");
             }
@@ -88,7 +88,7 @@ namespace Automatization.Hotkeys
 
         public static void UnregisterAll()
         {
-            if (_source == null)
+            if (!_isInitialized)
             {
                 return;
             }
@@ -97,7 +97,7 @@ namespace Automatization.Hotkeys
 
             foreach (KeyValuePair<int, HotKey> entry in IdToHotKeyMap.ToList())
             {
-                if (UnregisterHotKey(_source.Handle, entry.Key))
+                if (UnregisterHotKey(IntPtr.Zero, entry.Key))
                 {
                     LogService.LogInfo($"Successfully unregistered hotkey from OS: {entry.Value}");
                 }
@@ -117,26 +117,25 @@ namespace Automatization.Hotkeys
             return HotKeyToIdMap.Keys.ToList();
         }
 
-        private static IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        private static void OnThreadFilterMessage(ref MSG msg, ref bool handled)
         {
-            if (IsPaused || msg != WmHotkey)
+            if (handled || IsPaused || msg.message != WmHotkey)
             {
-                return IntPtr.Zero;
+                return;
             }
 
-            int id = wParam.ToInt32();
+            int id = msg.wParam.ToInt32();
             if (IdToHotKeyMap.TryGetValue(id, out HotKey? hotKey))
             {
                 LogService.LogInfo($"Hotkey pressed: {hotKey}");
                 HotKeyPressed?.Invoke(hotKey);
                 handled = true;
             }
-            return IntPtr.Zero;
         }
 
         public static void Shutdown()
         {
-            if (_source == null)
+            if (!_isInitialized)
             {
                 return;
             }
@@ -145,9 +144,8 @@ namespace Automatization.Hotkeys
 
             UnregisterAll();
 
-            _source.RemoveHook(WndProc);
-            _source.Dispose();
-            _source = null;
+            ComponentDispatcher.ThreadFilterMessage -= OnThreadFilterMessage;
+            _isInitialized = false;
         }
     }
 }
