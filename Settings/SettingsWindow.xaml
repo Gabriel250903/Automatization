@@ -43,11 +43,11 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBox Grid.Column="0" x:Name="GamePathTextBox" Height="30" IsReadOnly="True"
+                    <TextBox Grid.Column="0" x:Name="GamePathTextBox" Height="30" IsReadOnly="True" Margin="0,0,10,0"
                              Background="{DynamicResource TextBoxBackground}"
                              Foreground="{DynamicResource TextBoxForeground}"
                              BorderBrush="{DynamicResource TextBoxBorder}"/>
-                    <Button Grid.Column="1" Content="Browse" Margin="5,0,10,0" Width="80"
+                    <Button Grid.Column="1" Content="Browse" Margin="0,0,10,0" Width="80"
                             Click="BrowseGamePathButton_Click"/>
                 </Grid>
                 <TextBlock Text="Clicker Coordinates" Margin="0,15,0,8" FontWeight="SemiBold"
@@ -62,7 +62,7 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Text="Red Team:" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{DynamicResource Foreground}"/>
-                    <TextBox Grid.Column="1" x:Name="RedTeamXTextBox" Margin="4,0,10,0" Background="{DynamicResource TextBoxBackground}" Foreground="{DynamicResource TextBoxForeground}" BorderBrush="{DynamicResource TextBoxBorder}"/>
+                    <TextBox Grid.Column="1" x:Name="RedTeamXTextBox" Margin="4,0,0,0" Background="{DynamicResource TextBoxBackground}" Foreground="{DynamicResource TextBoxForeground}" BorderBrush="{DynamicResource TextBoxBorder}" HorizontalAlignment="Left" Width="92"/>
                     <TextBox Grid.Column="2" x:Name="RedTeamYTextBox" Margin="6,0,10,0" Background="{DynamicResource TextBoxBackground}" Foreground="{DynamicResource TextBoxForeground}" BorderBrush="{DynamicResource TextBoxBorder}"/>
                     <Button Grid.Column="3" x:Name="PickRedTeamButton" Content="Pick" Margin="5,0,10,0" Width="60" Click="PickRedTeamButton_Click"/>
                 </Grid>
@@ -76,8 +76,8 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Text="Blue Team:" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{DynamicResource Foreground}"/>
-                    <TextBox Grid.Column="1" x:Name="BlueTeamXTextBox" Background="{DynamicResource TextBoxBackground}" Foreground="{DynamicResource TextBoxForeground}" BorderBrush="{DynamicResource TextBoxBorder}" HorizontalAlignment="Left" Width="94"/>
-                    <TextBox Grid.Column="2" x:Name="BlueTeamYTextBox" Margin="5,0,10,0" Background="{DynamicResource TextBoxBackground}" Foreground="{DynamicResource TextBoxForeground}" BorderBrush="{DynamicResource TextBoxBorder}"/>
+                    <TextBox Grid.Column="1" x:Name="BlueTeamXTextBox" Margin="0,0,2,0" Background="{DynamicResource TextBoxBackground}" Foreground="{DynamicResource TextBoxForeground}" BorderBrush="{DynamicResource TextBoxBorder}" HorizontalAlignment="Left" Width="92"/>
+                    <TextBox Grid.Column="2" x:Name="BlueTeamYTextBox" Margin="6,0,10,0" Background="{DynamicResource TextBoxBackground}" Foreground="{DynamicResource TextBoxForeground}" BorderBrush="{DynamicResource TextBoxBorder}"/>
                     <Button Grid.Column="3" x:Name="PickBlueTeamButton" Content="Pick" Margin="5,0,10,0" Width="60" Click="PickBlueTeamButton_Click"/>
                 </Grid>
 
@@ -166,6 +166,18 @@
                     <RadioButton x:Name="LightRadio" Content="Light" GroupName="Theme"
                                  Checked="ThemeRadio_Checked"
                                  Foreground="{DynamicResource Foreground}"/>
+                </StackPanel>
+
+                <TextBlock Text="Updates" Margin="0,15,0,8" FontWeight="SemiBold"
+                           Foreground="{DynamicResource Foreground}"/>
+                <StackPanel Orientation="Vertical" Margin="0,0,0,15">
+                    <TextBlock x:Name="VersionTextBlock" Margin="0,0,0,8"
+                               Foreground="{DynamicResource Foreground}"/>
+                    <Button x:Name="CheckForUpdatesButton" Content="Check for Updates" Width="140"
+                            Click="CheckForUpdatesButton_Click"
+                            Background="{DynamicResource ButtonBackground}"
+                            Foreground="{DynamicResource ButtonForeground}"
+                            BorderBrush="{DynamicResource ButtonBorder}"/>
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>

@@ -5,8 +5,10 @@ using Automatization.Types;
 using Automatization.UI;
 using Automatization.UI.Coordinate;
 using System.Globalization;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Input;
+using MessageBox = System.Windows.MessageBox;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using Point = System.Windows.Point;
 
@@ -16,11 +18,13 @@ namespace Automatization
     {
         private AppSettings _settings;
         private bool _isGameProcessNameUnlocked = false;
+        private readonly UpdateService _updateService;
 
         public SettingsWindow()
         {
             InitializeComponent();
             _settings = App.Settings ?? AppSettings.Load();
+            _updateService = new UpdateService(_settings);
             LoadSettings();
         }
 
@@ -57,21 +61,47 @@ namespace Automatization
                 DarkRadio.IsChecked = true;
             }
 
+            VersionTextBlock.Text = $"Current Version: {Assembly.GetExecutingAssembly().GetName().Version}";
+
             RegisterSettingsHotkeys();
+        }
+
+        private async void CheckForUpdatesButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var release = await _updateService.CheckForUpdatesAsync();
+                if (release != null)
+                {
+                    var result = MessageBox.Show("A new version is available. Do you want to download and install it now?", "Update Available", MessageBoxButton.YesNo, MessageBoxImage.Information);
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        await _updateService.DownloadAndInstallUpdateAsync(release);
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("You are using the latest version.", "No Updates", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An error occurred while checking for updates: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void RegisterSettingsHotkeys()
         {
             GlobalHotKeyManager.UnregisterAll();
 
-            _ = GlobalHotKeyManager.Register(_settings.GlobalHotKey);
-            _ = GlobalHotKeyManager.Register(_settings.RedTeamHotKey);
-            _ = GlobalHotKeyManager.Register(_settings.BlueTeamHotKey);
+            GlobalHotKeyManager.Register(_settings.GlobalHotKey);
+            GlobalHotKeyManager.Register(_settings.RedTeamHotKey);
+            GlobalHotKeyManager.Register(_settings.BlueTeamHotKey);
 
             foreach (KeyValuePair<PowerupType, Key> entry in _settings.PowerupKeys)
             {
                 HotKey powerupHotKey = new(entry.Value, ModifierKeys.None);
-                _ = GlobalHotKeyManager.Register(powerupHotKey);
+                GlobalHotKeyManager.Register(powerupHotKey);
             }
         }
         private void ThemeRadio_Checked(object? sender, RoutedEventArgs e)
@@ -185,7 +215,6 @@ namespace Automatization
                 }
             }
 
-
             if (registrationFailed)
             {
                 LogService.LogError("One or more hotkeys could not be registered. They might be in use by another application. Reverting to previous hotkeys.");
@@ -196,12 +225,12 @@ namespace Automatization
                 _settings.PowerupKeys = originalPowerupKeys;
 
                 GlobalHotKeyManager.UnregisterAll();
-                _ = GlobalHotKeyManager.Register(_settings.GlobalHotKey);
-                _ = GlobalHotKeyManager.Register(_settings.RedTeamHotKey);
-                _ = GlobalHotKeyManager.Register(_settings.BlueTeamHotKey);
+                GlobalHotKeyManager.Register(_settings.GlobalHotKey);
+                GlobalHotKeyManager.Register(_settings.RedTeamHotKey);
+                GlobalHotKeyManager.Register(_settings.BlueTeamHotKey);
                 foreach (KeyValuePair<PowerupType, Key> entry in _settings.PowerupKeys)
                 {
-                    _ = GlobalHotKeyManager.Register(new HotKey(entry.Value, ModifierKeys.None));
+                    GlobalHotKeyManager.Register(new HotKey(entry.Value, ModifierKeys.None));
                 }
 
                 LoadSettings();
@@ -216,7 +245,7 @@ namespace Automatization
         private void LogsButton_Click(object sender, RoutedEventArgs e)
         {
             LogViewerWindow logViewer = new() { Owner = this };
-            _ = logViewer.ShowDialog();
+            logViewer.ShowDialog();
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
@@ -260,7 +289,7 @@ namespace Automatization
             {
                 _isGameProcessNameUnlocked = true;
                 GameProcessNameTextBox.IsReadOnly = false;
-                _ = GameProcessNameTextBox.Focus();
+                GameProcessNameTextBox.Focus();
                 UnlockGameProcessNameButton.Visibility = Visibility.Collapsed;
                 LogService.LogInfo("Game Process Name unlocked for editing.");
             }

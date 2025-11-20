@@ -40,7 +40,7 @@ namespace Automatization.Settings
             }
         }
 
-        private string GetLogDirectory()
+        private static string GetLogDirectory()
         {
             return Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),

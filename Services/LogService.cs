@@ -15,7 +15,7 @@ namespace Automatization.Services
 
             if (!Directory.Exists(settingsDir))
             {
-                _ = Directory.CreateDirectory(settingsDir);
+                Directory.CreateDirectory(settingsDir);
             }
 
             return settingsDir;

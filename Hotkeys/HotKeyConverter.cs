@@ -25,14 +25,14 @@ namespace Automatization.Hotkeys
                         if (tempReader.TokenType == JsonTokenType.PropertyName)
                         {
                             string? propName = tempReader.GetString();
-                            _ = tempReader.Read();
+                            tempReader.Read();
                             if (string.Equals(propName, "Key", StringComparison.OrdinalIgnoreCase))
                             {
-                                _ = Enum.TryParse<Key>(tempReader.GetString(), out key);
+                                Enum.TryParse<Key>(tempReader.GetString(), out key);
                             }
                             else if (string.Equals(propName, "Modifiers", StringComparison.OrdinalIgnoreCase))
                             {
-                                _ = Enum.TryParse<ModifierKeys>(tempReader.GetString(), out mod);
+                                Enum.TryParse<ModifierKeys>(tempReader.GetString(), out mod);
                             }
                         }
                     }
