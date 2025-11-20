@@ -90,6 +90,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -115,6 +116,13 @@
                     <TextBlock Grid.Row="2" Grid.Column="0" Text="Blue Team:" VerticalAlignment="Center" Margin="0,0,10,8"
                                Foreground="{DynamicResource Foreground}"/>
                     <controls:HotKeyBox Grid.Row="2" Grid.Column="1" x:Name="BlueTeamHotKeyBox" Margin="0,0,10,8"
+                                        Background="{DynamicResource TextBoxBackground}"
+                                        Foreground="{DynamicResource TextBoxForeground}"
+                                        BorderBrush="{DynamicResource TextBoxBorder}"/>
+                    
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Gold Box Timer:" VerticalAlignment="Center" Margin="0,0,10,8"
+                               Foreground="{DynamicResource Foreground}"/>
+                    <controls:HotKeyBox Grid.Row="3" Grid.Column="1" x:Name="GoldBoxTimerHotKeyBox" Margin="0,0,10,8"
                                         Background="{DynamicResource TextBoxBackground}"
                                         Foreground="{DynamicResource TextBoxForeground}"
                                         BorderBrush="{DynamicResource TextBoxBorder}"/>

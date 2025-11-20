@@ -22,6 +22,7 @@ public class AppSettings
     public HotKey GlobalHotKey { get; set; } = new(Key.F6, ModifierKeys.None);
     public HotKey RedTeamHotKey { get; set; } = new(Key.F7, ModifierKeys.None);
     public HotKey BlueTeamHotKey { get; set; } = new(Key.F8, ModifierKeys.None);
+    public HotKey GoldBoxTimerHotKey { get; set; } = new(Key.F9, ModifierKeys.None);
     public ThemeType Theme { get; set; } = ThemeType.Dark;
     public string? GameExecutablePath { get; set; } = null;
     public double ClickSpeed { get; set; } = 10;
@@ -34,7 +35,22 @@ public class AppSettings
 
     public string? GetActionForHotKey(HotKey hotKey)
     {
-        return hotKey == GlobalHotKey ? "ToggleAll" : hotKey == RedTeamHotKey ? "RedTeam" : hotKey == BlueTeamHotKey ? "BlueTeam" : null;
+        if (hotKey == GlobalHotKey)
+        {
+            return "ToggleAll";
+        }
+
+        if (hotKey == RedTeamHotKey)
+        {
+            return "RedTeam";
+        }
+
+        if (hotKey == BlueTeamHotKey)
+        {
+            return "BlueTeam";
+        }
+
+        return hotKey == GoldBoxTimerHotKey ? "StartTimer" : null;
     }
 
     public static AppSettings Load()
@@ -46,7 +62,7 @@ public class AppSettings
             {
                 string json = File.ReadAllText(settingsPath);
                 JsonSerializerOptions options = new() { PropertyNameCaseInsensitive = true };
-                
+
                 return JsonSerializer.Deserialize<AppSettings>(json, options) ?? new AppSettings();
             }
         }
@@ -81,7 +97,7 @@ public class AppSettings
 
         if (!Directory.Exists(settingsDir))
         {
-            Directory.CreateDirectory(settingsDir);
+            _ = Directory.CreateDirectory(settingsDir);
         }
 
         return Path.Combine(settingsDir, "appsettings.json");

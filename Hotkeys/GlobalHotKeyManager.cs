@@ -1,9 +1,7 @@
 using Automatization.Services;
 using System.Runtime.InteropServices;
-using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
-using System.Windows.Threading;
 
 namespace Automatization.Hotkeys
 {
@@ -34,9 +32,10 @@ namespace Automatization.Hotkeys
                 return;
             }
 
-            LogService.LogInfo("Initializing GlobalHotKeyManager.");
             ComponentDispatcher.ThreadFilterMessage += OnThreadFilterMessage;
             _isInitialized = true;
+
+            LogService.LogInfo("Initialized GlobalHotKeyManager.");
         }
 
         public static bool Register(HotKey hotKey)
@@ -51,16 +50,20 @@ namespace Automatization.Hotkeys
             uint fsModifiers = (uint)hotKey.Modifiers;
 
             int id = _nextId++;
-            if (!RegisterHotKey(IntPtr.Zero, id, fsModifiers, (uint)vk))
+            bool success = RegisterHotKey(IntPtr.Zero, id, fsModifiers, (uint)vk);
+
+            if (success)
             {
-                LogService.LogWarning($"Failed to register hotkey: {hotKey}");
-                return false;
+                IdToHotKeyMap[id] = hotKey;
+                HotKeyToIdMap[hotKey] = id;
+                LogService.LogInfo($"Registered hotkey: {hotKey} with ID {id}");
+            }
+            else
+            {
+                LogService.LogWarning($"Failed to register hotkey: {hotKey}. Error Code: {Marshal.GetLastWin32Error()}");
             }
 
-            IdToHotKeyMap[id] = hotKey;
-            HotKeyToIdMap[hotKey] = id;
-            LogService.LogInfo($"Registered hotkey: {hotKey}");
-            return true;
+            return success;
         }
 
         public static bool TryUnregister(HotKey hotKey)
@@ -71,19 +74,21 @@ namespace Automatization.Hotkeys
                 return false;
             }
 
-            if (UnregisterHotKey(IntPtr.Zero, id))
+            bool success = UnregisterHotKey(IntPtr.Zero, id);
+            if (success)
             {
-                LogService.LogInfo($"Successfully unregistered hotkey from OS: {hotKey}");
+                LogService.LogInfo($"Successfully unregistered hotkey from OS: {hotKey} with ID {id}");
             }
             else
             {
-                LogService.LogWarning($"Failed to unregister hotkey from OS: {hotKey}");
+                LogService.LogWarning($"Failed to unregister hotkey from OS: {hotKey}. Error Code: {Marshal.GetLastWin32Error()}");
             }
 
             _ = IdToHotKeyMap.Remove(id);
             _ = HotKeyToIdMap.Remove(hotKey);
+
             LogService.LogInfo($"Unregistered hotkey from manager: {hotKey}");
-            return true;
+            return success;
         }
 
         public static void UnregisterAll()
@@ -93,23 +98,25 @@ namespace Automatization.Hotkeys
                 return;
             }
 
-            LogService.LogInfo("Unregistering all hotkeys.");
+            LogService.LogInfo($"Unregistering all hotkeys. Currently {IdToHotKeyMap.Count} hotkeys registered.");
 
             foreach (KeyValuePair<int, HotKey> entry in IdToHotKeyMap.ToList())
             {
-                if (UnregisterHotKey(IntPtr.Zero, entry.Key))
+                bool success = UnregisterHotKey(IntPtr.Zero, entry.Key);
+                if (success)
                 {
-                    LogService.LogInfo($"Successfully unregistered hotkey from OS: {entry.Value}");
+                    LogService.LogInfo($"Successfully unregistered hotkey from OS: {entry.Value} with ID {entry.Key}");
                 }
                 else
                 {
-                    LogService.LogWarning($"Failed to unregister hotkey from OS: {entry.Value}");
+                    LogService.LogWarning($"Failed to unregister hotkey from OS: {entry.Value} with ID {entry.Key}. Error Code: {Marshal.GetLastWin32Error()}");
                 }
             }
 
             IdToHotKeyMap.Clear();
             HotKeyToIdMap.Clear();
-            LogService.LogInfo("All hotkeys unregistered from manager.");
+
+            LogService.LogInfo($"All hotkeys unregistered from manager. Remaining: {IdToHotKeyMap.Count}");
         }
 
         public static IEnumerable<HotKey> GetCurrentRegisteredHotkeys()
@@ -127,9 +134,10 @@ namespace Automatization.Hotkeys
             int id = msg.wParam.ToInt32();
             if (IdToHotKeyMap.TryGetValue(id, out HotKey? hotKey))
             {
-                LogService.LogInfo($"Hotkey pressed: {hotKey}");
                 HotKeyPressed?.Invoke(hotKey);
                 handled = true;
+
+                LogService.LogInfo($"Hotkey pressed: {hotKey}");
             }
         }
 
@@ -140,12 +148,12 @@ namespace Automatization.Hotkeys
                 return;
             }
 
-            LogService.LogInfo("Shutting down GlobalHotKeyManager.");
-
             UnregisterAll();
 
             ComponentDispatcher.ThreadFilterMessage -= OnThreadFilterMessage;
             _isInitialized = false;
+
+            LogService.LogInfo("Shutting down GlobalHotKeyManager.");
         }
     }
 }

@@ -1,13 +1,9 @@
 using Automatization.Settings;
 using Newtonsoft.Json;
-using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Reflection;
-using System.Threading.Tasks;
-using System.Windows;
 
 namespace Automatization.Services
 {
@@ -29,8 +25,8 @@ namespace Automatization.Services
             {
                 LogService.LogInfo("Checking for updates...");
 
-                var response = await _httpClient.GetStringAsync($"{_settings.UpdateUrl}/latest");
-                var release = JsonConvert.DeserializeObject<GitHubRelease>(response);
+                string response = await _httpClient.GetStringAsync($"{_settings.UpdateUrl}/latest");
+                GitHubRelease? release = JsonConvert.DeserializeObject<GitHubRelease>(response);
 
                 if (release == null || string.IsNullOrEmpty(release.TagName))
                 {
@@ -38,8 +34,8 @@ namespace Automatization.Services
                     return null;
                 }
 
-                var latestVersion = new Version(release.TagName.TrimStart('v'));
-                var currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
+                Version latestVersion = new(release.TagName.TrimStart('v'));
+                Version? currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
 
                 if (latestVersion > currentVersion)
                 {
@@ -60,35 +56,35 @@ namespace Automatization.Services
 
         public async Task DownloadAndInstallUpdateAsync(GitHubRelease release)
         {
-            var asset = release?.Assets?.FirstOrDefault(a => a.BrowserDownloadUrl != null && (a.BrowserDownloadUrl.EndsWith(".msi") || a.BrowserDownloadUrl.EndsWith(".exe")));
-            
+            GitHubAsset? asset = release?.Assets?.FirstOrDefault(a => a.BrowserDownloadUrl != null && (a.BrowserDownloadUrl.EndsWith(".msi") || a.BrowserDownloadUrl.EndsWith(".exe")));
+
             if (asset == null || asset.BrowserDownloadUrl == null)
             {
                 LogService.LogWarning("Could not find a valid installer for the latest release.");
-                System.Windows.MessageBox.Show("Could not find a valid installer for the latest release.", "Update Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                _ = System.Windows.MessageBox.Show("Could not find a valid installer for the latest release.", "Update Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                 return;
             }
 
-            var tempPath = Path.Combine(Path.GetTempPath(), Path.GetFileName(asset.BrowserDownloadUrl));
+            string tempPath = Path.Combine(Path.GetTempPath(), Path.GetFileName(asset.BrowserDownloadUrl));
 
             try
             {
                 LogService.LogInfo($"Downloading update from {asset.BrowserDownloadUrl}");
-                
-                var fileBytes = await _httpClient.GetByteArrayAsync(asset.BrowserDownloadUrl);
+
+                byte[] fileBytes = await _httpClient.GetByteArrayAsync(asset.BrowserDownloadUrl);
                 File.WriteAllBytes(tempPath, fileBytes);
 
                 LogService.LogInfo($"Update downloaded to {tempPath}");
 
                 LogService.LogInfo("Launching installer...");
-                Process.Start(new ProcessStartInfo(tempPath) { UseShellExecute = true });
+                _ = Process.Start(new ProcessStartInfo(tempPath) { UseShellExecute = true });
 
                 System.Windows.Application.Current.Shutdown();
             }
             catch (Exception ex)
             {
                 LogService.LogError("An error occurred during the update process.", ex);
-                System.Windows.MessageBox.Show($"An error occurred during the update process: {ex.Message}", "Update Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                _ = System.Windows.MessageBox.Show($"An error occurred during the update process: {ex.Message}", "Update Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             }
         }
     }

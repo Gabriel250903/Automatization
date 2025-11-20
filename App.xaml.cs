@@ -1,4 +1,4 @@
-﻿using Automatization.Services;
+using Automatization.Services;
 using Automatization.Settings;
 using Automatization.Types;
 using System.Windows;
@@ -14,6 +14,7 @@ public partial class App : System.Windows.Application
     private async void Application_Startup(object sender, StartupEventArgs e)
     {
         LogService.Initialize();
+        LogService.CleanOldLogs();
         LogService.LogInfo("Application starting.");
 
         Settings = AppSettings.Load();
@@ -30,16 +31,15 @@ public partial class App : System.Windows.Application
 
     private static async Task PerformStartupUpdateCheckAsync()
     {
-#if !DEBUG
-        var updateService = new UpdateService(Settings);
-        var release = await updateService.CheckForUpdatesAsync();
+        UpdateService updateService = new(Settings);
+        GitHubRelease? release = await updateService.CheckForUpdatesAsync();
+
         if (release != null)
         {
-            MessageBox.Show("A new version of the application is available. Please update from the settings screen.", "Update Available", MessageBoxButton.OK, MessageBoxImage.Information);
+            _ = MessageBox.Show("A new version of the application is available. Please update from the settings screen.", "Update Available", MessageBoxButton.OK, MessageBoxImage.Information);
         }
-#else
+
         await Task.CompletedTask;
-#endif
     }
 
     private void Application_Exit(object sender, ExitEventArgs e)

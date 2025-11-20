@@ -39,6 +39,7 @@ namespace Automatization
             GlobalHotKeyBox.HotKey = _settings.GlobalHotKey;
             RedTeamHotKeyBox.HotKey = _settings.RedTeamHotKey;
             BlueTeamHotKeyBox.HotKey = _settings.BlueTeamHotKey;
+            GoldBoxTimerHotKeyBox.HotKey = _settings.GoldBoxTimerHotKey;
             GamePathTextBox.Text = _settings.GameExecutablePath;
 
             RedTeamXTextBox.Text = _settings.RedTeamCoordinates.X.ToString(CultureInfo.InvariantCulture);
@@ -70,10 +71,10 @@ namespace Automatization
         {
             try
             {
-                var release = await _updateService.CheckForUpdatesAsync();
+                GitHubRelease? release = await _updateService.CheckForUpdatesAsync();
                 if (release != null)
                 {
-                    var result = MessageBox.Show("A new version is available. Do you want to download and install it now?", "Update Available", MessageBoxButton.YesNo, MessageBoxImage.Information);
+                    MessageBoxResult result = MessageBox.Show("A new version is available. Do you want to download and install it now?", "Update Available", MessageBoxButton.YesNo, MessageBoxImage.Information);
                     if (result == MessageBoxResult.Yes)
                     {
                         await _updateService.DownloadAndInstallUpdateAsync(release);
@@ -81,12 +82,12 @@ namespace Automatization
                 }
                 else
                 {
-                    MessageBox.Show("You are using the latest version.", "No Updates", MessageBoxButton.OK, MessageBoxImage.Information);
+                    _ = MessageBox.Show("You are using the latest version.", "No Updates", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"An error occurred while checking for updates: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                _ = MessageBox.Show($"An error occurred while checking for updates: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -94,14 +95,15 @@ namespace Automatization
         {
             GlobalHotKeyManager.UnregisterAll();
 
-            GlobalHotKeyManager.Register(_settings.GlobalHotKey);
-            GlobalHotKeyManager.Register(_settings.RedTeamHotKey);
-            GlobalHotKeyManager.Register(_settings.BlueTeamHotKey);
+            _ = GlobalHotKeyManager.Register(_settings.GlobalHotKey);
+            _ = GlobalHotKeyManager.Register(_settings.RedTeamHotKey);
+            _ = GlobalHotKeyManager.Register(_settings.BlueTeamHotKey);
+            _ = GlobalHotKeyManager.Register(_settings.GoldBoxTimerHotKey);
 
             foreach (KeyValuePair<PowerupType, Key> entry in _settings.PowerupKeys)
             {
                 HotKey powerupHotKey = new(entry.Value, ModifierKeys.None);
-                GlobalHotKeyManager.Register(powerupHotKey);
+                _ = GlobalHotKeyManager.Register(powerupHotKey);
             }
         }
         private void ThemeRadio_Checked(object? sender, RoutedEventArgs e)
@@ -137,6 +139,7 @@ namespace Automatization
             HotKey originalGlobalHotKey = _settings.GlobalHotKey;
             HotKey originalRedTeamHotKey = _settings.RedTeamHotKey;
             HotKey originalBlueTeamHotKey = _settings.BlueTeamHotKey;
+            HotKey originalGoldBoxTimerHotKey = _settings.GoldBoxTimerHotKey;
             Dictionary<PowerupType, Key> originalPowerupKeys = new(_settings.PowerupKeys);
 
             if (double.TryParse(ClickSpeedTextBox.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out double clickSpeed) && clickSpeed >= 1)
@@ -155,6 +158,7 @@ namespace Automatization
             _settings.GlobalHotKey = GlobalHotKeyBox.HotKey;
             _settings.RedTeamHotKey = RedTeamHotKeyBox.HotKey;
             _settings.BlueTeamHotKey = BlueTeamHotKeyBox.HotKey;
+            _settings.GoldBoxTimerHotKey = GoldBoxTimerHotKeyBox.HotKey;
 
             if (double.TryParse(RedTeamXTextBox.Text, out double rX) && double.TryParse(RedTeamYTextBox.Text, out double rY))
             {
@@ -204,6 +208,11 @@ namespace Automatization
                 LogService.LogError($"Failed to register Blue Team Hotkey: {_settings.BlueTeamHotKey}");
                 registrationFailed = true;
             }
+            if (!GlobalHotKeyManager.Register(_settings.GoldBoxTimerHotKey))
+            {
+                LogService.LogError($"Failed to register Gold Box Timer Hotkey: {_settings.GoldBoxTimerHotKey}");
+                registrationFailed = true;
+            }
 
             foreach (KeyValuePair<PowerupType, Key> entry in _settings.PowerupKeys)
             {
@@ -222,15 +231,18 @@ namespace Automatization
                 _settings.GlobalHotKey = originalGlobalHotKey;
                 _settings.RedTeamHotKey = originalRedTeamHotKey;
                 _settings.BlueTeamHotKey = originalBlueTeamHotKey;
+                _settings.GoldBoxTimerHotKey = originalGoldBoxTimerHotKey;
                 _settings.PowerupKeys = originalPowerupKeys;
 
                 GlobalHotKeyManager.UnregisterAll();
-                GlobalHotKeyManager.Register(_settings.GlobalHotKey);
-                GlobalHotKeyManager.Register(_settings.RedTeamHotKey);
-                GlobalHotKeyManager.Register(_settings.BlueTeamHotKey);
+                _ = GlobalHotKeyManager.Register(_settings.GlobalHotKey);
+                _ = GlobalHotKeyManager.Register(_settings.RedTeamHotKey);
+                _ = GlobalHotKeyManager.Register(_settings.BlueTeamHotKey);
+                _ = GlobalHotKeyManager.Register(_settings.GoldBoxTimerHotKey);
+
                 foreach (KeyValuePair<PowerupType, Key> entry in _settings.PowerupKeys)
                 {
-                    GlobalHotKeyManager.Register(new HotKey(entry.Value, ModifierKeys.None));
+                    _ = GlobalHotKeyManager.Register(new HotKey(entry.Value, ModifierKeys.None));
                 }
 
                 LoadSettings();
@@ -245,7 +257,7 @@ namespace Automatization
         private void LogsButton_Click(object sender, RoutedEventArgs e)
         {
             LogViewerWindow logViewer = new() { Owner = this };
-            logViewer.ShowDialog();
+            _ = logViewer.ShowDialog();
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
@@ -289,7 +301,7 @@ namespace Automatization
             {
                 _isGameProcessNameUnlocked = true;
                 GameProcessNameTextBox.IsReadOnly = false;
-                GameProcessNameTextBox.Focus();
+                _ = GameProcessNameTextBox.Focus();
                 UnlockGameProcessNameButton.Visibility = Visibility.Collapsed;
                 LogService.LogInfo("Game Process Name unlocked for editing.");
             }

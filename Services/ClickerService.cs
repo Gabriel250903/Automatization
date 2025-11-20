@@ -39,7 +39,7 @@ namespace Automatization.Services
             _timers[id] = (timer, clickType);
 
             LogService.LogInfo($"Clicker registered with ID: {id}");
-            
+
             return id;
         }
 
@@ -48,7 +48,7 @@ namespace Automatization.Services
             if (_timers.TryGetValue(id, out (DispatcherTimer Timer, ClickType ClickType) timerInfo))
             {
                 timerInfo.Timer.Stop();
-                _timers.Remove(id);
+                _ = _timers.Remove(id);
 
                 LogService.LogInfo($"Clicker unregistered with ID: {id}");
             }

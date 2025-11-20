@@ -15,7 +15,7 @@ namespace Automatization.Services
 
             if (!Directory.Exists(settingsDir))
             {
-                Directory.CreateDirectory(settingsDir);
+                _ = Directory.CreateDirectory(settingsDir);
             }
 
             return settingsDir;
@@ -48,6 +48,36 @@ namespace Automatization.Services
         public static void Shutdown()
         {
             Log.CloseAndFlush();
+        }
+
+        public static void CleanOldLogs()
+        {
+            try
+            {
+                string logDirectory = GetLogDirectory();
+                DateTime cutoffDate = DateTime.Now.AddDays(-14);
+
+                foreach (string file in Directory.EnumerateFiles(logDirectory, "log-*.txt"))
+                {
+                    FileInfo fi = new(file);
+                    if (fi.CreationTime < cutoffDate)
+                    {
+                        try
+                        {
+                            fi.Delete();
+                            LogInfo($"Deleted old log file: {fi.Name}");
+                        }
+                        catch (Exception ex)
+                        {
+                            LogError($"Failed to delete log file {fi.Name}.", ex);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogError("Error during log cleanup.", ex);
+            }
         }
     }
 }

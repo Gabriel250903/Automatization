@@ -1,4 +1,3 @@
-using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
@@ -27,7 +26,7 @@ namespace Automatization.Listeners
 
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern IntPtr GetModuleHandle(string? lpModuleName);
-        
+
         public KeyboardListener()
         {
             _proc = HookCallback;
@@ -36,25 +35,20 @@ namespace Automatization.Listeners
 
         public void Dispose()
         {
-            UnhookWindowsHookEx(_hookID);
+            _ = UnhookWindowsHookEx(_hookID);
         }
 
         private static IntPtr SetHook(LowLevelKeyboardProc proc)
         {
             using Process curProcess = Process.GetCurrentProcess();
             using ProcessModule? curModule = curProcess.MainModule;
-            
-            if (curModule != null)
-            {
-                return SetWindowsHookEx(WH_KEYBOARD_LL, proc, GetModuleHandle(curModule.ModuleName), 0);
-            }
 
-            return IntPtr.Zero;
+            return curModule != null ? SetWindowsHookEx(WH_KEYBOARD_LL, proc, GetModuleHandle(curModule.ModuleName), 0) : nint.Zero;
         }
 
         private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
-            if (nCode >= 0 && wParam == (IntPtr)WM_KEYDOWN && lParam != IntPtr.Zero)
+            if (nCode >= 0 && wParam == WM_KEYDOWN && lParam != IntPtr.Zero)
             {
                 int vkCode = Marshal.ReadInt32(lParam);
                 Key key = KeyInterop.KeyFromVirtualKey(vkCode);

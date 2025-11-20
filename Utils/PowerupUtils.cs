@@ -244,10 +244,10 @@ namespace Automatization.Utils
                     return;
                 }
 
-                IntPtr vk = (IntPtr)KeyInterop.VirtualKeyFromKey(key);
-                PostMessage(GameProcess.MainWindowHandle, WM_KEYDOWN, vk, IntPtr.Zero);
-                PostMessage(GameProcess.MainWindowHandle, WM_KEYUP, vk, IntPtr.Zero);
-                
+                IntPtr vk = KeyInterop.VirtualKeyFromKey(key);
+                _ = PostMessage(GameProcess.MainWindowHandle, WM_KEYDOWN, vk, IntPtr.Zero);
+                _ = PostMessage(GameProcess.MainWindowHandle, WM_KEYUP, vk, IntPtr.Zero);
+
                 LogService.LogInfo($"Sent powerup {powerup} with key {key}.");
             }
             catch (Exception ex)
