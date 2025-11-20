@@ -1,10 +1,10 @@
 # Automatization
 
-An automation tool for Windows built with WPF.
+An automation tool for ProTanki built with WPF.
 
 ## Overview
 
-Automatization is a versatile desktop application designed to help you automate repetitive tasks on your Windows machine. It provides a simple interface to configure and trigger actions like mouse clicks at specific coordinates, all manageable through global hotkeys.
+Automatization is a versatile desktop application designed to help you automate repetitive tasks on ProTanki. It provides a simple interface to configure and trigger actions like mouse clicks at specific coordinates, all manageable through global hotkeys.
 
 ## Features
 
@@ -17,17 +17,17 @@ Automatization is a versatile desktop application designed to help you automate 
 
 ## How to Use
 
-1.  **Launch the application:** Start Automatization.
-2.  **Configure Settings:** Open the settings window to set up your preferences, including hotkeys and clicker settings.
-3.  **Pick Coordinates:** Use the coordinate picker tool to select a point on your screen for the auto-clicker.
-4.  **Start/Stop:** Use the configured global hotkeys to start and stop the automation.
+1.  **Launch the application:** Start ``Automatization.exe``.
+2.  **Configure Settings:** ``Open the settings window to set up your preferences, including hotkeys and clicker settings``.
+3.  **Pick Coordinates:** ``Use the coordinate picker tool to select a point on your screen for the auto-clicker``.
+4.  **Start/Stop:** ``Use the configured global hotkeys to start and stop the automation``.
 
 ## Building from Source
 
 To build and run this project from source, you will need:
 
 -   Visual Studio (with .NET desktop development workload)
--   .NET Framework (check the `.csproj` file for the exact version)
+-   Latest .NET Framework or check the `.csproj` file for the exact version that it runs on
 
 1.  Clone the repository:
     ```sh
