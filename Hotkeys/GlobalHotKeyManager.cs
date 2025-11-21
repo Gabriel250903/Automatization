@@ -25,7 +25,7 @@ namespace Automatization.Hotkeys
 
         public static bool IsPaused { get; set; } = false;
 
-        public static event Action<HotKey>? HotKeyPressed;
+        public static event Action<HotKey, Process?>? HotKeyPressed;
 
         public static void Initialize()
         {
@@ -148,7 +148,7 @@ namespace Automatization.Hotkeys
             int id = msg.wParam.ToInt32();
             if (IdToHotKeyMap.TryGetValue(id, out HotKey? hotKey))
             {
-                HotKeyPressed?.Invoke(hotKey);
+                HotKeyPressed?.Invoke(hotKey, game);
                 handled = true;
 
                 LogService.LogInfo($"Hotkey pressed: {hotKey}");

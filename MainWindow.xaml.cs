@@ -93,7 +93,7 @@ namespace Automatization
             _hotkeyActions["StartTimer"] = StartGoldBoxTimer;
         }
 
-        private void OnHotKeyPressed(HotKey hotKey)
+        private void OnHotKeyPressed(HotKey hotKey, Process? gameProcess)
         {
             LogService.LogInfo($"Hotkey pressed: {hotKey}");
 
@@ -109,7 +109,12 @@ namespace Automatization
 
             if (powerupMapping.Key != default)
             {
-                _powerupUtils?.UsePowerup(powerupMapping.Key);
+                if (_powerupUtils != null)
+                {
+                    _powerupUtils.GameProcess = gameProcess;
+                    _powerupUtils.UsePowerup(powerupMapping.Key);
+                }
+
                 LogService.LogInfo($"Used powerup {powerupMapping.Key} via hotkey.");
                 return;
             }
