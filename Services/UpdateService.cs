@@ -56,15 +56,16 @@ namespace Automatization.Services
             }
         }
 
-        //TODO: Create an app installer which will improve the update service logic and will speed things up.
         public async Task DownloadAndInstallUpdateAsync(GitHubRelease release)
         {
-            GitHubAsset? asset = release?.Assets?.FirstOrDefault(a => a.BrowserDownloadUrl != null && (a.BrowserDownloadUrl.EndsWith(".msi") || a.BrowserDownloadUrl.EndsWith(".exe") || a.BrowserDownloadUrl.EndsWith(".zip")));
+            // Prefer setup.exe as it handles prerequisites
+            GitHubAsset? asset = release?.Assets?.FirstOrDefault(a => a.BrowserDownloadUrl != null && a.BrowserDownloadUrl.EndsWith(".exe"))
+                              ?? release?.Assets?.FirstOrDefault(a => a.BrowserDownloadUrl != null && a.BrowserDownloadUrl.EndsWith(".msi"));
 
             if (asset == null || asset.BrowserDownloadUrl == null)
             {
                 LogService.LogWarning("Could not find a valid installer for the latest release.");
-                _ = System.Windows.MessageBox.Show("Could not find a valid installer for the latest release.", "Update Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                _ = System.Windows.MessageBox.Show("Could not find a valid installer (.exe or .msi) for the latest release.", "Update Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                 return;
             }
 
@@ -79,15 +80,8 @@ namespace Automatization.Services
 
                 LogService.LogInfo($"Update downloaded to {tempPath}");
 
-                if (asset.BrowserDownloadUrl.EndsWith(".zip"))
-                {
-                    HandleZipUpdate(tempPath);
-                }
-                else
-                {
-                    LogService.LogInfo("Launching installer...");
-                    _ = Process.Start(new ProcessStartInfo(tempPath) { UseShellExecute = true });
-                }
+                LogService.LogInfo("Launching installer and shutting down application...");
+                _ = Process.Start(new ProcessStartInfo(tempPath) { UseShellExecute = true });
 
                 System.Windows.Application.Current.Shutdown();
             }
@@ -95,37 +89,6 @@ namespace Automatization.Services
             {
                 LogService.LogError("An error occurred during the update process.", ex);
                 _ = System.Windows.MessageBox.Show($"An error occurred during the update process: {ex.Message}", "Update Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
-            }
-        }
-
-        private void HandleZipUpdate(string zipPath)
-        {
-            try
-            {
-                string extractPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-                ZipFile.ExtractToDirectory(zipPath, extractPath);
-
-                string currentAppPath = AppContext.BaseDirectory;
-                string batchScript = $@"
-@echo off
-echo Waiting for Automatization to close...
-timeout /t 3 /nobreak > nul
-echo Replacing files...
-xcopy /s /y ""{extractPath}"" ""{currentAppPath}""
-echo Cleaning up...
-rmdir /s /q ""{extractPath}""
-del ""{zipPath}""
-start """" ""{Path.Combine(currentAppPath, "Automatization.exe")}""
-del ""%~f0""
-";
-                string batchPath = Path.Combine(Path.GetTempPath(), "update.bat");
-                File.WriteAllText(batchPath, batchScript);
-
-                Process.Start(new ProcessStartInfo(batchPath) { CreateNoWindow = true, UseShellExecute = false });
-            }
-            catch (Exception ex)
-            {
-                LogService.LogError("Failed to handle zip update.", ex);
             }
         }
     }

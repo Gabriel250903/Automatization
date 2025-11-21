@@ -18,7 +18,7 @@ namespace Automatization
     {
         private AppSettings _settings;
         private bool _isGameProcessNameUnlocked = false;
-        private readonly UpdateService _updateService;
+        private UpdateService _updateService;
 
         public SettingsWindow()
         {
@@ -26,6 +26,9 @@ namespace Automatization
             _settings = App.Settings ?? AppSettings.Load();
             _updateService = new UpdateService(_settings);
             LoadSettings();
+            LatestVersionTextBlock.Text = "Latest GitHub Version: Checking...";
+
+            Loaded += SettingsWindow_Loaded;
         }
 
         private void LoadSettings()
@@ -62,9 +65,28 @@ namespace Automatization
                 DarkRadio.IsChecked = true;
             }
 
-            VersionTextBlock.Text = $"Current Version: {Assembly.GetExecutingAssembly().GetName().Version}";
-
             RegisterSettingsHotkeys();
+        }
+
+        private async void SettingsWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                GitHubRelease? release = await _updateService.CheckForUpdatesAsync();
+                if (release != null && !string.IsNullOrEmpty(release.TagName))
+                {
+                    LatestVersionTextBlock.Text = $"Latest GitHub Version: {release.TagName.TrimStart('v')}";
+                }
+                else
+                {
+                    LatestVersionTextBlock.Text = "Latest GitHub Version: Not available or up to date.";
+                }
+            }
+            catch (Exception ex)
+            {
+                LogService.LogError("Failed to fetch latest GitHub version.", ex);
+                LatestVersionTextBlock.Text = $"Latest GitHub Version: Error ({ex.Message})";
+            }
         }
 
         private async void CheckForUpdatesButton_Click(object sender, RoutedEventArgs e)
@@ -72,9 +94,11 @@ namespace Automatization
             try
             {
                 GitHubRelease? release = await _updateService.CheckForUpdatesAsync();
+                
                 if (release != null)
                 {
                     MessageBoxResult result = MessageBox.Show("A new version is available. Do you want to download and install it now?", "Update Available", MessageBoxButton.YesNo, MessageBoxImage.Information);
+                    
                     if (result == MessageBoxResult.Yes)
                     {
                         await _updateService.DownloadAndInstallUpdateAsync(release);
@@ -179,7 +203,6 @@ namespace Automatization
                 LogService.LogError("Invalid Blue Team coordinates.");
                 return;
             }
-
 
             _settings.PowerupKeys[PowerupType.RepairKit] = RepairKitKeyBox.HotKey.Key;
             _settings.PowerupKeys[PowerupType.DoubleArmor] = DoubleArmorKeyBox.HotKey.Key;

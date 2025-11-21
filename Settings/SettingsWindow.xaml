@@ -181,6 +181,8 @@
                 <StackPanel Orientation="Vertical" Margin="0,0,0,15">
                     <TextBlock x:Name="VersionTextBlock" Margin="0,0,0,8"
                                Foreground="{DynamicResource Foreground}"/>
+                    <TextBlock x:Name="LatestVersionTextBlock" Margin="0,0,0,8"
+                               Foreground="{DynamicResource Foreground}"/>
                     <Button x:Name="CheckForUpdatesButton" Content="Check for Updates" Width="140"
                             Click="CheckForUpdatesButton_Click"
                             Background="{DynamicResource ButtonBackground}"
