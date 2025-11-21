@@ -17,6 +17,9 @@ public partial class App : System.Windows.Application
         LogService.CleanOldLogs();
         LogService.LogInfo("Application starting.");
 
+        UpdateService updateService = new();
+        updateService.CheckForUpdates();
+
         Settings = AppSettings.Load();
 
         ApplyTheme(Settings.Theme);
@@ -25,19 +28,6 @@ public partial class App : System.Windows.Application
         mainWindow.Show();
 
         LogService.LogInfo("Main window shown.");
-    }
-
-    private static async Task PerformStartupUpdateCheckAsync()
-    {
-        UpdateService updateService = new(Settings);
-        GitHubRelease? release = await updateService.CheckForUpdatesAsync();
-
-        if (release != null)
-        {
-            _ = MessageBox.Show("A new version of the application is available. Please update from the settings screen.", "Update Available", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        await Task.CompletedTask;
     }
 
     private void Application_Exit(object sender, ExitEventArgs e)

@@ -17,15 +17,14 @@ namespace Automatization
     {
         private AppSettings _settings;
         private bool _isGameProcessNameUnlocked = false;
-        private UpdateService _updateService;
+        private readonly UpdateService _updateService;
 
         public SettingsWindow()
         {
             InitializeComponent();
             _settings = App.Settings ?? AppSettings.Load();
-            _updateService = new UpdateService(_settings);
+            _updateService = new UpdateService();
             LoadSettings();
-            LatestVersionTextBlock.Text = "Latest GitHub Version: Checking...";
 
             Loaded += SettingsWindow_Loaded;
         }
@@ -69,47 +68,15 @@ namespace Automatization
             RegisterSettingsHotkeys();
         }
 
-        private async void SettingsWindow_Loaded(object sender, RoutedEventArgs e)
+        private void SettingsWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                GitHubRelease? release = await _updateService.CheckForUpdatesAsync();
-
-                LatestVersionTextBlock.Text = release != null && !string.IsNullOrEmpty(release.TagName)
-                    ? $"Latest GitHub Version: {release.TagName.TrimStart('v')}"
-                    : "Latest GitHub Version: Not available or up to date.";
-            }
-            catch (Exception ex)
-            {
-                LogService.LogError("Failed to fetch latest GitHub version.", ex);
-                LatestVersionTextBlock.Text = $"Latest GitHub Version: Error ({ex.Message})";
-            }
+            VersionTextBlock.Text = $"Current Version: {UpdateService.GetCurrentVersion() ?? "Not found"}";
+            LatestVersionTextBlock.Text = "Updates are checked automatically on startup.";
         }
 
-        private async void CheckForUpdatesButton_Click(object sender, RoutedEventArgs e)
+        private void CheckForUpdatesButton_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                GitHubRelease? release = await _updateService.CheckForUpdatesAsync();
-
-                if (release != null)
-                {
-                    MessageBoxResult result = MessageBox.Show("A new version is available. Do you want to download and install it now?", "Update Available", MessageBoxButton.YesNo, MessageBoxImage.Information);
-
-                    if (result == MessageBoxResult.Yes)
-                    {
-                        await _updateService.DownloadAndInstallUpdateAsync(release);
-                    }
-                }
-                else
-                {
-                    _ = MessageBox.Show("You are using the latest version.", "No Updates", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-            }
-            catch (Exception ex)
-            {
-                _ = MessageBox.Show($"An error occurred while checking for updates: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            _updateService.CheckForUpdates();
         }
 
         private void ThemeRadio_Checked(object? sender, RoutedEventArgs e)

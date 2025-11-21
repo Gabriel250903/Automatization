@@ -29,7 +29,6 @@ public class AppSettings
     public bool HotkeysPaused { get; set; } = false;
     public bool IsTimerWindowTransparent { get; set; } = false;
     public string GameProcessName { get; set; } = "ProTanki";
-    public string UpdateUrl { get; set; } = "https://api.github.com/repos/Gabriel250903/Automatization/releases";
 
     public Point RedTeamCoordinates { get; set; } = new(1186, 1017);
     public Point BlueTeamCoordinates { get; set; } = new(1544, 1009);

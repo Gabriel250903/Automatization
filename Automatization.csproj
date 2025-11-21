@@ -9,9 +9,9 @@
 		<UseWindowsForms>true</UseWindowsForms>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<ApplicationIcon>Settings\icon.ico</ApplicationIcon>
-		<FileVersion>1.0.6</FileVersion>
-		<Version>1.0.6</Version>
-		<AssemblyVersion>1.0.6</AssemblyVersion>
+		<FileVersion>1.0.7</FileVersion>
+		<Version>1.0.7</Version>
+		<AssemblyVersion>1.0.7</AssemblyVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -25,6 +25,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Autoupdater.NET.Official" Version="1.9.2" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 		<PackageReference Include="Serilog" Version="4.3.0" />
 		<PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
