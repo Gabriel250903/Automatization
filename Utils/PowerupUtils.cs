@@ -45,7 +45,7 @@ namespace Automatization.Utils
                     LogService.LogInfo($"Default delay set for {powerup}: 1000ms.");
                 }
 
-                PowerupViewModel viewModel = new(powerup, Settings.PowerupDelays[powerup], Settings, (p) => UsePowerup(p), SaveDelay);
+                PowerupViewModel viewModel = new(powerup, Settings.PowerupDelays[powerup], Settings, UsePowerup, SaveDelay);
                 _powerups.Add(viewModel);
             }
 
@@ -139,16 +139,19 @@ namespace Automatization.Utils
 
         private void SendKey(Key key)
         {
-            if (GameProcess?.MainWindowHandle == null || GameProcess.MainWindowHandle == IntPtr.Zero) return;
+            if (GameProcess?.MainWindowHandle == null || GameProcess.MainWindowHandle == IntPtr.Zero)
+            {
+                return;
+            }
 
             ushort virtualKey = (ushort)KeyInterop.VirtualKeyFromKey(key);
-            uint scanCode = (uint)NativeMethods.MapVirtualKey(virtualKey, 0);
+            uint scanCode = NativeMethods.MapVirtualKey(virtualKey, 0);
 
             IntPtr lParamDown = (IntPtr)((scanCode << 16) | 1);
             IntPtr lParamUp = (IntPtr)((scanCode << 16) | 0xC0000001);
 
-            PostMessage(GameProcess.MainWindowHandle, WM_KEYDOWN, (IntPtr)virtualKey, lParamDown);
-            PostMessage(GameProcess.MainWindowHandle, WM_KEYUP, (IntPtr)virtualKey, lParamUp);
+            _ = PostMessage(GameProcess.MainWindowHandle, WM_KEYDOWN, virtualKey, lParamDown);
+            _ = PostMessage(GameProcess.MainWindowHandle, WM_KEYUP, virtualKey, lParamUp);
         }
     }
 }

@@ -1,12 +1,12 @@
 using Automatization.Settings;
 using Automatization.Types;
-using System.Windows.Threading;
+using System.Diagnostics;
 
 namespace Automatization.Services
 {
     public class ClickerService : IDisposable
     {
-        private Dictionary<Guid, (DispatcherTimer Timer, ClickType ClickType)> _timers = [];
+        private Dictionary<Guid, System.Threading.Timer> _timers = [];
         private AppSettings _settings;
 
         public ClickerService(AppSettings settings)
@@ -25,29 +25,32 @@ namespace Automatization.Services
             }
         }
 
-        public Guid Register(Action<ClickType> action, ClickType clickType)
+        public Guid Register(Action<IntPtr, ClickType> clickAction, ClickType clickType, string gameProcessName)
         {
-            DispatcherTimer timer = new()
-            {
-                Interval = TimeSpan.FromMilliseconds(ClickSpeed)
-            };
-
-            timer.Tick += async (s, e) => await Task.Run(() => action(clickType));
-            timer.Start();
-
             Guid id = Guid.NewGuid();
-            _timers[id] = (timer, clickType);
 
-            LogService.LogInfo($"Clicker registered with ID: {id}");
+            System.Threading.Timer timer = new(
+                _ =>
+                {
+                    Process? gameProcess = Process.GetProcessesByName(gameProcessName).FirstOrDefault();
+                    if (gameProcess != null && gameProcess.MainWindowHandle != IntPtr.Zero)
+                    {
+                        clickAction(gameProcess.MainWindowHandle, clickType);
+                    }
+                },
+                null,
+                0,
+                (int)ClickSpeed);
 
+            _timers[id] = timer;
             return id;
         }
 
         public void Unregister(Guid id)
         {
-            if (_timers.TryGetValue(id, out (DispatcherTimer Timer, ClickType ClickType) timerInfo))
+            if (_timers.TryGetValue(id, out System.Threading.Timer? timerInfo))
             {
-                timerInfo.Timer.Stop();
+                timerInfo.Dispose();
                 _ = _timers.Remove(id);
 
                 LogService.LogInfo($"Clicker unregistered with ID: {id}");
@@ -56,9 +59,9 @@ namespace Automatization.Services
 
         public void Dispose()
         {
-            foreach ((DispatcherTimer Timer, ClickType ClickType) timerInfo in _timers.Values)
+            foreach (System.Threading.Timer timer in _timers.Values)
             {
-                timerInfo.Timer.Stop();
+                timer.Dispose();
             }
 
             _timers.Clear();
@@ -68,11 +71,9 @@ namespace Automatization.Services
 
         private void UpdateTimersInterval()
         {
-            TimeSpan newInterval = TimeSpan.FromMilliseconds(ClickSpeed);
-
-            foreach ((DispatcherTimer Timer, ClickType ClickType) timerInfo in _timers.Values)
+            foreach (System.Threading.Timer timer in _timers.Values)
             {
-                timerInfo.Timer.Interval = newInterval;
+                _ = timer.Change(0, (int)ClickSpeed);
             }
 
             LogService.LogInfo($"Click speed updated to: {ClickSpeed}ms");

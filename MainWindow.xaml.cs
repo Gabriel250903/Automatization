@@ -86,16 +86,40 @@ namespace Automatization
             RegisterHotkeysFromSettings();
 
             _keyboardListener = new KeyboardListener();
+            _keyboardListener.KeyDown += KeyboardListener_OnKeyPressed;
 
             _hotkeyActions["ToggleAll"] = () => _powerupUtils?.ToggleAll();
-            _hotkeyActions["RedTeam"] = () => RedTeamButton_Click(RedTeamButton, null);
-            _hotkeyActions["BlueTeam"] = () => BlueTeamButton_Click(BlueTeamButton, null);
+            _hotkeyActions["RedTeam"] = () => RedTeamButton_Click(this, null);
+            _hotkeyActions["BlueTeam"] = () => BlueTeamButton_Click(this, null);
             _hotkeyActions["StartTimer"] = StartGoldBoxTimer;
+        }
+
+        private bool KeyboardListener_OnKeyPressed(Key e)
+        {
+            if (e == Key.Enter && _gameProcess != null && WindowUtils.IsGameWindowInForeground(_gameProcess))
+            {
+                _ = (_powerupUtils?.ToggleAll());
+                LogService.LogInfo("Enter key pressed in-game, toggling powerups for chat.");
+            }
+            else if (_gameProcess != null && WindowUtils.IsGameWindowInForeground(_gameProcess) && _settings.PowerupKeys.ContainsValue(e))
+            {
+                PowerupType powerupType = _settings.PowerupKeys.FirstOrDefault(x => x.Value == e).Key;
+                _powerupUtils?.UsePowerup(powerupType);
+                LogService.LogInfo($"Powerup key '{e}' pressed in-game, using {powerupType}.");
+                return true;
+            }
+
+            return false;
         }
 
         private void OnHotKeyPressed(HotKey hotKey, Process? gameProcess)
         {
             LogService.LogInfo($"Hotkey pressed: {hotKey}");
+
+            if (_powerupUtils != null)
+            {
+                _powerupUtils.GameProcess = _gameProcess;
+            }
 
             string? actionEntry = _settings.GetActionForHotKey(hotKey);
 
@@ -109,18 +133,14 @@ namespace Automatization
 
             if (powerupMapping.Key != default)
             {
-                if (_powerupUtils != null)
-                {
-                    _powerupUtils.GameProcess = gameProcess;
-                    _powerupUtils.UsePowerup(powerupMapping.Key);
-                }
+                _powerupUtils?.UsePowerup(powerupMapping.Key);
 
                 LogService.LogInfo($"Used powerup {powerupMapping.Key} via hotkey.");
                 return;
             }
         }
 
-        private void RegisterHotkeysFromSettings()
+        public void RegisterHotkeysFromSettings()
         {
             GlobalHotKeyManager.UnregisterAll();
 
@@ -129,13 +149,9 @@ namespace Automatization
             _ = GlobalHotKeyManager.Register(_settings.BlueTeamHotKey);
             _ = GlobalHotKeyManager.Register(_settings.GoldBoxTimerHotKey);
 
-            foreach (Key powerupKey in _settings.PowerupKeys.Values)
-            {
-                _ = GlobalHotKeyManager.Register(new HotKey(powerupKey, ModifierKeys.None));
-            }
         }
 
-        private void StartGoldBoxTimer()
+        private async void StartGoldBoxTimer()
         {
             if (_gameProcess == null || !WindowUtils.IsGameWindowInForeground(_gameProcess))
             {
@@ -156,6 +172,9 @@ namespace Automatization
                 _timerWindow = null;
             };
             _timerWindow.Show();
+
+            await Task.Delay(500);
+
             _ = _timerWindow.Activate();
             _timerWindow.Start();
         }
@@ -167,37 +186,34 @@ namespace Automatization
             _clickerService = new ClickerService(_settings);
         }
 
-        private void ClickTeamButton(int x, int y, ClickType clickType)
+        private void ClickTeamButton(IntPtr windowHandle, int x, int y, ClickType clickType)
         {
-            if (_gameProcess == null || _gameProcess.MainWindowHandle == IntPtr.Zero)
+            _ = Dispatcher.BeginInvoke(() =>
             {
-                LogService.LogWarning("Game process not found, cannot click team button.");
-                return;
-            }
-
-            LogService.LogInfo($"Clicking team button at ({x}, {y}) with {clickType} click.");
+                LogService.LogInfo($"Clicking team button at ({x}, {y}) with {clickType} click.");
+            });
 
             IntPtr lParam = MakeLParam(x, y);
 
             switch (clickType)
             {
                 case ClickType.Left:
-                    _ = PostMessage(_gameProcess.MainWindowHandle, WM_LBUTTONDOWN, 1, lParam);
-                    _ = PostMessage(_gameProcess.MainWindowHandle, WM_LBUTTONUP, 0, lParam);
+                    _ = PostMessage(windowHandle, WM_LBUTTONDOWN, IntPtr.Zero, lParam);
+                    _ = PostMessage(windowHandle, WM_LBUTTONUP, IntPtr.Zero, lParam);
                     break;
                 case ClickType.Right:
-                    _ = PostMessage(_gameProcess.MainWindowHandle, WM_RBUTTONDOWN, 1, lParam);
-                    _ = PostMessage(_gameProcess.MainWindowHandle, WM_RBUTTONUP, 0, lParam);
+                    _ = PostMessage(windowHandle, WM_RBUTTONDOWN, IntPtr.Zero, lParam);
+                    _ = PostMessage(windowHandle, WM_RBUTTONUP, IntPtr.Zero, lParam);
                     break;
                 case ClickType.Middle:
-                    _ = PostMessage(_gameProcess.MainWindowHandle, WM_MBUTTONDOWN, 1, lParam);
-                    _ = PostMessage(_gameProcess.MainWindowHandle, WM_MBUTTONUP, 0, lParam);
+                    _ = PostMessage(windowHandle, WM_MBUTTONDOWN, IntPtr.Zero, lParam);
+                    _ = PostMessage(windowHandle, WM_MBUTTONUP, IntPtr.Zero, lParam);
                     break;
                 case ClickType.DoubleClick:
-                    _ = PostMessage(_gameProcess.MainWindowHandle, WM_LBUTTONDOWN, 1, lParam);
-                    _ = PostMessage(_gameProcess.MainWindowHandle, WM_LBUTTONUP, 0, lParam);
-                    _ = PostMessage(_gameProcess.MainWindowHandle, WM_LBUTTONDOWN, 1, lParam);
-                    _ = PostMessage(_gameProcess.MainWindowHandle, WM_LBUTTONUP, 0, lParam);
+                    _ = PostMessage(windowHandle, WM_LBUTTONDOWN, IntPtr.Zero, lParam);
+                    _ = PostMessage(windowHandle, WM_LBUTTONUP, IntPtr.Zero, lParam);
+                    _ = PostMessage(windowHandle, WM_LBUTTONDOWN, IntPtr.Zero, lParam);
+                    _ = PostMessage(windowHandle, WM_LBUTTONUP, IntPtr.Zero, lParam);
                     break;
             }
         }
@@ -209,8 +225,11 @@ namespace Automatization
                 _clickerService?.Unregister(_redClickerId.Value);
                 _redClickerId = null;
 
-                RedTeamButton.Content = "Auto Red Team";
-                Status = "Red Team auto-clicker stopped";
+                Dispatcher.Invoke(() =>
+                {
+                    RedTeamButton.Content = "Auto Red Team";
+                    Status = "Red Team auto-clicker stopped";
+                });
 
                 LogService.LogInfo("Red Team auto-clicker stopped.");
             }
@@ -219,12 +238,16 @@ namespace Automatization
                 ClickType clickType = (ClickType)ClickTypeComboBox.SelectedItem;
 
                 _redClickerId = _clickerService?.Register(
-                    (ct) => ClickTeamButton((int)_settings.RedTeamCoordinates.X, (int)_settings.RedTeamCoordinates.Y, ct),
-                    clickType
+                    (handle, ct) => ClickTeamButton(handle, (int)_settings.RedTeamCoordinates.X, (int)_settings.RedTeamCoordinates.Y, ct),
+                    clickType,
+                    _settings.GameProcessName
                 );
 
-                RedTeamButton.Content = "Stop Red Team";
-                Status = "Red Team auto-clicker started";
+                Dispatcher.Invoke(() =>
+                {
+                    RedTeamButton.Content = "Stop Red Team";
+                    Status = "Red Team auto-clicker started";
+                });
 
                 LogService.LogInfo("Red Team auto-clicker started.");
             }
@@ -238,8 +261,11 @@ namespace Automatization
 
                 _blueClickerId = null;
 
-                BlueTeamButton.Content = "Auto Blue Team";
-                Status = "Blue Team auto-clicker stopped";
+                Dispatcher.Invoke(() =>
+                {
+                    BlueTeamButton.Content = "Auto Blue Team";
+                    Status = "Blue Team auto-clicker stopped";
+                });
 
                 LogService.LogInfo("Blue Team auto-clicker stopped.");
             }
@@ -248,12 +274,16 @@ namespace Automatization
                 ClickType clickType = (ClickType)ClickTypeComboBox.SelectedItem;
 
                 _blueClickerId = _clickerService?.Register(
-                    (ct) => ClickTeamButton((int)_settings.BlueTeamCoordinates.X, (int)_settings.BlueTeamCoordinates.Y, ct),
-                    clickType
+                    (handle, ct) => ClickTeamButton(handle, (int)_settings.BlueTeamCoordinates.X, (int)_settings.BlueTeamCoordinates.Y, ct),
+                    clickType,
+                    _settings.GameProcessName
                 );
 
-                BlueTeamButton.Content = "Stop Blue Team";
-                Status = "Blue Team auto-clicker started";
+                Dispatcher.Invoke(() =>
+                {
+                    BlueTeamButton.Content = "Stop Blue Team";
+                    Status = "Blue Team auto-clicker started";
+                });
 
                 LogService.LogInfo("Blue Team auto-clicker started.");
             }
@@ -505,6 +535,7 @@ namespace Automatization
             }
 
             App.ApplyTheme(_settings.Theme);
+
             RegisterHotkeysFromSettings();
         }
 
@@ -571,13 +602,13 @@ namespace Automatization
 
         protected override void OnStateChanged(EventArgs e)
         {
-            if (WindowState == WindowState.Minimized && _notifyIcon != null)
-            {
-                Hide();
-                _notifyIcon.Visible = true;
+            //if (WindowState == WindowState.Minimized && _notifyIcon != null)
+            //{
+            //    Hide();
+            //    _notifyIcon.Visible = true;
 
-                LogService.LogInfo("Window minimized to tray.");
-            }
+            //    LogService.LogInfo("Window minimized to tray.");
+            //}
 
             base.OnStateChanged(e);
         }

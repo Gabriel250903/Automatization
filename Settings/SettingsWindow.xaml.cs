@@ -5,7 +5,6 @@ using Automatization.Types;
 using Automatization.UI;
 using Automatization.UI.Coordinate;
 using System.Globalization;
-using System.Reflection;
 using System.Windows;
 using System.Windows.Input;
 using MessageBox = System.Windows.MessageBox;
@@ -65,6 +64,8 @@ namespace Automatization
                 DarkRadio.IsChecked = true;
             }
 
+            TransparentTimerWindowCheckBox.IsChecked = _settings.IsTimerWindowTransparent;
+
             RegisterSettingsHotkeys();
         }
 
@@ -73,14 +74,10 @@ namespace Automatization
             try
             {
                 GitHubRelease? release = await _updateService.CheckForUpdatesAsync();
-                if (release != null && !string.IsNullOrEmpty(release.TagName))
-                {
-                    LatestVersionTextBlock.Text = $"Latest GitHub Version: {release.TagName.TrimStart('v')}";
-                }
-                else
-                {
-                    LatestVersionTextBlock.Text = "Latest GitHub Version: Not available or up to date.";
-                }
+
+                LatestVersionTextBlock.Text = release != null && !string.IsNullOrEmpty(release.TagName)
+                    ? $"Latest GitHub Version: {release.TagName.TrimStart('v')}"
+                    : "Latest GitHub Version: Not available or up to date.";
             }
             catch (Exception ex)
             {
@@ -94,11 +91,11 @@ namespace Automatization
             try
             {
                 GitHubRelease? release = await _updateService.CheckForUpdatesAsync();
-                
+
                 if (release != null)
                 {
                     MessageBoxResult result = MessageBox.Show("A new version is available. Do you want to download and install it now?", "Update Available", MessageBoxButton.YesNo, MessageBoxImage.Information);
-                    
+
                     if (result == MessageBoxResult.Yes)
                     {
                         await _updateService.DownloadAndInstallUpdateAsync(release);
@@ -115,21 +112,6 @@ namespace Automatization
             }
         }
 
-        private void RegisterSettingsHotkeys()
-        {
-            GlobalHotKeyManager.UnregisterAll();
-
-            _ = GlobalHotKeyManager.Register(_settings.GlobalHotKey);
-            _ = GlobalHotKeyManager.Register(_settings.RedTeamHotKey);
-            _ = GlobalHotKeyManager.Register(_settings.BlueTeamHotKey);
-            _ = GlobalHotKeyManager.Register(_settings.GoldBoxTimerHotKey);
-
-            foreach (KeyValuePair<PowerupType, Key> entry in _settings.PowerupKeys)
-            {
-                HotKey powerupHotKey = new(entry.Value, ModifierKeys.None);
-                _ = GlobalHotKeyManager.Register(powerupHotKey);
-            }
-        }
         private void ThemeRadio_Checked(object? sender, RoutedEventArgs e)
         {
             if (DarkRadio.IsChecked == true)
@@ -159,12 +141,6 @@ namespace Automatization
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             FocusManager.SetFocusedElement(this, SaveButton);
-
-            HotKey originalGlobalHotKey = _settings.GlobalHotKey;
-            HotKey originalRedTeamHotKey = _settings.RedTeamHotKey;
-            HotKey originalBlueTeamHotKey = _settings.BlueTeamHotKey;
-            HotKey originalGoldBoxTimerHotKey = _settings.GoldBoxTimerHotKey;
-            Dictionary<PowerupType, Key> originalPowerupKeys = new(_settings.PowerupKeys);
 
             if (double.TryParse(ClickSpeedTextBox.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out double clickSpeed) && clickSpeed >= 1)
             {
@@ -212,66 +188,7 @@ namespace Automatization
 
             _settings.Theme = DarkRadio.IsChecked == true ? ThemeType.Dark : ThemeType.Light;
 
-            GlobalHotKeyManager.UnregisterAll();
-
-            bool registrationFailed = false;
-
-            if (!GlobalHotKeyManager.Register(_settings.GlobalHotKey))
-            {
-                LogService.LogError($"Failed to register Global Hotkey: {_settings.GlobalHotKey}");
-                registrationFailed = true;
-            }
-            if (!GlobalHotKeyManager.Register(_settings.RedTeamHotKey))
-            {
-                LogService.LogError($"Failed to register Red Team Hotkey: {_settings.RedTeamHotKey}");
-                registrationFailed = true;
-            }
-            if (!GlobalHotKeyManager.Register(_settings.BlueTeamHotKey))
-            {
-                LogService.LogError($"Failed to register Blue Team Hotkey: {_settings.BlueTeamHotKey}");
-                registrationFailed = true;
-            }
-            if (!GlobalHotKeyManager.Register(_settings.GoldBoxTimerHotKey))
-            {
-                LogService.LogError($"Failed to register Gold Box Timer Hotkey: {_settings.GoldBoxTimerHotKey}");
-                registrationFailed = true;
-            }
-
-            foreach (KeyValuePair<PowerupType, Key> entry in _settings.PowerupKeys)
-            {
-                HotKey powerupHotKey = new(entry.Value, ModifierKeys.None);
-                if (!GlobalHotKeyManager.Register(powerupHotKey))
-                {
-                    LogService.LogError($"Failed to register Powerup Hotkey {entry.Key}: {powerupHotKey}");
-                    registrationFailed = true;
-                }
-            }
-
-            if (registrationFailed)
-            {
-                LogService.LogError("One or more hotkeys could not be registered. They might be in use by another application. Reverting to previous hotkeys.");
-
-                _settings.GlobalHotKey = originalGlobalHotKey;
-                _settings.RedTeamHotKey = originalRedTeamHotKey;
-                _settings.BlueTeamHotKey = originalBlueTeamHotKey;
-                _settings.GoldBoxTimerHotKey = originalGoldBoxTimerHotKey;
-                _settings.PowerupKeys = originalPowerupKeys;
-
-                GlobalHotKeyManager.UnregisterAll();
-                _ = GlobalHotKeyManager.Register(_settings.GlobalHotKey);
-                _ = GlobalHotKeyManager.Register(_settings.RedTeamHotKey);
-                _ = GlobalHotKeyManager.Register(_settings.BlueTeamHotKey);
-                _ = GlobalHotKeyManager.Register(_settings.GoldBoxTimerHotKey);
-
-                foreach (KeyValuePair<PowerupType, Key> entry in _settings.PowerupKeys)
-                {
-                    _ = GlobalHotKeyManager.Register(new HotKey(entry.Value, ModifierKeys.None));
-                }
-
-                LoadSettings();
-                return;
-            }
-
+            _settings.IsTimerWindowTransparent = TransparentTimerWindowCheckBox.IsChecked ?? false;
 
             _settings.Save();
 
@@ -289,7 +206,6 @@ namespace Automatization
 
             _settings = AppSettings.Load();
             LoadSettings();
-            App.ApplyTheme(_settings.Theme);
             Close();
         }
 
@@ -331,6 +247,21 @@ namespace Automatization
             else
             {
                 LogService.LogInfo("Game Process Name unlock cancelled or incorrect password entered.");
+            }
+        }
+
+        private void RegisterSettingsHotkeys()
+        {
+            GlobalHotKeyManager.UnregisterAll();
+
+            _ = GlobalHotKeyManager.Register(_settings.GlobalHotKey);
+            _ = GlobalHotKeyManager.Register(_settings.RedTeamHotKey);
+            _ = GlobalHotKeyManager.Register(_settings.BlueTeamHotKey);
+            _ = GlobalHotKeyManager.Register(_settings.GoldBoxTimerHotKey);
+
+            foreach (KeyValuePair<PowerupType, Key> entry in _settings.PowerupKeys)
+            {
+                _ = GlobalHotKeyManager.Register(new HotKey(entry.Value, ModifierKeys.None));
             }
         }
     }

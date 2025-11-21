@@ -1,7 +1,7 @@
 using Automatization.Services;
 using Automatization.Settings;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Windows.Input;
 using System.Windows.Interop;
 
@@ -22,9 +22,7 @@ namespace Automatization.Hotkeys
         private static int _nextId;
         private static Dictionary<int, HotKey> IdToHotKeyMap = [];
         private static Dictionary<HotKey, int> HotKeyToIdMap = [];
-
         public static bool IsPaused { get; set; } = false;
-
         public static event Action<HotKey, Process?>? HotKeyPressed;
 
         public static void Initialize()
@@ -135,12 +133,9 @@ namespace Automatization.Hotkeys
                 return;
             }
 
-            // Only process hotkeys if the game is in the foreground.
-            // This prevents number keys from being swallowed by this app when typing elsewhere.
             Process? game = Process.GetProcessesByName(_settings?.GameProcessName ?? "ProTanki").FirstOrDefault();
             if (game == null || Utils.WindowUtils.IsGameWindowInForeground(game) == false)
             {
-                // We received the hotkey, but we will not handle it, allowing other apps to use it.
                 handled = false;
                 return;
             }

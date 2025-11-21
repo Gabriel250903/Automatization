@@ -27,6 +27,7 @@ public class AppSettings
     public string? GameExecutablePath { get; set; } = null;
     public double ClickSpeed { get; set; } = 10;
     public bool HotkeysPaused { get; set; } = false;
+    public bool IsTimerWindowTransparent { get; set; } = false;
     public string GameProcessName { get; set; } = "ProTanki";
     public string UpdateUrl { get; set; } = "https://api.github.com/repos/Gabriel250903/Automatization/releases";
 
@@ -45,12 +46,7 @@ public class AppSettings
             return "RedTeam";
         }
 
-        if (hotKey == BlueTeamHotKey)
-        {
-            return "BlueTeam";
-        }
-
-        return hotKey == GoldBoxTimerHotKey ? "StartTimer" : null;
+        return hotKey == BlueTeamHotKey ? "BlueTeam" : hotKey == GoldBoxTimerHotKey ? "StartTimer" : null;
     }
 
     public static AppSettings Load()

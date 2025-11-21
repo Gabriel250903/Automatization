@@ -10,8 +10,7 @@ namespace Automatization.Listeners
         private const int WM_KEYDOWN = 0x0100;
         private LowLevelKeyboardProc _proc;
         private IntPtr _hookID = IntPtr.Zero;
-        public event Action<Key>? KeyDown;
-
+        public event Func<Key, bool>? KeyDown;
         private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
@@ -52,7 +51,12 @@ namespace Automatization.Listeners
             {
                 int vkCode = Marshal.ReadInt32(lParam);
                 Key key = KeyInterop.KeyFromVirtualKey(vkCode);
-                KeyDown?.Invoke(key);
+                bool handled = KeyDown?.Invoke(key) ?? false;
+
+                if (handled)
+                {
+                    return 1;
+                }
             }
 
             return CallNextHookEx(_hookID, nCode, wParam, lParam);

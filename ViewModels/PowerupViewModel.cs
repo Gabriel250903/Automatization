@@ -105,8 +105,10 @@ namespace Automatization.ViewModels
 
             TogglePowerupCommand = new RelayCommand(TogglePowerup);
 
-            _timer = new DispatcherTimer();
-            _timer.Interval = TimeSpan.FromMilliseconds(_delay);
+            _timer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(_delay)
+            };
             _timer.Tick += (s, e) => _usePowerupAction?.Invoke(PowerupType);
         }
 

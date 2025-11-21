@@ -91,6 +91,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -126,6 +127,10 @@
                                         Background="{DynamicResource TextBoxBackground}"
                                         Foreground="{DynamicResource TextBoxForeground}"
                                         BorderBrush="{DynamicResource TextBoxBorder}"/>
+                    
+                    <CheckBox Grid.Row="4" Grid.Column="1" x:Name="TransparentTimerWindowCheckBox" Content="Transparent Timer Window" Margin="0,0,10,8"
+                              VerticalAlignment="Center"
+                              Foreground="{DynamicResource Foreground}"/>
                 </Grid>
 
                 <TextBlock Text="Powerup Keys" Margin="0,15,0,8" FontWeight="SemiBold"

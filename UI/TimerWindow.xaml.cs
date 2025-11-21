@@ -1,10 +1,12 @@
 using Automatization.Services;
+using Automatization.Settings;
 using Automatization.Utils;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace Automatization.UI
@@ -14,7 +16,6 @@ namespace Automatization.UI
         private DispatcherTimer _timer;
         private DispatcherTimer _gameCheckTimer;
         private DispatcherTimer _hideTimer;
-
         private int _seconds;
         private Process? _gameProcess;
         private string _gameProcessName;
@@ -34,14 +35,21 @@ namespace Automatization.UI
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
-
-
+        
         public TimerWindow()
         {
             InitializeComponent();
+
             _seconds = 40;
             TimerLabel.Text = _seconds.ToString();
-            _gameProcessName = Settings.AppSettings.Load().GameProcessName;
+
+            AppSettings settings = AppSettings.Load();
+            _gameProcessName = settings.GameProcessName;
+
+            if (settings.IsTimerWindowTransparent)
+            {
+                BackgroundBorder.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(1, 0, 0, 0));
+            }
 
             _timer = new DispatcherTimer
             {

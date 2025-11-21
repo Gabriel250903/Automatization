@@ -6,7 +6,7 @@
         Topmost="True" ShowInTaskbar="False"
         ResizeMode="CanResizeWithGrip" MouseDown="Window_MouseDown">
     <Grid>
-        <Border Background="#80000000" CornerRadius="10">
+        <Border x:Name="BackgroundBorder" Background="#80000000" CornerRadius="10">
             <Viewbox>
                 <TextBlock x:Name="TimerLabel" Text="40" FontSize="48" FontWeight="Bold" Foreground="White"
                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
