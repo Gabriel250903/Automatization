@@ -6,26 +6,21 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
-using System.Windows.Threading;
 
 namespace Automatization.Utils
 {
     public class PowerupUtils
     {
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        private static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+        private const uint WM_KEYDOWN = 0x0100;
+        private const uint WM_KEYUP = 0x0101;
+
         public AppSettings Settings { get; set; }
         public Process? GameProcess { get; set; }
 
         private ObservableCollection<PowerupViewModel> _powerups = [];
         public ReadOnlyObservableCollection<PowerupViewModel> Powerups { get; }
-
-        private Dictionary<PowerupType, DispatcherTimer> _timers = [];
-        private Dictionary<PowerupType, bool> _activeStates = [];
-        private Dictionary<PowerupType, bool> _pausedStates = [];
-
-        [DllImport("user32.dll", CharSet = CharSet.Auto)]
-        private static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
-        private const uint WM_KEYDOWN = 0x0100;
-        private const uint WM_KEYUP = 0x0101;
 
         public PowerupUtils(AppSettings settings)
         {
@@ -38,71 +33,25 @@ namespace Automatization.Utils
             LogService.LogInfo("Initializing PowerupUtils.");
 
             _powerups.Clear();
-            _timers.Clear();
-            _activeStates.Clear();
 
             bool settingsChanged = false;
 
             foreach (PowerupType powerup in Enum.GetValues<PowerupType>())
             {
-                double intervalMs;
-
                 if (!Settings.PowerupDelays.TryGetValue(powerup, out double value))
                 {
-                    intervalMs = 1000;
-                    Settings.PowerupDelays[powerup] = intervalMs;
+                    Settings.PowerupDelays[powerup] = 1000;
                     settingsChanged = true;
-
-                    LogService.LogInfo($"Default delay set for {powerup}: {intervalMs}ms.");
-                }
-                else
-                {
-                    intervalMs = value;
+                    LogService.LogInfo($"Default delay set for {powerup}: 1000ms.");
                 }
 
-                DispatcherTimer timer = new()
-                {
-                    Interval = TimeSpan.FromMilliseconds(intervalMs)
-                };
-
-                timer.Tick += (_, _) => UsePowerup(powerup);
-                _timers[powerup] = timer;
-                _activeStates[powerup] = false;
-
-                PowerupViewModel viewModel = new(powerup, intervalMs, Settings, UsePowerup, SaveDelay);
-
-                viewModel.PropertyChanged += (sender, e) =>
-                {
-                    if (e.PropertyName == nameof(PowerupViewModel.IsActive))
-                    {
-                        if (sender is PowerupViewModel vm)
-                        {
-                            if (vm.IsActive)
-                            {
-                                StartPowerupTimer(vm.PowerupType);
-                            }
-                            else
-                            {
-                                StopPowerupTimer(vm.PowerupType);
-                            }
-                        }
-                    }
-                    else if (e.PropertyName == nameof(PowerupViewModel.Delay))
-                    {
-                        if (sender is PowerupViewModel vm && _timers.TryGetValue(vm.PowerupType, out DispatcherTimer? t))
-                        {
-                            t.Interval = TimeSpan.FromMilliseconds(vm.Delay);
-                        }
-                    }
-                };
-
+                PowerupViewModel viewModel = new(powerup, Settings.PowerupDelays[powerup], Settings, (p) => UsePowerup(p), SaveDelay);
                 _powerups.Add(viewModel);
             }
 
             if (settingsChanged)
             {
                 Settings.Save();
-
                 LogService.LogInfo("Powerup settings saved due to changes.");
             }
 
@@ -120,10 +69,6 @@ namespace Automatization.Utils
                 if (Settings.PowerupDelays.TryGetValue(viewModel.PowerupType, out double newDelay))
                 {
                     viewModel.Delay = newDelay;
-                    if (_timers.TryGetValue(viewModel.PowerupType, out DispatcherTimer? timer))
-                    {
-                        timer.Interval = TimeSpan.FromMilliseconds(newDelay);
-                    }
                 }
             }
 
@@ -136,28 +81,6 @@ namespace Automatization.Utils
             Settings.Save();
 
             LogService.LogInfo($"Powerup {powerup} delay saved to {delay}ms.");
-        }
-
-        private void StartPowerupTimer(PowerupType powerup)
-        {
-            if (_timers.TryGetValue(powerup, out DispatcherTimer? timer))
-            {
-                timer.Start();
-                _activeStates[powerup] = true;
-
-                LogService.LogInfo($"Powerup {powerup} timer started.");
-            }
-        }
-
-        private void StopPowerupTimer(PowerupType powerup)
-        {
-            if (_timers.TryGetValue(powerup, out DispatcherTimer? timer))
-            {
-                timer.Stop();
-                _activeStates[powerup] = false;
-
-                LogService.LogInfo($"Powerup {powerup} timer stopped.");
-            }
         }
 
         public bool ToggleAll()
@@ -188,51 +111,11 @@ namespace Automatization.Utils
             LogService.LogInfo("All powerups stopped.");
         }
 
-        public void PauseAll()
+        public void UsePowerup(PowerupType powerup)
         {
-            LogService.LogInfo("Pausing all powerups.");
-
-            _pausedStates = new Dictionary<PowerupType, bool>(_activeStates);
-
-            foreach (PowerupType powerup in _timers.Keys)
+            if (GameProcess == null)
             {
-                if (_activeStates.TryGetValue(powerup, out bool isActive) && isActive)
-                {
-                    StopPowerupTimer(powerup);
-                }
-            }
-
-            LogService.LogInfo("All powerups paused.");
-        }
-
-        public void ResumeAll()
-        {
-            LogService.LogInfo("Resuming all powerups.");
-
-            foreach (PowerupType powerup in _timers.Keys)
-            {
-                if (_pausedStates.TryGetValue(powerup, out bool wasActive) && wasActive)
-                {
-                    StartPowerupTimer(powerup);
-                }
-            }
-
-            _pausedStates.Clear();
-
-            LogService.LogInfo("All powerups resumed.");
-        }
-
-        private void UsePowerup(PowerupType powerup)
-        {
-            if (!WindowUtils.IsGameWindowInForeground(GameProcess))
-            {
-                LogService.LogWarning("Game window is not in the foreground. Powerup activation skipped.");
-                return;
-            }
-
-            if (GameProcess == null || GameProcess.MainWindowHandle == IntPtr.Zero)
-            {
-                LogService.LogWarning("Game process not found, cannot send powerup key press.");
+                LogService.LogWarning("Game process not found. Cannot send powerup key press.");
                 return;
             }
 
@@ -244,9 +127,7 @@ namespace Automatization.Utils
                     return;
                 }
 
-                IntPtr vk = KeyInterop.VirtualKeyFromKey(key);
-                _ = PostMessage(GameProcess.MainWindowHandle, WM_KEYDOWN, vk, IntPtr.Zero);
-                _ = PostMessage(GameProcess.MainWindowHandle, WM_KEYUP, vk, IntPtr.Zero);
+                SendKey(key);
 
                 LogService.LogInfo($"Sent powerup {powerup} with key {key}.");
             }
@@ -254,6 +135,20 @@ namespace Automatization.Utils
             {
                 LogService.LogError($"Error using powerup {powerup}.", ex);
             }
+        }
+
+        private void SendKey(Key key)
+        {
+            if (GameProcess?.MainWindowHandle == null || GameProcess.MainWindowHandle == IntPtr.Zero) return;
+
+            ushort virtualKey = (ushort)KeyInterop.VirtualKeyFromKey(key);
+            uint scanCode = (uint)NativeMethods.MapVirtualKey(virtualKey, 0);
+
+            IntPtr lParamDown = (IntPtr)((scanCode << 16) | 1);
+            IntPtr lParamUp = (IntPtr)((scanCode << 16) | 0xC0000001);
+
+            PostMessage(GameProcess.MainWindowHandle, WM_KEYDOWN, (IntPtr)virtualKey, lParamDown);
+            PostMessage(GameProcess.MainWindowHandle, WM_KEYUP, (IntPtr)virtualKey, lParamUp);
         }
     }
 }

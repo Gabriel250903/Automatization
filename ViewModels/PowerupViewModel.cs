@@ -3,6 +3,7 @@ using Automatization.Types;
 using Automatization.Utils;
 using System.ComponentModel;
 using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace Automatization.ViewModels
 {
@@ -11,6 +12,7 @@ namespace Automatization.ViewModels
         private AppSettings _settings;
         private Action<PowerupType> _usePowerupAction;
         private Action<PowerupType, double> _saveDelayAction;
+        private DispatcherTimer _timer;
 
         private PowerupType _powerupType;
         public PowerupType PowerupType
@@ -38,6 +40,7 @@ namespace Automatization.ViewModels
                     _delay = value;
                     OnPropertyChanged(nameof(Delay));
                     DelayText = $"{_delay:0}ms";
+                    _timer.Interval = TimeSpan.FromMilliseconds(_delay);
                     _saveDelayAction?.Invoke(PowerupType, _delay);
                 }
             }
@@ -67,6 +70,16 @@ namespace Automatization.ViewModels
                 {
                     _isActive = value;
                     OnPropertyChanged(nameof(IsActive));
+
+                    if (_isActive)
+                    {
+                        _timer.Start();
+                    }
+                    else
+                    {
+                        _timer.Stop();
+                    }
+
                     OnPropertyChanged(nameof(ButtonContent));
                 }
             }
@@ -91,6 +104,10 @@ namespace Automatization.ViewModels
             _saveDelayAction = saveDelayAction;
 
             TogglePowerupCommand = new RelayCommand(TogglePowerup);
+
+            _timer = new DispatcherTimer();
+            _timer.Interval = TimeSpan.FromMilliseconds(_delay);
+            _timer.Tick += (s, e) => _usePowerupAction?.Invoke(PowerupType);
         }
 
         private void TogglePowerup(object? parameter)

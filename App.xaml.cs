@@ -11,7 +11,7 @@ public partial class App : System.Windows.Application
 
     private static ResourceDictionary? _currentThemeDictionary;
 
-    private async void Application_Startup(object sender, StartupEventArgs e)
+    private void Application_Startup(object sender, StartupEventArgs e)
     {
         LogService.Initialize();
         LogService.CleanOldLogs();
@@ -20,8 +20,6 @@ public partial class App : System.Windows.Application
         Settings = AppSettings.Load();
 
         ApplyTheme(Settings.Theme);
-
-        await PerformStartupUpdateCheckAsync();
 
         MainWindow mainWindow = new();
         mainWindow.Show();

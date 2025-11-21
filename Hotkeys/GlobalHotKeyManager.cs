@@ -1,5 +1,7 @@
 using Automatization.Services;
+using Automatization.Settings;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 using System.Windows.Input;
 using System.Windows.Interop;
 
@@ -15,6 +17,7 @@ namespace Automatization.Hotkeys
         [DllImport("user32.dll", SetLastError = true)]
         private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
+        private static AppSettings? _settings;
         private static bool _isInitialized = false;
         private static int _nextId;
         private static Dictionary<int, HotKey> IdToHotKeyMap = [];
@@ -33,6 +36,7 @@ namespace Automatization.Hotkeys
             }
 
             ComponentDispatcher.ThreadFilterMessage += OnThreadFilterMessage;
+            _settings = AppSettings.Load();
             _isInitialized = true;
 
             LogService.LogInfo("Initialized GlobalHotKeyManager.");
@@ -128,6 +132,16 @@ namespace Automatization.Hotkeys
         {
             if (handled || IsPaused || msg.message != WmHotkey)
             {
+                return;
+            }
+
+            // Only process hotkeys if the game is in the foreground.
+            // This prevents number keys from being swallowed by this app when typing elsewhere.
+            Process? game = Process.GetProcessesByName(_settings?.GameProcessName ?? "ProTanki").FirstOrDefault();
+            if (game == null || Utils.WindowUtils.IsGameWindowInForeground(game) == false)
+            {
+                // We received the hotkey, but we will not handle it, allowing other apps to use it.
+                handled = false;
                 return;
             }
 

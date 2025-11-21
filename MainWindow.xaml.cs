@@ -30,7 +30,6 @@ namespace Automatization
 
         private Dictionary<string, Action> _hotkeyActions = [];
         private NotifyIcon? _notifyIcon;
-        private bool _isPowerupsPaused;
         private KeyboardListener? _keyboardListener;
         private TimerWindow? _timerWindow;
 
@@ -70,21 +69,9 @@ namespace Automatization
             _ = GameCheckAsync();
 
             PauseHotkeysCheckBox.IsChecked = GlobalHotKeyManager.IsPaused;
+            PauseHotkeysCheckBox.IsEnabled = true;
 
             InitializeNotifyIcon();
-
-            Activated += MainWindow_Activated;
-            Deactivated += MainWindow_Deactivated;
-        }
-
-        private void MainWindow_Activated(object? sender, EventArgs e)
-        {
-            LogService.LogInfo("Main window activated.");
-        }
-
-        private void MainWindow_Deactivated(object? sender, EventArgs e)
-        {
-            LogService.LogInfo("Main window deactivated.");
         }
 
         private void OnSourceInitialized(object? sender, EventArgs e)
@@ -99,28 +86,11 @@ namespace Automatization
             RegisterHotkeysFromSettings();
 
             _keyboardListener = new KeyboardListener();
-            _keyboardListener.KeyDown += OnKeyDown;
 
             _hotkeyActions["ToggleAll"] = () => _powerupUtils?.ToggleAll();
             _hotkeyActions["RedTeam"] = () => RedTeamButton_Click(RedTeamButton, null);
             _hotkeyActions["BlueTeam"] = () => BlueTeamButton_Click(BlueTeamButton, null);
             _hotkeyActions["StartTimer"] = StartGoldBoxTimer;
-        }
-
-        private void OnKeyDown(Key key)
-        {
-            if (key == Key.Enter)
-            {
-                _isPowerupsPaused = !_isPowerupsPaused;
-                if (_isPowerupsPaused)
-                {
-                    _powerupUtils?.PauseAll();
-                }
-                else
-                {
-                    _powerupUtils?.ResumeAll();
-                }
-            }
         }
 
         private void OnHotKeyPressed(HotKey hotKey)
@@ -131,46 +101,17 @@ namespace Automatization
 
             if (actionEntry != null && _hotkeyActions.TryGetValue(actionEntry, out Action? action))
             {
-                if (actionEntry == "ToggleAll")
-                {
-                    if (WindowUtils.IsGameWindowInForeground(_gameProcess))
-                    {
-                        action.Invoke();
-                    }
-                    else
-                    {
-                        LogService.LogWarning("ToggleAll hotkey pressed, but neither game nor app window is in the foreground.");
-                    }
-                }
-                else if (actionEntry == "StartTimer")
-                {
-                    action.Invoke();
-                }
-                else
-                {
-                    action.Invoke();
-                }
+                action.Invoke();
                 return;
             }
 
-            if (WindowUtils.IsGameWindowInForeground(_gameProcess))
-            {
-                KeyValuePair<PowerupType, Key> powerupMapping = _settings.PowerupKeys.FirstOrDefault(kvp => kvp.Value == hotKey.Key);
+            KeyValuePair<PowerupType, Key> powerupMapping = _settings.PowerupKeys.FirstOrDefault(kvp => kvp.Value == hotKey.Key);
 
-                if (powerupMapping.Key != default)
-                {
-                    ViewModels.PowerupViewModel? viewModel = _powerupUtils?.Powerups.FirstOrDefault(p => p.PowerupType == powerupMapping.Key);
-
-                    if (viewModel != null)
-                    {
-                        viewModel.IsActive = !viewModel.IsActive;
-                        LogService.LogInfo($"Toggled powerup {viewModel.PowerupType} to {viewModel.IsActive} via hotkey.");
-                    }
-                }
-            }
-            else
+            if (powerupMapping.Key != default)
             {
-                LogService.LogWarning("Powerup hotkey pressed, but neither game nor app window is in the foreground.");
+                _powerupUtils?.UsePowerup(powerupMapping.Key);
+                LogService.LogInfo($"Used powerup {powerupMapping.Key} via hotkey.");
+                return;
             }
         }
 
@@ -343,7 +284,6 @@ namespace Automatization
                     }
 
                     EnableAutomation();
-
                     LogService.LogInfo("Game process found.");
                 }
             }
@@ -354,11 +294,10 @@ namespace Automatization
                     _gameProcess = null;
                     if (_powerupUtils != null)
                     {
-                        _powerupUtils.GameProcess = _gameProcess;
+                        _powerupUtils.GameProcess = null;
                     }
 
                     DisableAutomation();
-
                     LogService.LogInfo("Game process lost.");
                 }
             }
@@ -562,8 +501,6 @@ namespace Automatization
 
             App.ApplyTheme(_settings.Theme);
             RegisterHotkeysFromSettings();
-
-            PauseHotkeysCheckBox.IsChecked = GlobalHotKeyManager.IsPaused;
         }
 
         private void PauseHotkeysCheckBox_Checked(object sender, RoutedEventArgs e)
