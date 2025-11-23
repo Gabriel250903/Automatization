@@ -2,7 +2,6 @@ using Automatization.Services;
 using Automatization.Settings;
 using Automatization.Types;
 using System.Windows;
-using MessageBox = System.Windows.MessageBox;
 
 namespace Automatization;
 public partial class App : System.Windows.Application
@@ -16,9 +15,6 @@ public partial class App : System.Windows.Application
         LogService.Initialize();
         LogService.CleanOldLogs();
         LogService.LogInfo("Application starting.");
-
-        UpdateService updateService = new();
-        updateService.CheckForUpdates();
 
         Settings = AppSettings.Load();
 

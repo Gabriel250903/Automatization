@@ -35,8 +35,8 @@ namespace Automatization.UI
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
-        
-        public TimerWindow()
+
+        public TimerWindow(bool startTimer = false)
         {
             InitializeComponent();
 
@@ -53,7 +53,7 @@ namespace Automatization.UI
 
             _timer = new DispatcherTimer
             {
-                Interval = TimeSpan.FromSeconds(1)
+                Interval = TimeSpan.FromMilliseconds(1000)
             };
             _timer.Tick += Timer_Tick;
 
@@ -66,7 +66,7 @@ namespace Automatization.UI
 
             _hideTimer = new DispatcherTimer
             {
-                Interval = TimeSpan.FromMilliseconds(1500)
+                Interval = TimeSpan.FromMilliseconds(500)
             };
             _hideTimer.Tick += HideTimer_Tick;
 
@@ -75,6 +75,11 @@ namespace Automatization.UI
             Top = 100;
 
             Topmost = true;
+
+            if (startTimer)
+            {
+                Start();
+            }
         }
 
         protected override void OnSourceInitialized(EventArgs e)
@@ -114,58 +119,85 @@ namespace Automatization.UI
 
         private void GameCheckTimer_Tick(object? sender, EventArgs e)
         {
-            Process? game = Process.GetProcessesByName(_gameProcessName).FirstOrDefault();
+            Process? currentGame = Process.GetProcessesByName(_gameProcessName).FirstOrDefault();
 
-            if (game != null)
+            if (currentGame == null)
             {
-                if (_gameProcess == null || _gameProcess.Id != game.Id)
-                {
-                    _gameProcess = game;
-                    LogService.LogInfo("Game process found for TimerWindow.");
-                }
+                HandleGameProcessLost();
+                return;
+            }
 
-                if (WindowUtils.IsGameWindowInForeground(_gameProcess))
-                {
-                    _hideTimer.Stop();
-                    if (Visibility != Visibility.Visible)
-                    {
-                        Visibility = Visibility.Visible;
-                        LogService.LogInfo("TimerWindow shown because game is in foreground.");
-                    }
-                }
-                else
-                {
-                    if (Visibility != Visibility.Hidden && !_hideTimer.IsEnabled)
-                    {
-                        _hideTimer.Start();
-                        LogService.LogInfo("TimerWindow hide debounced.");
-                    }
-                }
+            HandleGameProcessFound(currentGame);
+        }
+
+        private void HandleGameProcessFound(Process game)
+        {
+            if (_gameProcess == null || _gameProcess.Id != game.Id)
+            {
+                _gameProcess = game;
+                LogService.LogInfo("Game process found for TimerWindow.");
+            }
+
+            if (WindowUtils.IsGameWindowInForeground(_gameProcess))
+            {
+                ShowTimerWindow();
             }
             else
             {
-                if (_gameProcess != null)
-                {
-                    _gameProcess = null;
-                    LogService.LogInfo("Game process lost for TimerWindow.");
-                }
-
-                if (Visibility != Visibility.Hidden)
-                {
-                    Visibility = Visibility.Hidden;
-                    LogService.LogInfo("TimerWindow hidden because game process is not running.");
-                }
+                DebounceHideTimerWindow();
             }
+        }
+
+        private void HandleGameProcessLost()
+        {
+            if (_gameProcess != null)
+            {
+                _gameProcess = null;
+                LogService.LogInfo("Game process lost for TimerWindow.");
+            }
+            HideTimerWindow();
+        }
+
+        private void ShowTimerWindow()
+        {
+            _hideTimer.Stop();
+            if (Visibility == Visibility.Visible)
+            {
+                return;
+            }
+
+            Visibility = Visibility.Visible;
+            LogService.LogInfo("TimerWindow shown because game is in foreground.");
         }
 
         private void HideTimer_Tick(object? sender, EventArgs e)
         {
             _hideTimer.Stop();
-            if (Visibility != Visibility.Hidden)
+            HideTimerWindow(isDebounced: true);
+        }
+
+        private void DebounceHideTimerWindow()
+        {
+            if (Visibility == Visibility.Hidden || _hideTimer.IsEnabled)
             {
-                Visibility = Visibility.Hidden;
-                LogService.LogInfo("TimerWindow hidden after debounce.");
+                return;
             }
+
+            _hideTimer.Start();
+            LogService.LogInfo("TimerWindow hide debounced.");
+        }
+
+        private void HideTimerWindow(bool isDebounced = false)
+        {
+            if (Visibility == Visibility.Hidden)
+            {
+                return;
+            }
+
+            Visibility = Visibility.Hidden;
+            LogService.LogInfo(isDebounced
+                ? "TimerWindow hidden after debounce."
+                : "TimerWindow hidden because game process is not running.");
         }
 
         protected override void OnClosed(EventArgs e)

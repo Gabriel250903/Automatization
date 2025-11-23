@@ -32,6 +32,7 @@ namespace Automatization
         private NotifyIcon? _notifyIcon;
         private KeyboardListener? _keyboardListener;
         private TimerWindow? _timerWindow;
+        private bool _arePowerupsPausedForChat = false;
 
         #region Win32
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
@@ -98,8 +99,18 @@ namespace Automatization
         {
             if (e == Key.Enter && _gameProcess != null && WindowUtils.IsGameWindowInForeground(_gameProcess))
             {
-                _ = (_powerupUtils?.ToggleAll());
-                LogService.LogInfo("Enter key pressed in-game, toggling powerups for chat.");
+                if (!_arePowerupsPausedForChat)
+                {
+                    _powerupUtils?.StopAll();
+                    _arePowerupsPausedForChat = true;
+                    LogService.LogInfo("Enter key pressed in-game, pausing all powerups for chat.");
+                }
+                else
+                {
+                    _powerupUtils?.StartAll();
+                    _arePowerupsPausedForChat = false;
+                    LogService.LogInfo("Enter key pressed in-game, resuming all powerups after chat.");
+                }
             }
             else if (_gameProcess != null && WindowUtils.IsGameWindowInForeground(_gameProcess) && _settings.PowerupKeys.ContainsValue(e))
             {
@@ -151,7 +162,7 @@ namespace Automatization
 
         }
 
-        private async void StartGoldBoxTimer()
+        private void StartGoldBoxTimer()
         {
             if (_gameProcess == null || !WindowUtils.IsGameWindowInForeground(_gameProcess))
             {
@@ -161,22 +172,17 @@ namespace Automatization
 
             if (_timerWindow != null && _timerWindow.IsLoaded)
             {
-                _ = _timerWindow.Activate();
-                _timerWindow.ResetTimer();
+                // A timer is already running. Do nothing as requested.
+                LogService.LogInfo("Gold Box Timer hotkey pressed, but a timer is already active. Ignoring.");
                 return;
             }
 
-            _timerWindow = new TimerWindow();
+            _timerWindow = new TimerWindow(startTimer: true);
             _timerWindow.Closed += (sender, args) =>
             {
                 _timerWindow = null;
             };
             _timerWindow.Show();
-
-            await Task.Delay(500);
-
-            _ = _timerWindow.Activate();
-            _timerWindow.Start();
         }
 
         #region Team Auto-Clickers

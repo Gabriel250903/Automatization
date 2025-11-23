@@ -8,6 +8,8 @@ namespace Automatization.Utils
     {
         [DllImport("user32.dll")]
         private static extern IntPtr GetForegroundWindow();
+        private static int _foregroundCheckFailCount = 0;
+        private const int MAX_LOG_COUNT = 5;
 
         public static bool IsGameWindowInForeground(Process? gameProcess)
         {
@@ -21,9 +23,17 @@ namespace Automatization.Utils
 
             bool isInForeground = foregroundWindowHandle == gameWindowHandle;
 
-            if (!isInForeground)
+            if (isInForeground)
             {
-                LogService.LogInfo($"Foreground check failed: Foreground window handle is {foregroundWindowHandle}, game window handle is {gameWindowHandle}.");
+                _foregroundCheckFailCount = 0;
+            }
+            else
+            {
+                if (_foregroundCheckFailCount < MAX_LOG_COUNT)
+                {
+                    LogService.LogInfo($"Foreground check failed: Foreground window handle is {foregroundWindowHandle}, game window handle is {gameWindowHandle}.");
+                    _foregroundCheckFailCount++;
+                }
             }
 
             return isInForeground;

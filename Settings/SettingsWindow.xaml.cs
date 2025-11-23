@@ -7,7 +7,6 @@ using Automatization.UI.Coordinate;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Input;
-using MessageBox = System.Windows.MessageBox;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using Point = System.Windows.Point;
 
@@ -17,13 +16,14 @@ namespace Automatization
     {
         private AppSettings _settings;
         private bool _isGameProcessNameUnlocked = false;
-        private readonly UpdateService _updateService;
+        private UpdaterService _updaterService;
+        private Version? _latestVersion;
 
         public SettingsWindow()
         {
             InitializeComponent();
             _settings = App.Settings ?? AppSettings.Load();
-            _updateService = new UpdateService();
+            _updaterService = new UpdaterService();
             LoadSettings();
 
             Loaded += SettingsWindow_Loaded;
@@ -70,13 +70,81 @@ namespace Automatization
 
         private void SettingsWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            VersionTextBlock.Text = $"Current Version: {UpdateService.GetCurrentVersion() ?? "Not found"}";
-            LatestVersionTextBlock.Text = "Updates are checked automatically on startup.";
+            VersionTextBlock.Text = $"Current Version: {_updaterService.GetCurrentVersion()}";
         }
 
-        private void CheckForUpdatesButton_Click(object sender, RoutedEventArgs e)
+        private async void CheckForUpdatesButton_Click(object sender, RoutedEventArgs e)
         {
-            _updateService.CheckForUpdates();
+            StatusTextBlock.Text = "Checking for updates...";
+
+            try
+            {
+                (Version? latestVersion, string? releaseNotes) = await _updaterService.GetLatestVersionAsync();
+                _latestVersion = latestVersion;
+                LatestVersionTextBlock.Text = $"Latest Version: {latestVersion}";
+
+                if (_latestVersion != null && _latestVersion > _updaterService.GetCurrentVersion())
+                {
+                    StatusTextBlock.Text = "Update available!";
+                    UpdateNowButton.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    StatusTextBlock.Text = "You are up to date.";
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusTextBlock.Text = $"Error checking for updates: {ex.Message}";
+                LogService.LogError($"Error checking for updates: {ex}");
+            }
+        }
+
+        private async void UpdateNowButton_Click(object sender, RoutedEventArgs e)
+        {
+            LogService.LogInfo("UpdateNowButton_Click started.");
+            UpdateNowButton.IsEnabled = false;
+            CheckForUpdatesButton.IsEnabled = false;
+            StatusTextBlock.Text = "Downloading update...";
+            DownloadProgressBar.Visibility = Visibility.Visible;
+
+            try
+            {
+                LogService.LogInfo("Calling DownloadAndInstallUpdateAsync.");
+
+                (bool uninstalled, string? installerPath) = await _updaterService.DownloadAndInstallUpdateAsync((bytesReceived, totalBytes) =>
+                {
+                    _ = Dispatcher.BeginInvoke(() =>
+                    {
+                        DownloadProgressBar.Value = (double)bytesReceived / totalBytes * 100;
+                    });
+                });
+
+                LogService.LogInfo($"DownloadAndInstallUpdateAsync finished. Uninstalled: {uninstalled}");
+
+                if (uninstalled)
+                {
+                    StatusTextBlock.Text = "Update installed. Relaunching...";
+                    LogService.LogInfo("Relaunching application.");
+                    _updaterService.RelaunchApplication();
+                }
+                else
+                {
+                    StatusTextBlock.Text = $"New version downloaded to {installerPath}. Please run it manually.";
+                    LogService.LogInfo("Update downloaded, but not installed. Manual installation required.");
+                    CheckForUpdatesButton.IsEnabled = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusTextBlock.Text = $"Error during update: {ex.Message}";
+                LogService.LogError($"Error during update: {ex}");
+                UpdateNowButton.IsEnabled = true;
+                CheckForUpdatesButton.IsEnabled = true;
+                DownloadProgressBar.Visibility = Visibility.Collapsed;
+            }
+
+            LogService.LogInfo("UpdateNowButton_Click finished.");
         }
 
         private void ThemeRadio_Checked(object? sender, RoutedEventArgs e)

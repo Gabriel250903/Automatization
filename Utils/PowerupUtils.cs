@@ -111,6 +111,18 @@ namespace Automatization.Utils
             LogService.LogInfo("All powerups stopped.");
         }
 
+        public void StartAll()
+        {
+            LogService.LogInfo("Starting all powerups.");
+
+            foreach (PowerupViewModel viewModel in _powerups)
+            {
+                viewModel.IsActive = true;
+            }
+
+            LogService.LogInfo("All powerups started.");
+        }
+
         public void UsePowerup(PowerupType powerup)
         {
             if (GameProcess == null)

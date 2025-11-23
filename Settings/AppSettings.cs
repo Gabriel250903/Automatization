@@ -40,12 +40,9 @@ public class AppSettings
             return "ToggleAll";
         }
 
-        if (hotKey == RedTeamHotKey)
-        {
-            return "RedTeam";
-        }
-
-        return hotKey == BlueTeamHotKey ? "BlueTeam" : hotKey == GoldBoxTimerHotKey ? "StartTimer" : null;
+        return hotKey == RedTeamHotKey
+            ? "RedTeam"
+            : hotKey == BlueTeamHotKey ? "BlueTeam" : hotKey == GoldBoxTimerHotKey ? "StartTimer" : null;
     }
 
     public static AppSettings Load()
