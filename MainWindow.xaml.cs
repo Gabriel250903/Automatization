@@ -172,7 +172,6 @@ namespace Automatization
 
             if (_timerWindow != null && _timerWindow.IsLoaded)
             {
-                // A timer is already running. Do nothing as requested.
                 LogService.LogInfo("Gold Box Timer hotkey pressed, but a timer is already active. Ignoring.");
                 return;
             }

@@ -87,6 +87,12 @@ namespace Automatization.Utils
         {
             LogService.LogInfo("Toggling all powerups.");
 
+            if (!WindowUtils.IsGameReadyForInput(GameProcess))
+            {
+                LogService.LogInfo("Skipping toggle all: Game not ready for input (e.g., chat is open).");
+                return _powerups.Any(vm => vm.IsActive);
+            }
+
             bool anyActive = _powerups.Any(vm => vm.IsActive);
             bool newState = !anyActive;
 
@@ -128,6 +134,12 @@ namespace Automatization.Utils
             if (GameProcess == null)
             {
                 LogService.LogWarning("Game process not found. Cannot send powerup key press.");
+                return;
+            }
+
+            if (!WindowUtils.IsGameReadyForInput(GameProcess))
+            {
+                LogService.LogInfo($"Skipping powerup {powerup}: Game not ready for input (e.g., chat is open).");
                 return;
             }
 

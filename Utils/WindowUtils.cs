@@ -1,11 +1,21 @@
 using Automatization.Services;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Automatization.Utils
 {
     public static class WindowUtils
     {
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetFocus();
+
+        [DllImport("user32.dll")]
+        private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
         [DllImport("user32.dll")]
         private static extern IntPtr GetForegroundWindow();
         private static int _foregroundCheckFailCount = 0;
@@ -37,6 +47,31 @@ namespace Automatization.Utils
             }
 
             return isInForeground;
+        }
+
+        public static bool IsGameReadyForInput(Process? gameProcess)
+        {
+            if (!IsGameWindowInForeground(gameProcess))
+            {
+                return false;
+            }
+
+            IntPtr focusedControlHandle = GetFocus();
+            if (focusedControlHandle == IntPtr.Zero)
+            {
+                return true;
+            }
+
+            GetWindowThreadProcessId(focusedControlHandle, out uint focusedControlProcessId);
+            if (gameProcess != null && focusedControlProcessId != gameProcess.Id)
+            {
+                return false;
+            }
+
+            StringBuilder className = new();
+            GetClassName(focusedControlHandle, className, className.Capacity);
+
+            return !className.ToString().Equals("EDIT", StringComparison.OrdinalIgnoreCase);
         }
     }
 }
