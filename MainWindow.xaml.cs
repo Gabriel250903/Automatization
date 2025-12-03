@@ -12,31 +12,39 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
+using Wpf.Ui.Controls;
+using MessageBox = System.Windows.MessageBox;
+using MessageBoxButton = System.Windows.MessageBoxButton;
+using MessageBoxImage = System.Windows.MessageBoxImage;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 
 namespace Automatization
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow : FluentWindow
     {
         private DispatcherTimer _gameCheckTimer = null!;
-        private PowerupUtils? _powerupUtils;
+        private readonly PowerupUtils? _powerupUtils;
         private Process? _gameProcess;
         private string? _gameExecutablePath;
         private AppSettings _settings;
-
         private ClickerService? _clickerService;
         private Guid? _redClickerId;
         private Guid? _blueClickerId;
 
-        private Dictionary<string, Action> _hotkeyActions = [];
-        private NotifyIcon? _notifyIcon;
+        private readonly Dictionary<string, Action> _hotkeyActions = [];
         private KeyboardListener? _keyboardListener;
-        private TimerWindow? _timerWindow;
+
+        private readonly List<TimerWindow> _activeTimerWindows = [];
+        private SmartRepairKitWindow? _smartRepairWindow;
+        private AutoGoldBoxService? _autoGoldBoxService;
+
         private bool _arePowerupsPausedForChat = false;
+        private readonly List<PowerupType> _activePowerups = [];
 
         #region Win32
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         private static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
         private static IntPtr MakeLParam(int x, int y)
         {
             return (y << 16) | (x & 0xFFFF);
@@ -64,15 +72,12 @@ namespace Automatization
             InitializeGameCheckTimer();
 
             SourceInitialized += OnSourceInitialized;
-            ToggleAllButton.Click += (_, _) => _powerupUtils?.ToggleAll();
 
             DisableAutomation();
             _ = GameCheckAsync();
 
             PauseHotkeysCheckBox.IsChecked = GlobalHotKeyManager.IsPaused;
             PauseHotkeysCheckBox.IsEnabled = true;
-
-            InitializeNotifyIcon();
         }
 
         private void OnSourceInitialized(object? sender, EventArgs e)
@@ -81,6 +86,16 @@ namespace Automatization
 
             InitializeTeamClickers();
             _powerupUtils?.Initialize();
+
+            _autoGoldBoxService = new AutoGoldBoxService();
+            _autoGoldBoxService.OnTriggered += AutoGoldBoxService_OnTriggered;
+
+            AutoGoldBoxCheckBox.IsChecked = _settings.EnableAutoGoldBox;
+
+            if (_settings.EnableAutoGoldBox)
+            {
+                _autoGoldBoxService.Start();
+            }
 
             GlobalHotKeyManager.Initialize();
             GlobalHotKeyManager.HotKeyPressed += OnHotKeyPressed;
@@ -93,31 +108,95 @@ namespace Automatization
             _hotkeyActions["RedTeam"] = () => RedTeamButton_Click(this, null);
             _hotkeyActions["BlueTeam"] = () => BlueTeamButton_Click(this, null);
             _hotkeyActions["StartTimer"] = StartGoldBoxTimer;
+
+            _hotkeyActions["SmartRepairToggle"] = ToggleSmartRepair;
+            _hotkeyActions["SmartRepairDebug"] = DebugSmartRepair;
+        }
+
+        private void AutoGoldBoxService_OnTriggered()
+        {
+            Dispatcher.Invoke(() =>
+            {
+                System.Media.SystemSounds.Asterisk.Play();
+                StartGoldBoxTimer();
+            });
+        }
+
+        private void ToggleSmartRepair()
+        {
+            if (_smartRepairWindow == null || !_smartRepairWindow.IsLoaded)
+            {
+                SmartRepairButton_Click(this, null);
+
+                _smartRepairWindow?.ToggleMonitoring();
+            }
+            else
+            {
+                _smartRepairWindow.ToggleMonitoring();
+            }
+        }
+
+        private void DebugSmartRepair()
+        {
+            if (_smartRepairWindow != null && _smartRepairWindow.IsLoaded)
+            {
+                _smartRepairWindow.SaveDebugSnapshot();
+            }
         }
 
         private bool KeyboardListener_OnKeyPressed(Key e)
         {
-            if (e == Key.Enter && _gameProcess != null && WindowUtils.IsGameWindowInForeground(_gameProcess))
+            if (_gameProcess != null && WindowUtils.IsGameWindowInForeground(_gameProcess))
             {
-                if (!_arePowerupsPausedForChat)
+                if (e == Key.Enter && !_arePowerupsPausedForChat)
                 {
-                    _powerupUtils?.StopAll();
+                    if (_powerupUtils != null)
+                    {
+                        _activePowerups.Clear();
+                        foreach (ViewModels.PowerupViewModel powerup in _powerupUtils.Powerups)
+                        {
+                            if (powerup.IsActive)
+                            {
+                                _activePowerups.Add(powerup.PowerupType);
+                            }
+                        }
+
+                        _powerupUtils.StopAll();
+                    }
+
                     _arePowerupsPausedForChat = true;
-                    LogService.LogInfo("Enter key pressed in-game, pausing all powerups for chat.");
+                    LogService.LogInfo("Chat opened: Paused powerups.");
                 }
-                else
+                else if ((e == Key.Enter || e == Key.Escape) && _arePowerupsPausedForChat)
                 {
-                    _powerupUtils?.StartAll();
+                    if (_powerupUtils != null)
+                    {
+                        foreach (PowerupType type in _activePowerups)
+                        {
+                            ViewModels.PowerupViewModel? vm = _powerupUtils.Powerups.FirstOrDefault(x => x.PowerupType == type);
+                            if (vm != null)
+                            {
+                                vm.IsActive = true;
+                            }
+                        }
+
+                        _activePowerups.Clear();
+                    }
+
                     _arePowerupsPausedForChat = false;
-                    LogService.LogInfo("Enter key pressed in-game, resuming all powerups after chat.");
+                    LogService.LogInfo($"Chat closed: Resumed powerups.");
                 }
-            }
-            else if (_gameProcess != null && WindowUtils.IsGameWindowInForeground(_gameProcess) && _settings.PowerupKeys.ContainsValue(e))
-            {
-                PowerupType powerupType = _settings.PowerupKeys.FirstOrDefault(x => x.Value == e).Key;
-                _powerupUtils?.UsePowerup(powerupType);
-                LogService.LogInfo($"Powerup key '{e}' pressed in-game, using {powerupType}.");
-                return true;
+
+                if (!_arePowerupsPausedForChat && !GlobalHotKeyManager.IsPaused && _powerupUtils != null)
+                {
+                    KeyValuePair<PowerupType, Key> powerupMapping = _settings.PowerupKeys.FirstOrDefault(kvp => kvp.Value == e);
+                    if (powerupMapping.Key != default)
+                    {
+                        _powerupUtils.UsePowerup(powerupMapping.Key);
+                        LogService.LogInfo($"Detected powerup key {e}, triggering {powerupMapping.Key}");
+                        return true;
+                    }
+                }
             }
 
             return false;
@@ -127,9 +206,18 @@ namespace Automatization
         {
             LogService.LogInfo($"Hotkey pressed: {hotKey}");
 
-            if (_powerupUtils != null)
+            if (gameProcess != null)
             {
-                _powerupUtils.GameProcess = _gameProcess;
+                if (_gameProcess == null || _gameProcess.Id != gameProcess.Id)
+                {
+                    _gameProcess = gameProcess;
+                    EnableAutomation();
+                }
+
+                if (_powerupUtils != null)
+                {
+                    _powerupUtils.GameProcess = gameProcess;
+                }
             }
 
             string? actionEntry = _settings.GetActionForHotKey(hotKey);
@@ -154,38 +242,63 @@ namespace Automatization
         public void RegisterHotkeysFromSettings()
         {
             GlobalHotKeyManager.UnregisterAll();
-
             _ = GlobalHotKeyManager.Register(_settings.GlobalHotKey);
             _ = GlobalHotKeyManager.Register(_settings.RedTeamHotKey);
             _ = GlobalHotKeyManager.Register(_settings.BlueTeamHotKey);
             _ = GlobalHotKeyManager.Register(_settings.GoldBoxTimerHotKey);
+            _ = GlobalHotKeyManager.Register(_settings.SmartRepairToggleHotKey);
+            _ = GlobalHotKeyManager.Register(_settings.SmartRepairDebugHotKey);
+        }
 
+        private void AutoGoldBoxCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            _settings.EnableAutoGoldBox = true;
+            _settings.Save();
+            if (_autoGoldBoxService != null)
+            {
+                _autoGoldBoxService.IsEnabled = true;
+                _autoGoldBoxService.Start();
+            }
+            LogService.LogInfo("Auto Gold Box enabled via Main Window.");
+        }
+
+        private void AutoGoldBoxCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            _settings.EnableAutoGoldBox = false;
+            _settings.Save();
+            if (_autoGoldBoxService != null)
+            {
+                _autoGoldBoxService.IsEnabled = false;
+                _autoGoldBoxService.Stop();
+            }
+            LogService.LogInfo("Auto Gold Box disabled via Main Window.");
         }
 
         private void StartGoldBoxTimer()
         {
-            if (_gameProcess == null || !WindowUtils.IsGameWindowInForeground(_gameProcess))
+            TimerWindow newTimer = new(startTimer: true);
+
+            if (_activeTimerWindows.Count != 0)
             {
-                LogService.LogWarning("Gold Box Timer hotkey pressed, but game window is not in the foreground.");
-                return;
+                TimerWindow lastTimer = _activeTimerWindows.Last();
+
+                newTimer.Left = lastTimer.Left + lastTimer.ActualWidth + 5;
+                newTimer.Top = lastTimer.Top;
             }
 
-            if (_timerWindow != null && _timerWindow.IsLoaded)
+            newTimer.Closed += (sender, args) =>
             {
-                LogService.LogInfo("Gold Box Timer hotkey pressed, but a timer is already active. Ignoring.");
-                return;
-            }
-
-            _timerWindow = new TimerWindow(startTimer: true);
-            _timerWindow.Closed += (sender, args) =>
-            {
-                _timerWindow = null;
+                if (sender is TimerWindow closedTimer)
+                {
+                    _ = _activeTimerWindows.Remove(closedTimer);
+                }
             };
-            _timerWindow.Show();
+
+            _activeTimerWindows.Add(newTimer);
+            newTimer.Show();
         }
 
         #region Team Auto-Clickers
-
         private void InitializeTeamClickers()
         {
             _clickerService = new ClickerService(_settings);
@@ -193,10 +306,7 @@ namespace Automatization
 
         private void ClickTeamButton(IntPtr windowHandle, int x, int y, ClickType clickType)
         {
-            _ = Dispatcher.BeginInvoke(() =>
-            {
-                LogService.LogInfo($"Clicking team button at ({x}, {y}) with {clickType} click.");
-            });
+            _ = Dispatcher.BeginInvoke(() => LogService.LogInfo($"Clicking team button at ({x}, {y}) with {clickType} click."));
 
             IntPtr lParam = MakeLParam(x, y);
 
@@ -296,11 +406,6 @@ namespace Automatization
 
         #endregion
 
-        private string Status
-        {
-            set => Dispatcher.Invoke(() => StatusText.Text = value);
-        }
-
         #region Game Check Timer
         private void InitializeGameCheckTimer()
         {
@@ -348,9 +453,14 @@ namespace Automatization
         private void EnableAutomation()
         {
             PowerupsGroup.Visibility = Visibility.Visible;
-            ToggleAllButton.Visibility = Visibility.Visible;
+            SmartFeaturesGroup.Visibility = Visibility.Visible;
             LaunchButton.Visibility = Visibility.Collapsed;
             Status = "Game is running!";
+
+            if (_settings.EnableAutoGoldBox)
+            {
+                _autoGoldBoxService?.Start();
+            }
 
             LogService.LogInfo("Automation enabled.");
         }
@@ -358,8 +468,9 @@ namespace Automatization
         private void DisableAutomation()
         {
             _powerupUtils?.StopAll();
+            _autoGoldBoxService?.Stop();
             PowerupsGroup.Visibility = Visibility.Collapsed;
-            ToggleAllButton.Visibility = Visibility.Collapsed;
+            SmartFeaturesGroup.Visibility = Visibility.Collapsed;
             LaunchButton.Visibility = Visibility.Visible;
             Status = "Game not running. Click Launch to start.";
 
@@ -393,12 +504,12 @@ namespace Automatization
             string[] registryPaths =
             [
                 @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
-                @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"
+            @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"
             ];
 
             foreach (string path in registryPaths)
             {
-                foreach (RegistryKey baseKey in new[] { Registry.LocalMachine, Registry.CurrentUser })
+                foreach (RegistryKey baseKey in new[] { Microsoft.Win32.Registry.LocalMachine, Microsoft.Win32.Registry.CurrentUser })
                 {
                     using RegistryKey? key = baseKey.OpenSubKey(path);
                     if (key == null)
@@ -436,6 +547,7 @@ namespace Automatization
         private static string? SearchCommonInstallDirectories()
         {
             string gameProcessName = AppSettings.Load().GameProcessName;
+
             List<string> commonPaths =
             [
                 Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
@@ -514,10 +626,32 @@ namespace Automatization
         #endregion
 
         #region UI Event Handlers
+
+        private string Status
+        {
+            set => Dispatcher.Invoke(() => StatusText.Text = value);
+        }
+
         private void LaunchButton_Click(object sender, RoutedEventArgs e)
         {
             LogService.LogInfo("Launch button clicked.");
             LaunchGame();
+        }
+
+        private void SmartRepairButton_Click(object sender, RoutedEventArgs? e)
+        {
+            LogService.LogInfo("Opening Smart Repair Kit.");
+
+            if (_smartRepairWindow == null || !_smartRepairWindow.IsLoaded)
+            {
+                _smartRepairWindow = new SmartRepairKitWindow();
+                _smartRepairWindow.Closed += (s, args) => _smartRepairWindow = null;
+                _smartRepairWindow.Show();
+            }
+            else
+            {
+                _ = _smartRepairWindow.Activate();
+            }
         }
 
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
@@ -528,6 +662,7 @@ namespace Automatization
             _ = wnd.ShowDialog();
 
             _settings = AppSettings.Load();
+
             if (_clickerService != null)
             {
                 _clickerService.ClickSpeed = _settings.ClickSpeed;
@@ -539,7 +674,26 @@ namespace Automatization
                 _powerupUtils.Initialize();
             }
 
-            App.ApplyTheme(_settings.Theme);
+            if (_autoGoldBoxService != null)
+            {
+                _autoGoldBoxService.UpdateSettings(_settings.EnableAutoGoldBox, _settings.GoldBoxColor);
+
+                if (_settings.EnableAutoGoldBox && _gameProcess != null)
+                {
+                    _autoGoldBoxService.Start();
+                }
+                else
+                {
+                    _autoGoldBoxService.Stop();
+                }
+            }
+
+            _ = GameCheckAsync();
+
+            if (_settings.CustomThemeName == null)
+            {
+                App.ApplyTheme(_settings.Theme);
+            }
 
             RegisterHotkeysFromSettings();
         }
@@ -555,9 +709,58 @@ namespace Automatization
             GlobalHotKeyManager.IsPaused = false;
             LogService.LogInfo("Hotkeys resumed by checkbox.");
         }
-        #endregion
 
-        #region Helpers
+        private void ShowDebugButton_Click(object sender, RoutedEventArgs e)
+        {
+            AdminPasswordDialog passwordDialog = new() { Owner = this };
+            if (passwordDialog.ShowDialog() == true)
+            {
+                DebugGroup.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void SimulateGoldBox_Click(object sender, RoutedEventArgs e)
+        {
+            if (_autoGoldBoxService != null)
+            {
+                _autoGoldBoxService.SimulateTrigger();
+            }
+            else
+            {
+                Status = "Auto Gold Box Service not initialized.";
+            }
+        }
+
+        private void TestImageDetection_Click(object sender, RoutedEventArgs e)
+        {
+            if (_autoGoldBoxService == null)
+            {
+                _ = MessageBox.Show("Auto Gold Box Service is not initialized.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            OpenFileDialog dlg = new()
+            {
+                Filter = "Image files (*.png;*.jpg;*.jpeg;*.bmp)|*.png;*.jpg;*.jpeg;*.bmp|All files (*.*)|*.*",
+                Title = "Select Screenshot for Detection Test"
+            };
+
+            if (dlg.ShowDialog() == true)
+            {
+                try
+                {
+                    using Bitmap bmp = new(dlg.FileName);
+
+                    string result = _autoGoldBoxService.TestDetection(bmp);
+                    _ = MessageBox.Show(result, "Detection Test Result", MessageBoxButton.OK, result.StartsWith("Success") ? MessageBoxImage.Information : MessageBoxImage.Warning);
+                }
+                catch (Exception ex)
+                {
+                    _ = MessageBox.Show($"Failed to load image: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+        #endregion
 
         protected override void OnClosed(EventArgs e)
         {
@@ -566,74 +769,23 @@ namespace Automatization
             _gameCheckTimer?.Stop();
             _powerupUtils?.StopAll();
             _clickerService?.Dispose();
+            _autoGoldBoxService?.Dispose();
             GlobalHotKeyManager.Shutdown();
             _keyboardListener?.Dispose();
-            _notifyIcon?.Dispose();
-            _timerWindow?.Close();
+
+            foreach (TimerWindow? timer in _activeTimerWindows.ToList())
+            {
+                timer.Close();
+            }
+            _activeTimerWindows.Clear();
 
             base.OnClosed(e);
 
         }
-        #endregion
-
-        #region Tray Icon
-
-        private void InitializeNotifyIcon()
-        {
-            _notifyIcon = new NotifyIcon
-            {
-                Visible = false,
-                Text = "Automatization"
-            };
-
-            try
-            {
-                _notifyIcon.Icon = new Icon("Settings/icon.ico");
-            }
-            catch (Exception ex)
-            {
-                LogService.LogWarning($"Failed to load tray icon: {ex.Message}");
-            }
-
-            _notifyIcon.DoubleClick += (s, args) => ShowWindow();
-
-            ContextMenuStrip contextMenu = new();
-            _ = contextMenu.Items.Add("Show", null, (s, e) => ShowWindow());
-            _ = contextMenu.Items.Add("Toggle All", null, (s, e) => _powerupUtils?.ToggleAll());
-            _ = contextMenu.Items.Add("Exit", null, (s, e) => Close());
-
-            _notifyIcon.ContextMenuStrip = contextMenu;
-        }
 
         protected override void OnStateChanged(EventArgs e)
         {
-            //if (WindowState == WindowState.Minimized && _notifyIcon != null)
-            //{
-            //    Hide();
-            //    _notifyIcon.Visible = true;
-
-            //    LogService.LogInfo("Window minimized to tray.");
-            //}
-
             base.OnStateChanged(e);
         }
-
-        private void ShowWindow()
-        {
-            Show();
-            WindowState = WindowState.Normal;
-
-            if (_notifyIcon != null)
-            {
-                _notifyIcon.Visible = false;
-            }
-
-            _ = Activate();
-
-            LogService.LogInfo("Window restored from tray.");
-        }
-        #endregion
     }
-
-
 }

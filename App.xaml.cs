@@ -1,29 +1,41 @@
 using Automatization.Services;
 using Automatization.Settings;
 using Automatization.Types;
+using Automatization.Utils;
 using System.Windows;
+using Wpf.Ui.Appearance;
+using Wpf.Ui.Controls;
+using ThemeService = Automatization.Services.ThemeService;
 
 namespace Automatization;
+
 public partial class App : System.Windows.Application
 {
     public static AppSettings Settings { get; private set; } = null!;
 
-    private static ResourceDictionary? _currentThemeDictionary;
-
     private void Application_Startup(object sender, StartupEventArgs e)
     {
         LogService.Initialize();
-        LogService.CleanOldLogs();
         LogService.LogInfo("Application starting.");
 
         Settings = AppSettings.Load();
 
-        ApplyTheme(Settings.Theme);
+        ThemeService.LoadThemes();
 
         MainWindow mainWindow = new();
         mainWindow.Show();
 
+        if (!string.IsNullOrEmpty(Settings.CustomThemeName))
+        {
+            ViewModels.CustomTheme? custom = ThemeService.LoadedThemes.FirstOrDefault(t => t.Name == Settings.CustomThemeName);
+
+            if (custom != null) ThemeService.ApplyTheme(custom);
+            else ApplyTheme(Settings.Theme);
+        }
+        else ApplyTheme(Settings.Theme);
+
         LogService.LogInfo("Main window shown.");
+        LogService.CleanupOldLogsAsync();
     }
 
     private void Application_Exit(object sender, ExitEventArgs e)
@@ -34,27 +46,24 @@ public partial class App : System.Windows.Application
 
     public static void ApplyTheme(ThemeType mode)
     {
-        string themePath = mode == ThemeType.Light
-            ? "Themes/Light.xaml"
-            : "Themes/Dark.xaml";
-
         try
         {
-            ResourceDictionary dict = new() { Source = new Uri(themePath, UriKind.Relative) };
+            ApplicationTheme newTheme = mode == ThemeType.Light
+                ? ApplicationTheme.Light
+                : ApplicationTheme.Dark;
 
-            if (_currentThemeDictionary != null)
+            ApplicationThemeManager.Apply(newTheme);
+
+            if (Current.MainWindow is Wpf.Ui.Controls.FluentWindow fluentWindow)
             {
-                _ = Current.Resources.MergedDictionaries.Remove(_currentThemeDictionary);
+                fluentWindow.WindowBackdropType = Wpf.Ui.Controls.WindowBackdropType.Mica;
             }
-
-            Current.Resources.MergedDictionaries.Add(dict);
-            _currentThemeDictionary = dict;
 
             LogService.LogInfo($"Theme changed to {mode}.");
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            LogService.LogWarning($"Failed to apply theme: {themePath}");
+            LogService.LogError($"Failed to apply theme.", ex);
         }
     }
 }

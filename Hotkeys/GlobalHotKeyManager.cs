@@ -42,9 +42,20 @@ namespace Automatization.Hotkeys
 
         public static bool Register(HotKey hotKey)
         {
-            if (!_isInitialized || hotKey.IsEmpty || HotKeyToIdMap.ContainsKey(hotKey))
+            if (!_isInitialized)
             {
-                LogService.LogWarning($"Skipping registration for hotkey {hotKey}. Manager not initialized, hotkey is empty, or hotkey is already mapped.");
+                LogService.LogWarning($"Skipping registration for hotkey {hotKey}. Manager not initialized.");
+                return false;
+            }
+
+            if (hotKey.IsEmpty)
+            {
+                return false;
+            }
+
+            if (HotKeyToIdMap.ContainsKey(hotKey))
+            {
+                LogService.LogWarning($"Skipping registration for hotkey {hotKey}. Hotkey is already mapped.");
                 return false;
             }
 
@@ -117,6 +128,7 @@ namespace Automatization.Hotkeys
 
             IdToHotKeyMap.Clear();
             HotKeyToIdMap.Clear();
+            _nextId = 0;
 
             LogService.LogInfo($"All hotkeys unregistered from manager. Remaining: {IdToHotKeyMap.Count}");
         }

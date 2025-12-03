@@ -1,6 +1,6 @@
-namespace Automatization.UI
+namespace Automatization.Types
 {
-    public partial class InputDialog
+    public partial class PasswordDialogResultType
     {
         public enum PasswordDialogResult
         {

@@ -1,0 +1,193 @@
+<ui:FluentWindow
+    x:Class="Automatization.UI.SmartRepairKitWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="Smart Repair Kit"
+    Width="400"
+    Height="600"
+    Closing="Window_Closing"
+    ExtendsContentIntoTitleBar="True"
+    ResizeMode="NoResize"
+    WindowBackdropType="Mica"
+    mc:Ignorable="d">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar Title="Smart Repair Kit" Grid.Row="0" />
+
+        <StackPanel Grid.Row="1" Margin="20">
+
+            <ui:CardControl Margin="0,0,0,15" Icon="{ui:SymbolIcon HeartPulse24}">
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock FontWeight="Bold" Text="Health Monitor" />
+                        <TextBlock
+                            x:Name="TxtStatus"
+                            FontSize="12"
+                            Foreground="Gray"
+                            Text="Stopped" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <TextBlock
+                    x:Name="TxtHealth"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    FontSize="24"
+                    FontWeight="Bold"
+                    Text="--" />
+            </ui:CardControl>
+
+            <GroupBox Margin="0,0,0,15" Header="Configuration">
+                <StackPanel>
+                    <TextBlock
+                        Margin="0,0,0,10"
+                        Foreground="OrangeRed"
+                        Text="If detection is inaccurate, pick the colors manually."
+                        TextWrapping="Wrap" />
+
+                    <Expander
+                        Margin="0,0,0,10"
+                        Header="Color Calibration"
+                        IsExpanded="False">
+                        <StackPanel Margin="0,10,0,0">
+                            <Grid Margin="0,0,0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock VerticalAlignment="Center" Text="Full Health Color" />
+                                <Rectangle
+                                    x:Name="RectFullColor"
+                                    Grid.Column="1"
+                                    Width="20"
+                                    Height="20"
+                                    Margin="5,0"
+                                    Fill="Gray" />
+                            </Grid>
+                            <ui:Button
+                                Margin="0,0,0,10"
+                                HorizontalAlignment="Stretch"
+                                Click="BtnPickFull_Click"
+                                Content="Pick 'Full' Color (5s delay)" />
+
+                            <Grid Margin="0,0,0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock VerticalAlignment="Center" Text="Empty Health Color" />
+                                <Rectangle
+                                    x:Name="RectEmptyColor"
+                                    Grid.Column="1"
+                                    Width="20"
+                                    Height="20"
+                                    Margin="5,0"
+                                    Fill="Gray" />
+                            </Grid>
+                            <ui:Button
+                                Margin="0,0,0,10"
+                                HorizontalAlignment="Stretch"
+                                Click="BtnPickEmpty_Click"
+                                Content="Pick 'Empty' Color (5s delay)" />
+
+                            <ui:Button
+                                Margin="0,0,0,10"
+                                HorizontalAlignment="Stretch"
+                                Appearance="Secondary"
+                                Click="BtnApplyColors_Click"
+                                Content="Apply Custom Colors" />
+                        </StackPanel>
+                    </Expander>
+
+                    <TextBlock Margin="0,0,0,5" Text="Activation Threshold (% of HP bar)" />
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="50" />
+                        </Grid.ColumnDefinitions>
+                        <Slider
+                            x:Name="SldThreshold"
+                            IsSnapToTickEnabled="True"
+                            Maximum="99"
+                            Minimum="1"
+                            TickFrequency="5"
+                            ValueChanged="SldThreshold_ValueChanged"
+                            Value="40" />
+                        <TextBlock
+                            Grid.Column="1"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Text="{Binding ElementName=SldThreshold, Path=Value, StringFormat={}{0}%}" />
+                    </Grid>
+
+                    <TextBlock Margin="0,0,0,5" Text="Cooldown (ms)" />
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="50" />
+                        </Grid.ColumnDefinitions>
+                        <Slider
+                            x:Name="SldCooldown"
+                            IsSnapToTickEnabled="True"
+                            Maximum="10000"
+                            Minimum="1000"
+                            TickFrequency="100"
+                            ValueChanged="SldCooldown_ValueChanged"
+                            Value="5000" />
+                        <TextBlock
+                            Grid.Column="1"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Text="{Binding ElementName=SldCooldown, Path=Value}" />
+                    </Grid>
+
+                    <TextBlock Margin="0,0,0,5" Text="Activation Key (In-Game Repair Kit Hotkey)" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ComboBox
+                            x:Name="CmbKey"
+                            HorizontalAlignment="Stretch"
+                            SelectionChanged="CmbKey_SelectionChanged" />
+                        <ui:Button
+                            Grid.Column="1"
+                            Margin="5,0,0,0"
+                            Appearance="Secondary"
+                            Click="BtnTestInput_Click"
+                            Content="Test Input" />
+                    </Grid>
+                </StackPanel>
+            </GroupBox>
+
+            <Separator Margin="0,0,0,15" />
+
+            <ui:Button
+                x:Name="BtnToggle"
+                HorizontalAlignment="Stretch"
+                Appearance="Primary"
+                Click="BtnToggle_Click"
+                Content="Start Monitoring"
+                Icon="{ui:SymbolIcon Play24}" />
+
+            <ui:Button
+                x:Name="BtnDebug"
+                Margin="0,10,0,0"
+                HorizontalAlignment="Stretch"
+                Appearance="Secondary"
+                Click="BtnDebug_Click"
+                Content="Save Debug Screenshot"
+                Icon="{ui:SymbolIcon Camera24}" />
+
+        </StackPanel>
+    </Grid>
+</ui:FluentWindow>

@@ -62,14 +62,14 @@ namespace Automatization.Utils
                 return true;
             }
 
-            GetWindowThreadProcessId(focusedControlHandle, out uint focusedControlProcessId);
+            _ = GetWindowThreadProcessId(focusedControlHandle, out uint focusedControlProcessId);
             if (gameProcess != null && focusedControlProcessId != gameProcess.Id)
             {
                 return false;
             }
 
             StringBuilder className = new();
-            GetClassName(focusedControlHandle, className, className.Capacity);
+            _ = GetClassName(focusedControlHandle, className, className.Capacity);
 
             return !className.ToString().Equals("EDIT", StringComparison.OrdinalIgnoreCase);
         }

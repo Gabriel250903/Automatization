@@ -9,11 +9,9 @@ Automatization is a versatile desktop application designed to help you automate 
 ## Features
 
 - **Auto-Clicker:** Configure and run an automatic clicker at specified screen coordinates.
-- **Global Hotkeys:** Set up and manage global hotkeys to start and stop automation tasks from anywhere in the OS.
-- **Coordinate Picker:** An easy-to-use tool to pick and save screen coordinates for your automation tasks.
-- **Theming:** Switch between light and dark themes to suit your preference.
+- **Smart Features:** Smart repair kit and Smart gold box detection.
+- **Themes:** Switch between light and dark themes to suit your preference or even create your own custom theme.
 - **Settings:** A dedicated settings window to configure the application's behavior.
-- **Log Viewer:** View logs of the application's activity.
 
 ## How to Use
 

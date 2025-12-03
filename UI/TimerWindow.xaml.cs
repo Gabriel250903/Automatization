@@ -1,4 +1,3 @@
-using Automatization.Services;
 using Automatization.Settings;
 using Automatization.Utils;
 using System.Diagnostics;
@@ -6,8 +5,8 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
-using System.Windows.Media;
 using System.Windows.Threading;
+using Brushes = System.Windows.Media.Brushes;
 
 namespace Automatization.UI
 {
@@ -17,14 +16,13 @@ namespace Automatization.UI
         private DispatcherTimer _gameCheckTimer;
         private DispatcherTimer _hideTimer;
         private int _seconds;
+        private const int MaxSeconds = 40;
         private Process? _gameProcess;
         private string _gameProcessName;
+        private bool _isPaused = false;
+
         private const int GWL_EXSTYLE = -20;
         private const int WS_EX_NOACTIVATE = 0x08000000;
-        private const int HWND_TOPMOST = -1;
-        private const uint SWP_NOACTIVATE = 0x0010;
-        private const uint SWP_NOMOVE = 0x0002;
-        private const uint SWP_NOSIZE = 0x0001;
 
         [DllImport("user32.dll")]
         public static extern IntPtr GetWindowLongPtr(IntPtr hWnd, int nIndex);
@@ -32,49 +30,35 @@ namespace Automatization.UI
         [DllImport("user32.dll")]
         public static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
 
-        [DllImport("user32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
-
         public TimerWindow(bool startTimer = false)
         {
             InitializeComponent();
 
-            _seconds = 40;
-            TimerLabel.Text = _seconds.ToString();
+            _seconds = MaxSeconds;
+            UpdateTimerDisplay();
 
             AppSettings settings = AppSettings.Load();
             _gameProcessName = settings.GameProcessName;
 
             if (settings.IsTimerWindowTransparent)
             {
-                BackgroundBorder.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(1, 0, 0, 0));
+                BackgroundBorder.Background = Brushes.Transparent;
+                BackgroundBorder.BorderThickness = new Thickness(0);
             }
 
-            _timer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(1000)
-            };
+            _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1000) };
             _timer.Tick += Timer_Tick;
 
-            _gameCheckTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(500)
-            };
+            _gameCheckTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
             _gameCheckTimer.Tick += GameCheckTimer_Tick;
             _gameCheckTimer.Start();
 
-            _hideTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(500)
-            };
+            _hideTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
             _hideTimer.Tick += HideTimer_Tick;
 
             WindowStartupLocation = WindowStartupLocation.Manual;
             Left = 100;
             Top = 100;
-
-            Topmost = true;
 
             if (startTimer)
             {
@@ -85,10 +69,8 @@ namespace Automatization.UI
         protected override void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);
-
             WindowInteropHelper helper = new(this);
             IntPtr currentStyle = GetWindowLongPtr(helper.Handle, GWL_EXSTYLE);
-
             _ = SetWindowLongPtr(helper.Handle, GWL_EXSTYLE, new IntPtr(currentStyle.ToInt64() | WS_EX_NOACTIVATE));
         }
 
@@ -97,23 +79,31 @@ namespace Automatization.UI
             _timer.Start();
         }
 
-        public void ResetTimer()
-        {
-            _timer.Stop();
-            _seconds = 40;
-            TimerLabel.Text = _seconds.ToString();
-            _timer.Start();
-        }
-
         private void Timer_Tick(object? sender, EventArgs e)
         {
-            _seconds--;
-            TimerLabel.Text = _seconds.ToString();
-
-            if (_seconds <= 0)
+            if (!_isPaused)
             {
-                _timer.Stop();
-                Close();
+                _seconds--;
+                UpdateTimerDisplay();
+
+                if (_seconds <= 0)
+                {
+                    _timer.Stop();
+                    Close();
+                }
+            }
+        }
+
+        private void UpdateTimerDisplay()
+        {
+            TimerLabel.Text = _seconds.ToString();
+            double progress = (double)_seconds / MaxSeconds * 100;
+            TimerProgressRing.Progress = progress;
+
+            if (_seconds <= 5)
+            {
+                TimerLabel.Foreground = Brushes.Red;
+                TimerProgressRing.Foreground = Brushes.Red;
             }
         }
 
@@ -126,7 +116,6 @@ namespace Automatization.UI
                 HandleGameProcessLost();
                 return;
             }
-
             HandleGameProcessFound(currentGame);
         }
 
@@ -135,7 +124,6 @@ namespace Automatization.UI
             if (_gameProcess == null || _gameProcess.Id != game.Id)
             {
                 _gameProcess = game;
-                LogService.LogInfo("Game process found for TimerWindow.");
             }
 
             if (WindowUtils.IsGameWindowInForeground(_gameProcess))
@@ -150,11 +138,7 @@ namespace Automatization.UI
 
         private void HandleGameProcessLost()
         {
-            if (_gameProcess != null)
-            {
-                _gameProcess = null;
-                LogService.LogInfo("Game process lost for TimerWindow.");
-            }
+            _gameProcess = null;
             HideTimerWindow();
         }
 
@@ -167,13 +151,12 @@ namespace Automatization.UI
             }
 
             Visibility = Visibility.Visible;
-            LogService.LogInfo("TimerWindow shown because game is in foreground.");
         }
 
         private void HideTimer_Tick(object? sender, EventArgs e)
         {
             _hideTimer.Stop();
-            HideTimerWindow(isDebounced: true);
+            HideTimerWindow();
         }
 
         private void DebounceHideTimerWindow()
@@ -184,10 +167,9 @@ namespace Automatization.UI
             }
 
             _hideTimer.Start();
-            LogService.LogInfo("TimerWindow hide debounced.");
         }
 
-        private void HideTimerWindow(bool isDebounced = false)
+        private void HideTimerWindow()
         {
             if (Visibility == Visibility.Hidden)
             {
@@ -195,9 +177,6 @@ namespace Automatization.UI
             }
 
             Visibility = Visibility.Hidden;
-            LogService.LogInfo(isDebounced
-                ? "TimerWindow hidden after debounce."
-                : "TimerWindow hidden because game process is not running.");
         }
 
         protected override void OnClosed(EventArgs e)
@@ -214,6 +193,33 @@ namespace Automatization.UI
             {
                 DragMove();
             }
+        }
+
+        private void Window_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            double scale = e.Delta > 0 ? 1.1 : 0.9;
+
+            double newWidth = Width * scale;
+            double newHeight = Height * scale;
+
+            if (newWidth is > 50 and < 500)
+            {
+                Width = newWidth;
+                Height = newHeight;
+            }
+
+            e.Handled = true;
+        }
+
+        private void PauseMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            _isPaused = !_isPaused;
+            PauseMenuItem.Header = _isPaused ? "Resume" : "Pause";
+        }
+
+        private void RemoveMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
         }
     }
 }

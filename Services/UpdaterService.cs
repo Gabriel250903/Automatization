@@ -12,7 +12,7 @@ namespace Automatization.Services
         private const string Owner = "Gabriel250903";
         private const string Repo = "Automatization";
 
-        private readonly HttpClient _httpClient;
+        private HttpClient _httpClient;
 
         public UpdaterService()
         {
@@ -20,55 +20,76 @@ namespace Automatization.Services
             _httpClient.DefaultRequestHeaders.Add("User-Agent", "C# App");
         }
 
-        public Version GetCurrentVersion()
+        public static Version GetCurrentVersion()
         {
             return Assembly.GetExecutingAssembly().GetName().Version ?? new Version("0.0.0");
         }
 
         public async Task<(Version?, string?)> GetLatestVersionAsync()
         {
-            string url = $"https://api.github.com/repos/{Owner}/{Repo}/releases";
-            string response = await _httpClient.GetStringAsync(url);
-            if (string.IsNullOrEmpty(response))
+            try
             {
+                string url = $"https://api.github.com/repos/{Owner}/{Repo}/releases";
+                string response = await _httpClient.GetStringAsync(url);
+
+                if (string.IsNullOrEmpty(response))
+                {
+                    return (null, null);
+                }
+
+                using JsonDocument jsonDoc = JsonDocument.Parse(response);
+
+                var releases = jsonDoc.RootElement.EnumerateArray()
+                    .Select(r => new
+                    {
+                        TagName = r.GetProperty("tag_name").GetString(),
+                        ReleaseNotes = r.GetProperty("body").GetString()
+                    })
+                    .Where(r => !string.IsNullOrEmpty(r.TagName))
+                    .Select(r =>
+                    {
+                        string cleanTag = r.TagName!.TrimStart('v', 'V', '.');
+                        bool isParsable = Version.TryParse(cleanTag, out Version? version);
+                        return new { Version = version, r.ReleaseNotes, IsValid = isParsable };
+                    })
+                    .Where(r => r.IsValid)
+                    .OrderByDescending(r => r.Version)
+                    .FirstOrDefault();
+
+                return (releases?.Version, releases?.ReleaseNotes);
+            }
+            catch (Exception ex)
+            {
+                LogService.LogError($"Failed to fetch latest version: {ex.Message}");
                 return (null, null);
             }
-
-            using JsonDocument jsonDoc = JsonDocument.Parse(response);
-            var releases = jsonDoc.RootElement.EnumerateArray()
-                .Select(r => new
-                {
-                    TagName = r.GetProperty("tag_name").GetString(),
-                    ReleaseNotes = r.GetProperty("body").GetString()
-                })
-                .Where(r => r.TagName != null)
-                .Select(r => new
-                {
-                    Version = new Version(r.TagName!.TrimStart('v', '.')),
-                    r.ReleaseNotes
-                })
-                .OrderByDescending(r => r.Version)
-                .FirstOrDefault();
-
-            return (releases?.Version, releases?.ReleaseNotes);
         }
 
         public async Task<(bool, string?)> DownloadAndInstallUpdateAsync(Action<long, long> progressChanged)
         {
             LogService.LogInfo("DownloadAndInstallUpdateAsync started.");
 
-            string url = $"https://api.github.com/repos/{Owner}/{Repo}/releases";
-            string response = await _httpClient.GetStringAsync(url);
-
-            using (JsonDocument jsonDoc = JsonDocument.Parse(response))
+            try
             {
+                string url = $"https://api.github.com/repos/{Owner}/{Repo}/releases";
+                string response = await _httpClient.GetStringAsync(url);
+
+                using JsonDocument jsonDoc = JsonDocument.Parse(response);
+
                 var latestRelease = jsonDoc.RootElement.EnumerateArray()
-                    .Select(r => new
+                    .Select(r =>
                     {
-                        Json = r,
-                        Version = new Version(r.GetProperty("tag_name").GetString()!.TrimStart('v', '.'))
+                        string? tagName = r.GetProperty("tag_name").GetString();
+                        if (string.IsNullOrEmpty(tagName))
+                        {
+                            return null;
+                        }
+
+                        string cleanTag = tagName.TrimStart('v', 'V', '.');
+                        return Version.TryParse(cleanTag, out Version? version) ? (new { Json = r, Version = version }) : null;
                     })
-                    .OrderByDescending(r => r.Version)
+                    .Where(r => r != null)
+                    .OrderByDescending(r => r!.Version)
                     .FirstOrDefault();
 
                 if (latestRelease != null)
@@ -103,9 +124,11 @@ namespace Automatization.Services
                                 byte[] buffer = new byte[8192];
                                 int bytesRead = 0;
                                 long totalBytesRead = 0L;
-                                while ((bytesRead = await downloadStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+
+                                while ((bytesRead = await downloadStream.ReadAsync(buffer)) > 0)
                                 {
-                                    await fileStream.WriteAsync(buffer, 0, bytesRead);
+                                    await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead));
+
                                     totalBytesRead += bytesRead;
                                     progressChanged(totalBytesRead, totalBytes);
                                 }
@@ -129,12 +152,16 @@ namespace Automatization.Services
                     }
                 }
             }
+            catch (Exception ex)
+            {
+                LogService.LogError($"Error during download/install: {ex.Message}");
+            }
 
-            LogService.LogInfo("No new version found.");
+            LogService.LogInfo("No new version found or installation failed.");
             return (false, null);
         }
 
-        private async Task<bool> UninstallCurrentVersionAsync()
+        private static async Task<bool> UninstallCurrentVersionAsync()
         {
             LogService.LogInfo("UninstallCurrentVersionAsync started.");
             string productDisplayName = "Automatization";
@@ -185,7 +212,7 @@ namespace Automatization.Services
             }
         }
 
-        private string? GetUninstallString(string productDisplayName)
+        private static string? GetUninstallString(string productDisplayName)
         {
             string uninstallKeyPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
             using RegistryKey? uninstallKey = Registry.LocalMachine.OpenSubKey(uninstallKeyPath);
@@ -210,7 +237,7 @@ namespace Automatization.Services
             return null;
         }
 
-        public void RelaunchApplication()
+        public static void RelaunchApplication()
         {
             Assembly? entryAssembly = Assembly.GetEntryAssembly();
             if (entryAssembly != null)

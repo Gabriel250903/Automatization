@@ -12,6 +12,12 @@ namespace Automatization.UI.Coordinate
         public CoordinatePickerWindow()
         {
             InitializeComponent();
+
+            Loaded += (s, e) =>
+            {
+                _ = Activate();
+                _ = Focus();
+            };
         }
 
         private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -24,6 +30,7 @@ namespace Automatization.UI.Coordinate
         {
             if (e.Key == Key.Escape)
             {
+                e.Handled = true;
                 DialogResult = false;
             }
         }

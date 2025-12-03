@@ -1,6 +1,7 @@
 using Automatization.Hotkeys;
 using System.Windows;
 using System.Windows.Input;
+using Cursors = System.Windows.Input.Cursors;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using TextBox = System.Windows.Controls.TextBox;
 
@@ -8,7 +9,7 @@ namespace Automatization.Controls
 {
     public class HotKeyBox : TextBox
     {
-        public static DependencyProperty HotKeyProperty =
+        private static DependencyProperty HotKeyProperty =
             DependencyProperty.Register(nameof(HotKey), typeof(HotKey), typeof(HotKeyBox),
                 new FrameworkPropertyMetadata(new HotKey(), FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, OnHotKeyChanged));
 
@@ -29,8 +30,10 @@ namespace Automatization.Controls
 
         public HotKeyBox()
         {
-            IsReadOnly = true;
+            IsReadOnly = false;
             IsReadOnlyCaretVisible = false;
+            Cursor = Cursors.Arrow;
+            ContextMenu = null;
         }
 
         protected override void OnPreviewKeyDown(KeyEventArgs e)

@@ -1,0 +1,72 @@
+﻿<ui:FluentWindow
+    x:Class="Automatization.Settings.LogViewerWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="Log Viewer"
+    Width="800"
+    Height="500"
+    ExtendsContentIntoTitleBar="True"
+    FontFamily="Segoe UI"
+    WindowBackdropType="Mica"
+    WindowStartupLocation="CenterOwner">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar Title="Log Viewer" Grid.Row="0" />
+
+        <ScrollViewer
+            x:Name="LogScrollViewer"
+            Grid.Row="1"
+            Margin="15,0,15,15"
+            HorizontalScrollBarVisibility="Disabled"
+            VerticalScrollBarVisibility="Visible">
+            <TextBox
+                x:Name="LogTextBox"
+                AcceptsReturn="True"
+                Background="Transparent"
+                BorderThickness="0"
+                FontFamily="Consolas"
+                FontSize="12"
+                IsReadOnly="True"
+                TextWrapping="Wrap" />
+        </ScrollViewer>
+
+        <Border
+            Grid.Row="2"
+            Padding="15"
+            Background="{DynamicResource ControlFillColorSecondaryBrush}"
+            BorderBrush="{DynamicResource SurfaceStrokeColorDefaultBrush}"
+            BorderThickness="0,1,0,0">
+            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                <ui:Button
+                    x:Name="OpenFolderButton"
+                    Margin="0,0,10,0"
+                    Appearance="Info"
+                    Click="OpenFolderButton_Click"
+                    Content="Open Folder"
+                    Icon="{ui:SymbolIcon Folder24}" />
+
+                <ui:Button
+                    x:Name="RefreshButton"
+                    Width="100"
+                    Margin="0,0,10,0"
+                    Click="RefreshButton_Click"
+                    Content="Refresh"
+                    Icon="{ui:SymbolIcon ArrowSync24}" />
+
+                <ui:Button
+                    x:Name="CloseButton"
+                    Width="100"
+                    Click="CloseButton_Click"
+                    Content="Close"
+                    IsCancel="True" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</ui:FluentWindow>

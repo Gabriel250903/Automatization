@@ -13,11 +13,6 @@ namespace Automatization.Services
                 "Logs"
             );
 
-            if (!Directory.Exists(settingsDir))
-            {
-                _ = Directory.CreateDirectory(settingsDir);
-            }
-
             return settingsDir;
         }
 
@@ -50,34 +45,49 @@ namespace Automatization.Services
             Log.CloseAndFlush();
         }
 
-        public static void CleanOldLogs()
+        public static void CleanupOldLogsAsync()
         {
-            try
+            _ = Task.Run(() =>
             {
-                string logDirectory = GetLogDirectory();
-                DateTime cutoffDate = DateTime.Now.AddDays(-14);
-
-                foreach (string file in Directory.EnumerateFiles(logDirectory, "log-*.txt"))
+                try
                 {
-                    FileInfo fi = new(file);
-                    if (fi.CreationTime < cutoffDate)
+                    string logDirectory = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                        "TankAutomation",
+                        "Logs"
+                    );
+
+                    if (!Directory.Exists(logDirectory))
                     {
-                        try
+                        return;
+                    }
+
+                    DirectoryInfo dirInfo = new(logDirectory);
+
+                    FileInfo[] oldFiles = [.. dirInfo.GetFiles("*.txt").Where(f => f.LastWriteTime < DateTime.Now.AddDays(-1))];
+
+                    if (oldFiles.Length > 0)
+                    {
+                        foreach (FileInfo file in oldFiles)
                         {
-                            fi.Delete();
-                            LogInfo($"Deleted old log file: {fi.Name}");
+                            try
+                            {
+                                file.Delete();
+                            }
+                            catch
+                            {
+                                LogService.LogError($"Could not delete log file: {file.FullName}.");
+                            }
                         }
-                        catch (Exception ex)
-                        {
-                            LogError($"Failed to delete log file {fi.Name}.", ex);
-                        }
+
+                        LogService.LogInfo($"Cleanup: Deleted {oldFiles.Length} {(oldFiles.Length == 1 ? "log" : "logs")}.");
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                LogError("Error during log cleanup.", ex);
-            }
+                catch (Exception ex)
+                {
+                    LogService.LogError("Error during log cleanup.", ex);
+                }
+            });
         }
     }
 }
