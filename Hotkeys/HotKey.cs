@@ -9,45 +9,35 @@ namespace Automatization.Hotkeys
     {
         public Key Key { get; set; }
         public ModifierKeys Modifiers { get; set; }
+        
+        [JsonIgnore]
+        public int VirtualKey { get; private set; }
 
         public HotKey(Key key, ModifierKeys modifiers)
         {
             Key = key;
             Modifiers = modifiers;
+            VirtualKey = KeyInterop.VirtualKeyFromKey(key);
         }
 
         public HotKey()
         {
             Key = Key.None;
             Modifiers = ModifierKeys.None;
+            VirtualKey = 0;
         }
 
         public bool IsEmpty => Key == Key.None;
 
         public override string ToString()
         {
-            if (IsEmpty)
-            {
-                return "None";
-            }
+            if (IsEmpty) return "None";
 
             StringBuilder sb = new();
-            if (Modifiers.HasFlag(ModifierKeys.Control))
-            {
-                _ = sb.Append("Ctrl + ");
-            }
-            if (Modifiers.HasFlag(ModifierKeys.Shift))
-            {
-                _ = sb.Append("Shift + ");
-            }
-            if (Modifiers.HasFlag(ModifierKeys.Alt))
-            {
-                _ = sb.Append("Alt + ");
-            }
-            if (Modifiers.HasFlag(ModifierKeys.Windows))
-            {
-                _ = sb.Append("Win + ");
-            }
+            if (Modifiers.HasFlag(ModifierKeys.Control)) _ = sb.Append("Ctrl + ");
+            if (Modifiers.HasFlag(ModifierKeys.Shift)) _ = sb.Append("Shift + ");
+            if (Modifiers.HasFlag(ModifierKeys.Alt)) _ = sb.Append("Alt + ");
+            if (Modifiers.HasFlag(ModifierKeys.Windows)) _ = sb.Append("Win + ");
             _ = sb.Append(Key);
             return sb.ToString();
         }

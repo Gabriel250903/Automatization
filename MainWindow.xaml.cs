@@ -92,10 +92,7 @@ namespace Automatization
 
             AutoGoldBoxCheckBox.IsChecked = _settings.EnableAutoGoldBox;
 
-            if (_settings.EnableAutoGoldBox)
-            {
-                _autoGoldBoxService.Start();
-            }
+            if (_settings.EnableAutoGoldBox) _autoGoldBoxService.Start();
 
             GlobalHotKeyManager.Initialize();
             GlobalHotKeyManager.HotKeyPressed += OnHotKeyPressed;
@@ -130,18 +127,12 @@ namespace Automatization
 
                 _smartRepairWindow?.ToggleMonitoring();
             }
-            else
-            {
-                _smartRepairWindow.ToggleMonitoring();
-            }
+            else _smartRepairWindow.ToggleMonitoring();
         }
 
         private void DebugSmartRepair()
         {
-            if (_smartRepairWindow != null && _smartRepairWindow.IsLoaded)
-            {
-                _smartRepairWindow.SaveDebugSnapshot();
-            }
+            if (_smartRepairWindow != null && _smartRepairWindow.IsLoaded) _smartRepairWindow.SaveDebugSnapshot();
         }
 
         private bool KeyboardListener_OnKeyPressed(Key e)
@@ -169,27 +160,31 @@ namespace Automatization
                 }
                 else if ((e == Key.Enter || e == Key.Escape) && _arePowerupsPausedForChat)
                 {
-                    if (_powerupUtils != null)
+                    _arePowerupsPausedForChat = false;
+                    List<PowerupType> powerupsToResume = [.. _activePowerups];
+                    _activePowerups.Clear();
+
+                    _ = Dispatcher.InvokeAsync(async () =>
                     {
-                        foreach (PowerupType type in _activePowerups)
+                        await Task.Delay(500);
+
+                        if (!_arePowerupsPausedForChat && _powerupUtils != null)
                         {
-                            ViewModels.PowerupViewModel? vm = _powerupUtils.Powerups.FirstOrDefault(x => x.PowerupType == type);
-                            if (vm != null)
+                            foreach (PowerupType type in powerupsToResume)
                             {
-                                vm.IsActive = true;
+                                ViewModels.PowerupViewModel? vm = _powerupUtils.Powerups.FirstOrDefault(x => x.PowerupType == type);
+                                if (vm != null) vm.IsActive = true;
                             }
                         }
+                    });
 
-                        _activePowerups.Clear();
-                    }
-
-                    _arePowerupsPausedForChat = false;
-                    LogService.LogInfo($"Chat closed: Resumed powerups.");
+                    LogService.LogInfo($"Chat closed: Resuming powerups in 500ms.");
                 }
 
                 if (!_arePowerupsPausedForChat && !GlobalHotKeyManager.IsPaused && _powerupUtils != null)
                 {
                     KeyValuePair<PowerupType, Key> powerupMapping = _settings.PowerupKeys.FirstOrDefault(kvp => kvp.Value == e);
+
                     if (powerupMapping.Key != default)
                     {
                         _powerupUtils.UsePowerup(powerupMapping.Key);
@@ -214,10 +209,7 @@ namespace Automatization
                     EnableAutomation();
                 }
 
-                if (_powerupUtils != null)
-                {
-                    _powerupUtils.GameProcess = gameProcess;
-                }
+                if (_powerupUtils != null) _powerupUtils.GameProcess = gameProcess;
             }
 
             string? actionEntry = _settings.GetActionForHotKey(hotKey);
@@ -254,11 +246,13 @@ namespace Automatization
         {
             _settings.EnableAutoGoldBox = true;
             _settings.Save();
+
             if (_autoGoldBoxService != null)
             {
                 _autoGoldBoxService.IsEnabled = true;
                 _autoGoldBoxService.Start();
             }
+
             LogService.LogInfo("Auto Gold Box enabled via Main Window.");
         }
 
@@ -266,11 +260,13 @@ namespace Automatization
         {
             _settings.EnableAutoGoldBox = false;
             _settings.Save();
+
             if (_autoGoldBoxService != null)
             {
                 _autoGoldBoxService.IsEnabled = false;
                 _autoGoldBoxService.Stop();
             }
+
             LogService.LogInfo("Auto Gold Box disabled via Main Window.");
         }
 
@@ -288,10 +284,7 @@ namespace Automatization
 
             newTimer.Closed += (sender, args) =>
             {
-                if (sender is TimerWindow closedTimer)
-                {
-                    _ = _activeTimerWindows.Remove(closedTimer);
-                }
+                if (sender is TimerWindow closedTimer) _ = _activeTimerWindows.Remove(closedTimer);
             };
 
             _activeTimerWindows.Add(newTimer);
@@ -457,10 +450,7 @@ namespace Automatization
             LaunchButton.Visibility = Visibility.Collapsed;
             Status = "Game is running!";
 
-            if (_settings.EnableAutoGoldBox)
-            {
-                _autoGoldBoxService?.Start();
-            }
+            if (_settings.EnableAutoGoldBox) _autoGoldBoxService?.Start();
 
             LogService.LogInfo("Automation enabled.");
         }
@@ -512,18 +502,12 @@ namespace Automatization
                 foreach (RegistryKey baseKey in new[] { Microsoft.Win32.Registry.LocalMachine, Microsoft.Win32.Registry.CurrentUser })
                 {
                     using RegistryKey? key = baseKey.OpenSubKey(path);
-                    if (key == null)
-                    {
-                        continue;
-                    }
+                    if (key == null) continue;
 
                     foreach (string subKeyName in key.GetSubKeyNames())
                     {
                         using RegistryKey? subKey = key.OpenSubKey(subKeyName);
-                        if (subKey == null)
-                        {
-                            continue;
-                        }
+                        if (subKey == null) continue;
 
                         string? displayName = subKey.GetValue("DisplayName")?.ToString();
                         if (displayName != null && displayName.Contains(gameProcessName + " Online", StringComparison.OrdinalIgnoreCase))
@@ -532,10 +516,7 @@ namespace Automatization
                             if (!string.IsNullOrEmpty(installLocation))
                             {
                                 string executablePath = Path.Combine(installLocation, gameProcessName + ".exe");
-                                if (File.Exists(executablePath))
-                                {
-                                    return executablePath;
-                                }
+                                if (File.Exists(executablePath)) return executablePath;
                             }
                         }
                     }
@@ -558,22 +539,13 @@ namespace Automatization
             foreach (string basePath in commonPaths)
             {
                 string directPath = Path.Combine(basePath, gameProcessName + ".exe");
-                if (File.Exists(directPath))
-                {
-                    return directPath;
-                }
+                if (File.Exists(directPath)) return directPath;
 
                 string subDirPath = Path.Combine(basePath, gameProcessName + " Online", gameProcessName + ".exe");
-                if (File.Exists(subDirPath))
-                {
-                    return subDirPath;
-                }
+                if (File.Exists(subDirPath)) return subDirPath;
 
                 subDirPath = Path.Combine(basePath, gameProcessName, gameProcessName + ".exe");
-                if (File.Exists(subDirPath))
-                {
-                    return subDirPath;
-                }
+                if (File.Exists(subDirPath)) return subDirPath;
             }
 
             return null;
@@ -602,20 +574,14 @@ namespace Automatization
 
                         LogService.LogInfo($"Game executable path set to: {_gameExecutablePath}");
                     }
-                    else
-                    {
-                        return;
-                    }
+                    else return;
                 }
 
                 LogService.LogInfo("Launching game.");
 
                 _gameProcess = Process.Start(new ProcessStartInfo { FileName = _gameExecutablePath, UseShellExecute = true });
 
-                if (_gameProcess != null)
-                {
-                    EnableAutomation();
-                }
+                if (_gameProcess != null) EnableAutomation();
             }
             catch (Exception ex)
             {
