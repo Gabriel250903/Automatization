@@ -107,3 +107,4 @@ Access by clicking **Logs** in the Settings window.
 *   **Admin Privileges:** Some features (like simulating input or capturing screens) require a password. To get the password, please DM Noizy on discord - noizy3345.
 *   **Anti-Virus:** If the tool is blocked, add an exclusion folder for the application.
 *   **Screen Scaling:** If coordinates (Auto-Clicker) or detection (Smart Repair) seem off, ensure your Windows Display Scale is set to 100% or re-calibrate your coordinates.
+*   **Smart Gold Box feature:** This feature might not work in exclusive fullscreen mode, ensure you're playing in Windowed Fullscreen.
