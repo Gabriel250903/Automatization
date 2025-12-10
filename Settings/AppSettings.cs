@@ -51,39 +51,27 @@ public class AppSettings
     public int SmartRepairFps { get; set; } = 60;
     public bool EnableAutoGoldBox { get; set; } = false;
     public string GoldBoxColor { get; set; } = "#F69001";
+    public string Language { get; set; } = "en-US";
+    public ulong DiscordIssueTagId { get; set; } = 1447898377009365002;
+    public ulong DiscordIdeaTagId { get; set; } = 1447898389046890497;
 
     public string? GetActionForHotKey(HotKey hotKey)
     {
-        if (hotKey == GlobalHotKey)
-        {
-            return "ToggleAll";
-        }
-
-        if (hotKey == RedTeamHotKey)
-        {
-            return "RedTeam";
-        }
-
-        if (hotKey == BlueTeamHotKey)
-        {
-            return "BlueTeam";
-        }
-
-        if (hotKey == GoldBoxTimerHotKey)
-        {
-            return "StartTimer";
-        }
-
-        if (hotKey == SmartRepairToggleHotKey)
-        {
-            return "SmartRepairToggle";
-        }
-
-        return hotKey == SmartRepairDebugHotKey ? "SmartRepairDebug" : null;
+        return hotKey == GlobalHotKey
+            ? "ToggleAll"
+            : hotKey == RedTeamHotKey
+            ? "RedTeam"
+            : hotKey == BlueTeamHotKey
+            ? "BlueTeam"
+            : hotKey == GoldBoxTimerHotKey
+            ? "StartTimer"
+            : hotKey == SmartRepairToggleHotKey ? "SmartRepairToggle" : hotKey == SmartRepairDebugHotKey ? "SmartRepairDebug" : null;
     }
 
     public static AppSettings Load()
     {
+        AppSettings settings = new();
+
         try
         {
             string settingsPath = GetSettingsPath();
@@ -91,8 +79,7 @@ public class AppSettings
             if (File.Exists(settingsPath))
             {
                 string json = File.ReadAllText(settingsPath);
-
-                return JsonSerializer.Deserialize<AppSettings>(json, _jsonReadOption) ?? new AppSettings();
+                settings = JsonSerializer.Deserialize<AppSettings>(json, _jsonReadOption) ?? new AppSettings();
             }
         }
         catch (Exception ex)
@@ -100,7 +87,7 @@ public class AppSettings
             LogService.LogError("Failed to load settings.", ex);
         }
 
-        return new AppSettings();
+        return settings;
     }
 
     public void Save()

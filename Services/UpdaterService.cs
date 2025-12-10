@@ -1,4 +1,3 @@
-using Microsoft.Win32;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
@@ -17,7 +16,7 @@ namespace Automatization.Services
         public UpdaterService()
         {
             _httpClient = new HttpClient();
-            _httpClient.DefaultRequestHeaders.Add("User-Agent", "C# App");
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", "Automatization");
         }
 
         public static Version GetCurrentVersion()
@@ -65,9 +64,9 @@ namespace Automatization.Services
             }
         }
 
-        public async Task<(bool, string?)> DownloadAndInstallUpdateAsync(Action<long, long> progressChanged)
+        public async Task<string?> DownloadUpdateAsync(Action<long, long> progressChanged)
         {
-            LogService.LogInfo("DownloadAndInstallUpdateAsync started.");
+            LogService.LogInfo("DownloadUpdateAsync started.");
 
             try
             {
@@ -104,7 +103,7 @@ namespace Automatization.Services
                             if (downloadUrl == null)
                             {
                                 LogService.LogError("Download URL not found.");
-                                return (false, null);
+                                return null;
                             }
 
                             string targetDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TankAutomation");
@@ -135,106 +134,45 @@ namespace Automatization.Services
                             }
 
                             LogService.LogInfo("Download finished.");
-
-                            bool uninstalled = await UninstallCurrentVersionAsync();
-                            if (uninstalled)
-                            {
-                                LogService.LogInfo("Previous version uninstalled. Starting new installer.");
-                                _ = Process.Start("msiexec.exe", $"/i \"{tempPath}\" /quiet");
-                                return (true, tempPath);
-                            }
-                            else
-                            {
-                                LogService.LogInfo("Previous version not found. Manual installation required.");
-                                return (false, tempPath);
-                            }
+                            return tempPath;
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                LogService.LogError($"Error during download/install: {ex.Message}");
+                LogService.LogError($"Error during download: {ex.Message}");
             }
 
-            LogService.LogInfo("No new version found or installation failed.");
-            return (false, null);
-        }
-
-        private static async Task<bool> UninstallCurrentVersionAsync()
-        {
-            LogService.LogInfo("UninstallCurrentVersionAsync started.");
-            string productDisplayName = "Automatization";
-            string? uninstallString = GetUninstallString(productDisplayName);
-
-            if (!string.IsNullOrEmpty(uninstallString))
-            {
-                try
-                {
-                    ProcessStartInfo processStartInfo = new();
-                    if (uninstallString.Contains("msiexec.exe", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        string arguments = uninstallString[uninstallString.IndexOf("/i", StringComparison.CurrentCultureIgnoreCase)..].Replace("/i", "/x").Replace("/I", "/X");
-                        processStartInfo.FileName = "msiexec.exe";
-                        processStartInfo.Arguments = $"{arguments} /quiet";
-                    }
-                    else
-                    {
-                        processStartInfo.FileName = "msiexec.exe";
-                        processStartInfo.Arguments = $"/x \"{uninstallString}\" /quiet";
-                    }
-
-                    LogService.LogInfo($"Starting uninstaller with command: {processStartInfo.FileName} {processStartInfo.Arguments}");
-
-                    Process? process = Process.Start(processStartInfo);
-                    if (process != null)
-                    {
-                        await process.WaitForExitAsync();
-                        LogService.LogInfo("Uninstaller process finished.");
-                    }
-                    else
-                    {
-                        LogService.LogError("Failed to start uninstaller process.");
-                    }
-
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    LogService.LogError($"Error uninstalling: {ex.Message}");
-                    return false;
-                }
-            }
-            else
-            {
-                LogService.LogInfo("Uninstaller not found in registry. The application may not be installed.");
-                return false;
-            }
-        }
-
-        private static string? GetUninstallString(string productDisplayName)
-        {
-            string uninstallKeyPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
-            using RegistryKey? uninstallKey = Registry.LocalMachine.OpenSubKey(uninstallKeyPath);
-
-            if (uninstallKey != null)
-            {
-                foreach (string subKeyName in uninstallKey.GetSubKeyNames())
-                {
-                    using RegistryKey? subKey = uninstallKey.OpenSubKey(subKeyName);
-
-                    if (subKey != null)
-                    {
-                        if (subKey.GetValue("DisplayName") is string displayName && displayName.Equals(productDisplayName, StringComparison.OrdinalIgnoreCase))
-                        {
-                            return subKey.GetValue("UninstallString") as string;
-                        }
-
-                    }
-                }
-
-            }
+            LogService.LogInfo("No new version found or download failed.");
             return null;
+        }
+
+        public static void InstallUpdate(string msiPath)
+        {
+            try
+            {
+                string logPath = Path.ChangeExtension(msiPath, ".log");
+                LogService.LogInfo($"Starting installer: {msiPath} with log: {logPath}");
+
+                ProcessStartInfo psi = new()
+                {
+                    FileName = "msiexec.exe",
+                    Arguments = $"/i \"{msiPath}\" /qf /l*v \"{logPath}\"",
+                    UseShellExecute = true
+                };
+
+                _ = Process.Start(psi);
+
+                LogService.LogInfo("Installer started. Shutting down application.");
+
+                Thread.Sleep(1000);
+                Environment.Exit(0);
+            }
+            catch (Exception ex)
+            {
+                LogService.LogError($"Failed to start installer: {ex.Message}");
+            }
         }
 
         public static void RelaunchApplication()
@@ -245,7 +183,52 @@ namespace Automatization.Services
                 _ = Process.Start(entryAssembly.Location);
             }
 
-            System.Windows.Application.Current?.Shutdown();
+            Environment.Exit(0);
+        }
+
+        public static async Task CleanupUpdateFilesAsync()
+        {
+            try
+            {
+                string targetDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TankAutomation");
+                string msiPath = Path.Combine(targetDirectory, "Automatization.Installer.msi");
+                string logPath = Path.ChangeExtension(msiPath, ".log");
+
+                bool msiExists = File.Exists(msiPath);
+                bool logExists = File.Exists(logPath);
+
+                if (!msiExists && !logExists)
+                {
+                    return;
+                }
+
+                UpdaterService updater = new();
+                (Version? latestVersion, _) = await updater.GetLatestVersionAsync();
+                Version currentVersion = GetCurrentVersion();
+
+                if (latestVersion != null && currentVersion >= latestVersion)
+                {
+                    if (msiExists)
+                    {
+                        File.Delete(msiPath);
+                        LogService.LogInfo($"Deleted temporary installer: {msiPath}");
+                    }
+
+                    if (logExists)
+                    {
+                        File.Delete(logPath);
+                        LogService.LogInfo($"Deleted installer log: {logPath}");
+                    }
+                }
+                else
+                {
+                    LogService.LogInfo("Update files preserved: Current version is not newer than or equal to the latest release.");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogService.LogError($"Failed to cleanup update files: {ex.Message}");
+            }
         }
     }
 }

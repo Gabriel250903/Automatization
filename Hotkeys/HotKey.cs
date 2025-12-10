@@ -9,7 +9,7 @@ namespace Automatization.Hotkeys
     {
         public Key Key { get; set; }
         public ModifierKeys Modifiers { get; set; }
-        
+
         [JsonIgnore]
         public int VirtualKey { get; private set; }
 
@@ -31,13 +31,32 @@ namespace Automatization.Hotkeys
 
         public override string ToString()
         {
-            if (IsEmpty) return "None";
+            if (IsEmpty)
+            {
+                return "None";
+            }
 
             StringBuilder sb = new();
-            if (Modifiers.HasFlag(ModifierKeys.Control)) _ = sb.Append("Ctrl + ");
-            if (Modifiers.HasFlag(ModifierKeys.Shift)) _ = sb.Append("Shift + ");
-            if (Modifiers.HasFlag(ModifierKeys.Alt)) _ = sb.Append("Alt + ");
-            if (Modifiers.HasFlag(ModifierKeys.Windows)) _ = sb.Append("Win + ");
+            if (Modifiers.HasFlag(ModifierKeys.Control))
+            {
+                _ = sb.Append("Ctrl + ");
+            }
+
+            if (Modifiers.HasFlag(ModifierKeys.Shift))
+            {
+                _ = sb.Append("Shift + ");
+            }
+
+            if (Modifiers.HasFlag(ModifierKeys.Alt))
+            {
+                _ = sb.Append("Alt + ");
+            }
+
+            if (Modifiers.HasFlag(ModifierKeys.Windows))
+            {
+                _ = sb.Append("Win + ");
+            }
+
             _ = sb.Append(Key);
             return sb.ToString();
         }

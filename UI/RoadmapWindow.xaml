@@ -1,0 +1,233 @@
+<ui:FluentWindow
+    x:Class="Automatization.UI.RoadmapWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="clr-namespace:Automatization.Converters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:viewmodels="clr-namespace:Automatization.ViewModels"
+    Title="Roadmap"
+    Width="800"
+    Height="600"
+    ExtendsContentIntoTitleBar="True"
+    WindowStartupLocation="CenterOwner"
+    mc:Ignorable="d">
+
+    <Window.Resources>
+        <converters:HexToSolidColorBrushConverter x:Key="HexToBrushConverter" />
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar Title="Upcoming Features (Roadmap)" Grid.Row="0" />
+
+        <Grid Grid.Row="1" Margin="10">
+            <StackPanel
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <ui:ProgressRing
+                    Width="50"
+                    Height="50"
+                    IsIndeterminate="True" />
+                <TextBlock
+                    Margin="0,10,0,0"
+                    HorizontalAlignment="Center"
+                    Text="Loading roadmap..." />
+            </StackPanel>
+
+            <StackPanel
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Visibility="{Binding IsEmpty, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <ui:SymbolIcon
+                    Margin="0,0,0,10"
+                    FontSize="48"
+                    Symbol="Sleep24" />
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="No planned features found at the moment." />
+            </StackPanel>
+
+            <Grid Visibility="{Binding IsLoading, Converter={StaticResource InverseBooleanConverter}}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="20" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Grid Grid.Column="0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Margin="0,0,0,10" Orientation="Horizontal">
+                        <ui:SymbolIcon
+                            Margin="0,0,10,0"
+                            Foreground="Orange"
+                            Symbol="Clock24" />
+                        <TextBlock
+                            FontSize="18"
+                            FontWeight="Bold"
+                            Text="Planned" />
+                    </StackPanel>
+
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding PlannedItems}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ui:Card Margin="0,0,0,10" Padding="0">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="*" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+
+                                            <StackPanel Margin="15,15,15,5">
+                                                <TextBlock
+                                                    FontSize="16"
+                                                    FontWeight="Bold"
+                                                    Text="{Binding Title}"
+                                                    TextWrapping="Wrap" />
+
+                                                <ItemsControl ItemsSource="{Binding Labels}">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <WrapPanel Orientation="Horizontal" />
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border
+                                                                Margin="0,10,0,10"
+                                                                Padding="8,5"
+                                                                Background="{Binding Color, Converter={StaticResource HexToBrushConverter}}"
+                                                                CornerRadius="10">
+                                                                <TextBlock
+                                                                    FontSize="11"
+                                                                    FontWeight="SemiBold"
+                                                                    Foreground="Black"
+                                                                    Text="{Binding Name}" />
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+
+                                            <Border
+                                                Grid.Row="1"
+                                                Padding="10,5"
+                                                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                                BorderThickness="0,1,0,0">
+                                                <ui:Button
+                                                    HorizontalAlignment="Right"
+                                                    Appearance="Secondary"
+                                                    Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=DataContext.ViewDetailsCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Content="View Discussion"
+                                                    Icon="{ui:SymbolIcon Chat24}" />
+                                            </Border>
+                                        </Grid>
+                                    </ui:Card>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+
+                <Grid Grid.Column="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Margin="0,0,0,10" Orientation="Horizontal">
+                        <ui:SymbolIcon
+                            Margin="0,0,10,0"
+                            Foreground="Green"
+                            Symbol="CheckmarkCircle24" />
+                        <TextBlock
+                            FontSize="18"
+                            FontWeight="Bold"
+                            Text="Completed" />
+                    </StackPanel>
+
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding CompletedItems}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ui:Card
+                                        Margin="0,0,0,10"
+                                        Padding="0"
+                                        Background="{DynamicResource ControlFillColorSecondaryBrush}">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="*" />
+                                                <RowDefinition Height="Auto" />
+                                            </Grid.RowDefinitions>
+
+                                            <StackPanel Margin="15,15,15,5">
+                                                <TextBlock
+                                                    Margin="0,0,0,10"
+                                                    FontSize="16"
+                                                    FontWeight="Bold"
+                                                    Opacity="0.7"
+                                                    Text="{Binding Title}"
+                                                    TextWrapping="Wrap" />
+
+                                                <ItemsControl ItemsSource="{Binding Labels}">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <WrapPanel Orientation="Horizontal" />
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border
+                                                                Margin="0,0,5,5"
+                                                                Padding="8,2"
+                                                                Background="{Binding Color, Converter={StaticResource HexToBrushConverter}}"
+                                                                CornerRadius="10"
+                                                                Opacity="0.8">
+                                                                <TextBlock
+                                                                    FontSize="11"
+                                                                    FontWeight="SemiBold"
+                                                                    Foreground="Black"
+                                                                    Text="{Binding Name}" />
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+
+                                            <Border
+                                                Grid.Row="1"
+                                                Padding="10,5"
+                                                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                                BorderThickness="0,1,0,0">
+                                                <ui:Button
+                                                    HorizontalAlignment="Right"
+                                                    Appearance="Secondary"
+                                                    Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=DataContext.ViewDetailsCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    Content="View Discussion"
+                                                    Icon="{ui:SymbolIcon Chat24}" />
+                                            </Border>
+                                        </Grid>
+                                    </ui:Card>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Grid>
+</ui:FluentWindow>

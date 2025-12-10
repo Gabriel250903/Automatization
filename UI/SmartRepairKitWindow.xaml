@@ -21,19 +21,19 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <ui:TitleBar Title="Smart Repair Kit" Grid.Row="0" />
+        <ui:TitleBar Title="{DynamicResource SmartRepair_Title}" Grid.Row="0" />
 
         <StackPanel Grid.Row="1" Margin="20">
 
             <ui:CardControl Margin="0,0,0,15" Icon="{ui:SymbolIcon HeartPulse24}">
                 <ui:CardControl.Header>
                     <StackPanel>
-                        <TextBlock FontWeight="Bold" Text="Health Monitor" />
+                        <TextBlock FontWeight="Bold" Text="{DynamicResource SmartRepair_HealthMonitor}" />
                         <TextBlock
                             x:Name="TxtStatus"
                             FontSize="12"
                             Foreground="Gray"
-                            Text="Stopped" />
+                            Text="{DynamicResource SmartRepair_Stopped}" />
                     </StackPanel>
                 </ui:CardControl.Header>
                 <TextBlock
@@ -45,17 +45,17 @@
                     Text="--" />
             </ui:CardControl>
 
-            <GroupBox Margin="0,0,0,15" Header="Configuration">
+            <GroupBox Margin="0,0,0,15" Header="{DynamicResource SmartRepair_Configuration}">
                 <StackPanel>
                     <TextBlock
                         Margin="0,0,0,10"
                         Foreground="OrangeRed"
-                        Text="If detection is inaccurate, pick the colors manually."
+                        Text="{DynamicResource SmartRepair_CalibrationWarning}"
                         TextWrapping="Wrap" />
 
                     <Expander
                         Margin="0,0,0,10"
-                        Header="Color Calibration"
+                        Header="{DynamicResource SmartRepair_Calibration}"
                         IsExpanded="False">
                         <StackPanel Margin="0,10,0,0">
                             <Grid Margin="0,0,0,5">
@@ -63,7 +63,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock VerticalAlignment="Center" Text="Full Health Color" />
+                                <TextBlock VerticalAlignment="Center" Text="{DynamicResource SmartRepair_FullColor}" />
                                 <Rectangle
                                     x:Name="RectFullColor"
                                     Grid.Column="1"
@@ -76,14 +76,14 @@
                                 Margin="0,0,0,10"
                                 HorizontalAlignment="Stretch"
                                 Click="BtnPickFull_Click"
-                                Content="Pick 'Full' Color (5s delay)" />
+                                Content="{DynamicResource SmartRepair_PickFull}" />
 
                             <Grid Margin="0,0,0,5">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock VerticalAlignment="Center" Text="Empty Health Color" />
+                                <TextBlock VerticalAlignment="Center" Text="{DynamicResource SmartRepair_EmptyColor}" />
                                 <Rectangle
                                     x:Name="RectEmptyColor"
                                     Grid.Column="1"
@@ -96,18 +96,18 @@
                                 Margin="0,0,0,10"
                                 HorizontalAlignment="Stretch"
                                 Click="BtnPickEmpty_Click"
-                                Content="Pick 'Empty' Color (5s delay)" />
+                                Content="{DynamicResource SmartRepair_PickEmpty}" />
 
                             <ui:Button
                                 Margin="0,0,0,10"
                                 HorizontalAlignment="Stretch"
                                 Appearance="Secondary"
                                 Click="BtnApplyColors_Click"
-                                Content="Apply Custom Colors" />
+                                Content="{DynamicResource SmartRepair_ApplyCustom}" />
                         </StackPanel>
                     </Expander>
 
-                    <TextBlock Margin="0,0,0,5" Text="Activation Threshold (% of HP bar)" />
+                    <TextBlock Margin="0,0,0,5" Text="{DynamicResource SmartRepair_Threshold}" />
                     <Grid Margin="0,0,0,10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
@@ -128,7 +128,7 @@
                             Text="{Binding ElementName=SldThreshold, Path=Value, StringFormat={}{0}%}" />
                     </Grid>
 
-                    <TextBlock Margin="0,0,0,5" Text="Cooldown (ms)" />
+                    <TextBlock Margin="0,0,0,5" Text="{DynamicResource SmartRepair_Cooldown}" />
                     <Grid Margin="0,0,0,10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
@@ -149,7 +149,7 @@
                             Text="{Binding ElementName=SldCooldown, Path=Value}" />
                     </Grid>
 
-                    <TextBlock Margin="0,0,0,5" Text="Activation Key (In-Game Repair Kit Hotkey)" />
+                    <TextBlock Margin="0,0,0,5" Text="{DynamicResource SmartRepair_ActivationKey}" />
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
@@ -164,7 +164,7 @@
                             Margin="5,0,0,0"
                             Appearance="Secondary"
                             Click="BtnTestInput_Click"
-                            Content="Test Input" />
+                            Content="{DynamicResource SmartRepair_TestInput}" />
                     </Grid>
                 </StackPanel>
             </GroupBox>
@@ -176,7 +176,7 @@
                 HorizontalAlignment="Stretch"
                 Appearance="Primary"
                 Click="BtnToggle_Click"
-                Content="Start Monitoring"
+                Content="{DynamicResource SmartRepair_Start}"
                 Icon="{ui:SymbolIcon Play24}" />
 
             <ui:Button
@@ -185,7 +185,7 @@
                 HorizontalAlignment="Stretch"
                 Appearance="Secondary"
                 Click="BtnDebug_Click"
-                Content="Save Debug Screenshot"
+                Content="{DynamicResource SmartRepair_DebugScreenshot}"
                 Icon="{ui:SymbolIcon Camera24}" />
 
         </StackPanel>

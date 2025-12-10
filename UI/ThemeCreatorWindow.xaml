@@ -4,7 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     Title="Theme Creator"
-    Width="450"
+    Width="550"
     Height="650"
     ExtendsContentIntoTitleBar="True"
     WindowBackdropType="Mica"
@@ -17,7 +17,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <ui:TitleBar Title="Create Custom Theme" Grid.Row="0" />
+        <ui:TitleBar Title="{DynamicResource Theme_Title}" Grid.Row="0" />
 
         <ScrollViewer
             Grid.Row="1"
@@ -28,37 +28,35 @@
                 <ui:TextBox
                     x:Name="ThemeNameBox"
                     Margin="0,0,0,15"
-                    PlaceholderText="Theme Name (e.g. Ocean Blue)" />
+                    PlaceholderText="{DynamicResource Theme_NamePlaceholder}" />
 
                 <ui:CardExpander
                     Margin="0,0,0,10"
-                    Header="Window Background"
+                    Header="{DynamicResource Theme_WindowBg}"
                     Icon="{ui:SymbolIcon AppGeneric24}"
                     IsExpanded="True">
                     <StackPanel>
-                        <!--  Mode Selection  -->
                         <StackPanel Margin="0,0,0,15" Orientation="Horizontal">
                             <RadioButton
                                 x:Name="RadioSolid"
                                 Margin="0,0,10,0"
                                 Checked="BgMode_Checked"
-                                Content="Solid"
+                                Content="{DynamicResource Theme_Solid}"
                                 GroupName="BgMode"
                                 IsChecked="True" />
                             <RadioButton
                                 x:Name="RadioGradient"
                                 Margin="0,0,10,0"
                                 Checked="BgMode_Checked"
-                                Content="Gradient"
+                                Content="{DynamicResource Theme_Gradient}"
                                 GroupName="BgMode" />
                             <RadioButton
                                 x:Name="RadioImage"
                                 Checked="BgMode_Checked"
-                                Content="Image"
+                                Content="{DynamicResource Theme_Image}"
                                 GroupName="BgMode" />
                         </StackPanel>
 
-                        <!--  Solid / Gradient Start Color  -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
@@ -68,11 +66,11 @@
                                 <TextBlock
                                     x:Name="PrimaryColorLabel"
                                     FontWeight="SemiBold"
-                                    Text="Primary Color" />
+                                    Text="{DynamicResource Theme_PrimaryColor}" />
                                 <TextBlock
                                     FontSize="11"
                                     Opacity="0.7"
-                                    Text="Background or Gradient Start" />
+                                    Text="{DynamicResource Theme_PrimaryDesc}" />
                             </StackPanel>
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Border
@@ -89,8 +87,9 @@
                                 </Border>
                                 <ui:TextBox
                                     x:Name="WindowBgHex"
-                                    Width="90"
+                                    MinWidth="110"
                                     Margin="0,0,5,0"
+                                    HorizontalContentAlignment="Center"
                                     Text="#FFFFFFFF" />
                                 <Button
                                     Click="PickColor_Click"
@@ -99,7 +98,6 @@
                             </StackPanel>
                         </Grid>
 
-                        <!--  Gradient End Color (Hidden by default)  -->
                         <Grid
                             x:Name="GradientEndContainer"
                             Margin="0,0,0,10"
@@ -109,11 +107,11 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <StackPanel>
-                                <TextBlock FontWeight="SemiBold" Text="Gradient End" />
+                                <TextBlock FontWeight="SemiBold" Text="{DynamicResource Theme_GradientEnd}" />
                                 <TextBlock
                                     FontSize="11"
                                     Opacity="0.7"
-                                    Text="The fade-out color" />
+                                    Text="{DynamicResource Theme_GradientEndDesc}" />
                             </StackPanel>
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Border
@@ -129,8 +127,9 @@
                                 </Border>
                                 <ui:TextBox
                                     x:Name="GradientEndHex"
-                                    Width="90"
+                                    MinWidth="110"
                                     Margin="0,0,5,0"
+                                    HorizontalContentAlignment="Center"
                                     Text="#FFDDDDDD" />
                                 <Button
                                     Click="PickColor_Click"
@@ -139,7 +138,6 @@
                             </StackPanel>
                         </Grid>
 
-                        <!--  Image Selector (Hidden by default)  -->
                         <Grid
                             x:Name="ImageContainer"
                             Margin="0,0,0,10"
@@ -151,7 +149,7 @@
                             <TextBlock
                                 Margin="0,0,0,5"
                                 FontWeight="SemiBold"
-                                Text="Image Path" />
+                                Text="{DynamicResource Theme_ImagePath}" />
                             <Grid Grid.Row="1">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
@@ -171,11 +169,10 @@
                 </ui:CardExpander>
 
                 <ui:CardExpander
-                    Header="UI Colors"
+                    Header="{DynamicResource Theme_UIColors}"
                     Icon="{ui:SymbolIcon Color24}"
                     IsExpanded="True">
                     <StackPanel>
-                        <!--  Text Color  -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
@@ -184,7 +181,7 @@
                             <TextBlock
                                 VerticalAlignment="Center"
                                 FontWeight="SemiBold"
-                                Text="Text Color" />
+                                Text="{DynamicResource Theme_TextColor}" />
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Border
                                     Width="20"
@@ -199,8 +196,9 @@
                                 </Border>
                                 <ui:TextBox
                                     x:Name="TextColorHex"
-                                    Width="90"
+                                    MinWidth="110"
                                     Margin="0,0,5,0"
+                                    HorizontalContentAlignment="Center"
                                     Text="#FF000000" />
                                 <Button
                                     Click="PickColor_Click"
@@ -209,7 +207,6 @@
                             </StackPanel>
                         </Grid>
 
-                        <!--  Accent Color  -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
@@ -218,7 +215,7 @@
                             <TextBlock
                                 VerticalAlignment="Center"
                                 FontWeight="SemiBold"
-                                Text="Accent Color" />
+                                Text="{DynamicResource Theme_AccentColor}" />
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Border
                                     Width="20"
@@ -233,8 +230,9 @@
                                 </Border>
                                 <ui:TextBox
                                     x:Name="AccentHex"
-                                    Width="90"
+                                    MinWidth="110"
                                     Margin="0,0,5,0"
+                                    HorizontalContentAlignment="Center"
                                     Text="#FF0078D7" />
                                 <Button
                                     Click="PickColor_Click"
@@ -243,7 +241,6 @@
                             </StackPanel>
                         </Grid>
 
-                        <!--  Button Bg  -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
@@ -252,7 +249,7 @@
                             <TextBlock
                                 VerticalAlignment="Center"
                                 FontWeight="SemiBold"
-                                Text="Button Fill" />
+                                Text="{DynamicResource Theme_ButtonFill}" />
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Border
                                     Width="20"
@@ -267,8 +264,9 @@
                                 </Border>
                                 <ui:TextBox
                                     x:Name="BtnBgHex"
-                                    Width="90"
+                                    MinWidth="110"
                                     Margin="0,0,5,0"
+                                    HorizontalContentAlignment="Center"
                                     Text="#1A000000" />
                                 <Button
                                     Click="PickColor_Click"
@@ -277,7 +275,6 @@
                             </StackPanel>
                         </Grid>
 
-                        <!--  Button Hover  -->
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
@@ -286,7 +283,7 @@
                             <TextBlock
                                 VerticalAlignment="Center"
                                 FontWeight="SemiBold"
-                                Text="Button Hover" />
+                                Text="{DynamicResource Theme_ButtonHover}" />
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
                                 <Border
                                     Width="20"
@@ -301,8 +298,9 @@
                                 </Border>
                                 <ui:TextBox
                                     x:Name="BtnHoverHex"
-                                    Width="90"
+                                    MinWidth="110"
                                     Margin="0,0,5,0"
+                                    HorizontalContentAlignment="Center"
                                     Text="#29000000" />
                                 <Button
                                     Click="PickColor_Click"
@@ -316,20 +314,25 @@
             </StackPanel>
         </ScrollViewer>
 
-        <!--  Footer  -->
         <StackPanel
             Grid.Row="2"
             HorizontalAlignment="Right"
             Orientation="Horizontal">
             <ui:Button
                 Margin="0,0,10,0"
+                Appearance="Secondary"
+                Click="Randomize_Click"
+                Content="{DynamicResource Theme_Randomize}"
+                Icon="{ui:SymbolIcon ArrowShuffle24}" />
+            <ui:Button
+                Margin="0,0,10,0"
                 Click="Preview_Click"
-                Content="Preview Here"
+                Content="{DynamicResource Theme_Preview}"
                 Icon="{ui:SymbolIcon Eye24}" />
             <ui:Button
                 Appearance="Primary"
                 Click="Save_Click"
-                Content="Save Theme"
+                Content="{DynamicResource Theme_Save}"
                 Icon="{ui:SymbolIcon Save24}" />
         </StackPanel>
     </Grid>

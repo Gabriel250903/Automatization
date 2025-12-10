@@ -45,6 +45,16 @@ namespace Automatization.Services
             Log.CloseAndFlush();
         }
 
+        public static string GetLatestLogFilePath()
+        {
+            string logDirectory = GetLogDirectory();
+            DirectoryInfo dirInfo = new(logDirectory);
+            FileInfo? latestLogFile = dirInfo.GetFiles("*.txt")
+                                              .OrderByDescending(f => f.LastWriteTime)
+                                              .FirstOrDefault();
+            return latestLogFile?.FullName ?? string.Empty;
+        }
+
         public static void CleanupOldLogsAsync()
         {
             _ = Task.Run(() =>

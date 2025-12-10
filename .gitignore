@@ -25,7 +25,7 @@ x64/
 x86/
 [Ww][Ii][Nn]32/
 [Aa][Rr][Mm]/
-[Aa][Rr][Mm]64/
+[Aa][Rr]m64/
 bld/
 [Bb]in/
 [Oo]bj/
@@ -401,3 +401,8 @@ FodyWeavers.xsd
 *.sln.iml
 
 Secrets/
+
+# Node.js specific ignores for Vercel backend
+node_modules/
+.env
+.vercel/

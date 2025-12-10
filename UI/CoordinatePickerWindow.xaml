@@ -10,7 +10,7 @@
         MouseRightButtonDown="Window_MouseRightButtonDown"
         KeyDown="Window_KeyDown">
     <Grid>
-        <TextBlock Text="Left-click to select coordinate | Right-click or Esc to cancel"
+        <TextBlock Text="{DynamicResource Picker_Instructions}"
                    HorizontalAlignment="Center"
                    VerticalAlignment="Center"
                    FontSize="24"

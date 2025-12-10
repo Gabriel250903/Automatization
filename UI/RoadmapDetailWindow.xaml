@@ -1,0 +1,170 @@
+<ui:FluentWindow
+    x:Class="Automatization.UI.RoadmapDetailWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:converters="clr-namespace:Automatization.Converters"
+    Title="Feature Details"
+    Width="550"
+    Height="600"
+    ExtendsContentIntoTitleBar="True"
+    WindowStartupLocation="CenterOwner"
+    mc:Ignorable="d">
+
+    <Window.Resources>
+        <converters:HexToSolidColorBrushConverter x:Key="HexToBrushConverter" />
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar Title="{Binding SelectedItem.Title}" Grid.Row="0" />
+
+        <ScrollViewer
+            Grid.Row="1"
+            HorizontalScrollBarVisibility="Disabled"
+            VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock
+                    Margin="20,20,20,10"
+                    FontSize="24"
+                    FontWeight="Bold"
+                    Text="{Binding SelectedItem.Title}"
+                    TextWrapping="Wrap" />
+
+                <ItemsControl Margin="20,0,20,15" ItemsSource="{Binding SelectedItem.Labels}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border
+                                Margin="0,0,5,5"
+                                Padding="10,4"
+                                Background="{Binding Color, Converter={StaticResource HexToBrushConverter}}"
+                                CornerRadius="10">
+                                <TextBlock
+                                    FontSize="12"
+                                    FontWeight="SemiBold"
+                                    Foreground="Black"
+                                    Text="{Binding Name}" />
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <ui:Card
+                    Width="500"
+                    Margin="20,0,20,20"
+                    HorizontalAlignment="Left">
+                    <StackPanel>
+                        <TextBlock
+                            Margin="0,0,0,15"
+                            FontWeight="Bold"
+                            Text="Description" />
+                        <FlowDocumentScrollViewer
+                            x:Name="DescriptionFlowDocumentViewer"
+                            Padding="0"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Document="{Binding SelectedItem, Converter={StaticResource MarkdownToFlowDocumentConverter}}"
+                            Focusable="True"
+                            HorizontalScrollBarVisibility="Disabled"
+                            IsToolBarVisible="False"
+                            PreviewMouseLeftButtonDown="DescriptionFlowDocumentViewer_PreviewMouseLeftButtonDown"
+                            PreviewMouseWheel="FlowDocumentScrollViewer_PreviewMouseWheel"
+                            VerticalScrollBarVisibility="Hidden" />
+                    </StackPanel>
+                </ui:Card>
+
+                <TextBlock
+                    Margin="20,0,20,10"
+                    FontSize="18"
+                    FontWeight="SemiBold"
+                    Text="Discussion" />
+
+                <StackPanel Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <ui:ProgressRing IsIndeterminate="True" />
+                </StackPanel>
+
+                <ItemsControl Margin="20,0,20,0" ItemsSource="{Binding Comments}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <ui:Card
+                                Width="500"
+                                Margin="0,0,0,10"
+                                Padding="10"
+                                HorizontalAlignment="Left">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <ui:SymbolIcon
+                                        Margin="0,5,10,0"
+                                        VerticalAlignment="Top"
+                                        FontSize="24"
+                                        Symbol="Person24" />
+
+                                    <StackPanel Grid.Column="1">
+                                        <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
+                                            <TextBlock
+                                                Margin="0,0,10,0"
+                                                FontWeight="Bold"
+                                                Text="{Binding User.Login}" />
+                                            <TextBlock
+                                                VerticalAlignment="Center"
+                                                FontSize="11"
+                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                Text="{Binding CreatedAt}" />
+                                        </StackPanel>
+
+                                        <FlowDocumentScrollViewer
+                                            Padding="0"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            Document="{Binding Converter={StaticResource MarkdownToFlowDocumentConverter}}"
+                                            Focusable="True"
+                                            HorizontalScrollBarVisibility="Disabled"
+                                            IsToolBarVisible="False"
+                                            PreviewMouseLeftButtonDown="DescriptionFlowDocumentViewer_PreviewMouseLeftButtonDown"
+                                            PreviewMouseWheel="FlowDocumentScrollViewer_PreviewMouseWheel"
+                                            VerticalScrollBarVisibility="Hidden" />
+                                    </StackPanel>
+                                </Grid>
+                            </ui:Card>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <TextBlock
+                    Margin="20,10,20,10"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="No comments yet."
+                    Visibility="{Binding Comments.Count, Converter={StaticResource IntToVisibilityConverter}, ConverterParameter=Inverse}" />
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border
+            Grid.Row="2"
+            Padding="10"
+            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+            BorderThickness="0,1,0,0">
+            <ui:Button
+                HorizontalAlignment="Right"
+                Appearance="Secondary"
+                Click="CloseButton_Click"
+                Content="Close" />
+        </Border>
+    </Grid>
+</ui:FluentWindow>

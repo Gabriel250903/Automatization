@@ -1,10 +1,13 @@
 using Automatization.Services;
 using Automatization.Settings;
 using Automatization.Types;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Wpf.Ui.Controls;
+using Application = System.Windows.Application;
+using Media = System.Windows.Media;
 using MessageBox = System.Windows.MessageBox;
 
 namespace Automatization.UI
@@ -46,10 +49,9 @@ namespace Automatization.UI
 
             _service.TargetFps = settings.SmartRepairFps;
 
-            if (settings.SmartRepairToggleHotKey != null)
-            {
-                BtnToggle.Content = $"Start Monitoring ({settings.SmartRepairToggleHotKey})";
-            }
+            BtnToggle.Content = settings.SmartRepairToggleHotKey != null
+                ? $"{(string)Application.Current.Resources["SmartRepair_Start"]} ({settings.SmartRepairToggleHotKey})"
+                : (string)Application.Current.Resources["SmartRepair_Start"];
 
             if (settings.UseCustomHealthColors &&
                 !string.IsNullOrEmpty(settings.CustomHealthBrightColor) &&
@@ -62,11 +64,11 @@ namespace Automatization.UI
 
                     _service.UpdateColors(c1, c2);
 
-                    _pickedFullColor = System.Windows.Media.Color.FromRgb(c1.R, c1.G, c1.B);
-                    _pickedEmptyColor = System.Windows.Media.Color.FromRgb(c2.R, c2.G, c2.B);
+                    _pickedFullColor = Media.Color.FromRgb(c1.R, c1.G, c1.B);
+                    _pickedEmptyColor = Media.Color.FromRgb(c2.R, c2.G, c2.B);
 
-                    RectFullColor.Fill = new System.Windows.Media.SolidColorBrush(_pickedFullColor);
-                    RectEmptyColor.Fill = new System.Windows.Media.SolidColorBrush(_pickedEmptyColor);
+                    RectFullColor.Fill = new Media.SolidColorBrush(_pickedFullColor);
+                    RectEmptyColor.Fill = new Media.SolidColorBrush(_pickedEmptyColor);
 
                     TxtStatus.Text = "Custom colors loaded.";
                 }
@@ -91,8 +93,6 @@ namespace Automatization.UI
             settings.Save();
         }
 
-        // private async Task HotkeyLoop() ... Removed
-
         private void PopulateKeys()
         {
             List<Key> keys =
@@ -110,21 +110,21 @@ namespace Automatization.UI
             {
                 _isMonitoring = true;
                 _service.Start();
-                BtnToggle.Content = "Stop Monitoring";
+                BtnToggle.Content = (string)Application.Current.Resources["SmartRepair_Stop"];
                 BtnToggle.Appearance = ControlAppearance.Danger;
                 BtnToggle.Icon = new SymbolIcon(SymbolRegular.Stop24);
-                TxtStatus.Text = "Searching for Health Bar...";
-                TxtStatus.Foreground = System.Windows.Media.Brushes.Orange;
+                TxtStatus.Text = (string)Application.Current.Resources["SmartRepair_Running"];
+                TxtStatus.Foreground = Media.Brushes.Orange;
             }
             else
             {
                 _isMonitoring = false;
                 _service.Stop();
-                BtnToggle.Content = "Start Monitoring";
+                BtnToggle.Content = (string)Application.Current.Resources["SmartRepair_Start"];
                 BtnToggle.Appearance = ControlAppearance.Primary;
                 BtnToggle.Icon = new SymbolIcon(SymbolRegular.Play24);
-                TxtStatus.Text = "Stopped";
-                TxtStatus.Foreground = System.Windows.Media.Brushes.Gray;
+                TxtStatus.Text = (string)Application.Current.Resources["SmartRepair_Stopped"];
+                TxtStatus.Foreground = Media.Brushes.Gray;
                 TxtHealth.Text = "--";
             }
         }
@@ -139,10 +139,10 @@ namespace Automatization.UI
 
             try
             {
-                string path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "debug_capture.png");
+                string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "debug_capture.png");
 
-                ScreenCaptureService tempCapture = new();
-                using (Bitmap bmp = ScreenCaptureService.CaptureScreen())
+                using ScreenCaptureService tempCapture = new();
+                using (Bitmap bmp = tempCapture.Capture())
                 {
                     HealthBarStruct state = _service.Detector.Detect(bmp);
 
@@ -191,22 +191,29 @@ namespace Automatization.UI
                 if (state.IsFound)
                 {
                     TxtStatus.Text = $"Tracking health bar...";
-                    TxtStatus.Foreground = System.Windows.Media.Brushes.Green;
+                    TxtStatus.Foreground = Media.Brushes.Green;
 
                     TxtHealth.Text = $"{state.HealthPercentage:F0}%";
 
-                    TxtHealth.Foreground = state.HealthPercentage < SldThreshold.Value ? System.Windows.Media.Brushes.Red : (System.Windows.Media.Brush)System.Windows.Application.Current.Resources["Foreground"];
+                    if (state.HealthPercentage < SldThreshold.Value)
+                    {
+                        TxtHealth.Foreground = Media.Brushes.Red;
+                    }
+                    else
+                    {
+                        TxtHealth.ClearValue(Wpf.Ui.Controls.TextBlock.ForegroundProperty);
+                    }
                 }
                 else
                 {
                     TxtStatus.Text = "Searching...";
-                    TxtStatus.Foreground = System.Windows.Media.Brushes.Orange;
+                    TxtStatus.Foreground = Media.Brushes.Orange;
                 }
             }));
         }
 
-        private System.Windows.Media.Color _pickedFullColor = System.Windows.Media.Colors.Gray;
-        private System.Windows.Media.Color _pickedEmptyColor = System.Windows.Media.Colors.Gray;
+        private Media.Color _pickedFullColor = Media.Colors.Gray;
+        private Media.Color _pickedEmptyColor = Media.Colors.Gray;
 
         private async void BtnPickFull_Click(object sender, RoutedEventArgs e)
         {
@@ -228,7 +235,8 @@ namespace Automatization.UI
 
             Color capturedColor;
 
-            using (Bitmap bmp = ScreenCaptureService.CaptureScreen())
+            using (ScreenCaptureService capture = new())
+            using (Bitmap bmp = capture.Capture())
             {
                 System.Drawing.Point point = System.Windows.Forms.Cursor.Position;
                 capturedColor = point.X >= 0 && point.X < bmp.Width && point.Y >= 0 && point.Y < bmp.Height ? bmp.GetPixel(point.X, point.Y) : Color.Black;
@@ -238,20 +246,20 @@ namespace Automatization.UI
             if (isFull)
             {
                 _pickedFullColor = mediaColor;
-                RectFullColor.Fill = new System.Windows.Media.SolidColorBrush(mediaColor);
+                RectFullColor.Fill = new Media.SolidColorBrush(mediaColor);
                 TxtStatus.Text = $"Picked Full: {capturedColor}";
             }
             else
             {
                 _pickedEmptyColor = mediaColor;
-                RectEmptyColor.Fill = new System.Windows.Media.SolidColorBrush(mediaColor);
+                RectEmptyColor.Fill = new Media.SolidColorBrush(mediaColor);
                 TxtStatus.Text = $"Picked Empty: {capturedColor}";
             }
         }
 
         private void BtnApplyColors_Click(object sender, RoutedEventArgs e)
         {
-            if (_pickedFullColor == System.Windows.Media.Colors.Gray || _pickedEmptyColor == System.Windows.Media.Colors.Gray)
+            if (_pickedFullColor == Media.Colors.Gray || _pickedEmptyColor == Media.Colors.Gray)
             {
                 _ = MessageBox.Show("Please pick both Full and Empty colors first.", "Calibration");
                 return;

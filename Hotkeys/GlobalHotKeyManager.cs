@@ -47,7 +47,10 @@ namespace Automatization.Hotkeys
                 return false;
             }
 
-            if (hotKey.IsEmpty) return false;
+            if (hotKey.IsEmpty)
+            {
+                return false;
+            }
 
             if (HotKeyToIdMap.ContainsKey(hotKey))
             {
@@ -67,22 +70,34 @@ namespace Automatization.Hotkeys
                 HotKeyToIdMap[hotKey] = id;
                 LogService.LogInfo($"Registered hotkey: {hotKey} (VK: {vk}) with ID {id}");
             }
-            else LogService.LogWarning($"Failed to register hotkey: {hotKey}. Error Code: {Marshal.GetLastWin32Error()}");
+            else
+            {
+                LogService.LogWarning($"Failed to register hotkey: {hotKey}. Error Code: {Marshal.GetLastWin32Error()}");
+            }
 
             return success;
         }
 
         public static void UnregisterAll()
         {
-            if (!_isInitialized) return;
+            if (!_isInitialized)
+            {
+                return;
+            }
 
             LogService.LogInfo($"Unregistering all hotkeys. Currently {IdToHotKeyMap.Count} hotkeys registered.");
 
             foreach (KeyValuePair<int, HotKey> entry in IdToHotKeyMap.ToList())
             {
                 bool success = UnregisterHotKey(IntPtr.Zero, entry.Key);
-                if (success) LogService.LogInfo($"Successfully unregistered hotkey from OS: {entry.Value} with ID {entry.Key}");
-                else LogService.LogWarning($"Failed to unregister hotkey from OS: {entry.Value} with ID {entry.Key}. Error Code: {Marshal.GetLastWin32Error()}");
+                if (success)
+                {
+                    LogService.LogInfo($"Successfully unregistered hotkey from OS: {entry.Value} with ID {entry.Key}");
+                }
+                else
+                {
+                    LogService.LogWarning($"Failed to unregister hotkey from OS: {entry.Value} with ID {entry.Key}. Error Code: {Marshal.GetLastWin32Error()}");
+                }
             }
 
             IdToHotKeyMap.Clear();
@@ -94,7 +109,10 @@ namespace Automatization.Hotkeys
 
         private static void OnThreadFilterMessage(ref MSG msg, ref bool handled)
         {
-            if (handled || IsPaused || msg.message != WmHotkey) return;
+            if (handled || IsPaused || msg.message != WmHotkey)
+            {
+                return;
+            }
 
             Process? game = Process.GetProcessesByName(_settings?.GameProcessName ?? "ProTanki").FirstOrDefault();
             if (game == null || Utils.WindowUtils.IsGameWindowInForeground(game) == false)
@@ -115,7 +133,10 @@ namespace Automatization.Hotkeys
 
         public static void Shutdown()
         {
-            if (!_isInitialized) return;
+            if (!_isInitialized)
+            {
+                return;
+            }
 
             UnregisterAll();
 

@@ -1,0 +1,216 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <!--  Main Window  -->
+    <system:String x:Key="Main_Title">Automatization</system:String>
+    <system:String x:Key="Main_PauseHotkeys">Wstrzymaj skróty</system:String>
+    <system:String x:Key="Main_Settings">Ustawienia</system:String>
+    <system:String x:Key="Main_Debug">Debugowanie</system:String>
+    <system:String x:Key="Main_LaunchGame">Uruchom grę</system:String>
+
+    <system:String x:Key="Group_Tools">Narzędzia</system:String>
+    <system:String x:Key="Group_SmartFeatures">Inteligentne funkcje</system:String>
+    <system:String x:Key="Group_Powerups">Powerupy</system:String>
+    <system:String x:Key="Group_TeamAutoClickers">Zespołowe auto-klikacze</system:String>
+    <system:String x:Key="Group_Debug">Debugowanie</system:String>
+
+    <system:String x:Key="Tool_DiscountCalculator">Kalkulator zniżek</system:String>
+
+    <system:String x:Key="Smart_RepairKit">Inteligentny zestaw naprawczy</system:String>
+    <system:String x:Key="Smart_GoldBox">Inteligentne wykrywanie złotej skrzyni</system:String>
+
+    <system:String x:Key="Team_ClickType">Typ kliknięcia:</system:String>
+    <system:String x:Key="Team_AutoRed">Auto klikanie Czerwoni</system:String>
+    <system:String x:Key="Team_AutoBlue">Auto klikanie Niebiescy</system:String>
+    <system:String x:Key="Team_StopRed">Zatrzymaj Czerwonych</system:String>
+    <system:String x:Key="Team_StopBlue">Zatrzymaj Niebieskich</system:String>
+
+    <system:String x:Key="Debug_SimulateGoldBox">Symuluj złotą skrzynię</system:String>
+    <system:String x:Key="Debug_TestImage">Testuj wykrywanie obrazu</system:String>
+
+    <system:String x:Key="Status_RedTeamStopped">Auto-klikacz Czerwonych zatrzymany</system:String>
+    <system:String x:Key="Status_RedTeamStarted">Auto-klikacz Czerwonych uruchomiony</system:String>
+    <system:String x:Key="Status_BlueTeamStopped">Auto-klikacz Niebieskich zatrzymany</system:String>
+    <system:String x:Key="Status_BlueTeamStarted">Auto-klikacz Niebieskich uruchomiony</system:String>
+    <system:String x:Key="Status_GameRunning">Gra jest uruchomiona!</system:String>
+    <system:String x:Key="Status_GameNotRunning">Gra nie jest uruchomiona. Kliknij Uruchom.</system:String>
+    <system:String x:Key="Status_GameNotFound">Nie znaleziono pliku wykonywalnego gry. Proszę go wybrać.</system:String>
+    <system:String x:Key="Status_LaunchError">Błąd podczas uruchamiania gry.</system:String>
+    <system:String x:Key="Status_AutoGoldBoxNotInit">Usługa Auto Gold Box nie została zainicjowana.</system:String>
+    <system:String x:Key="Status_Ready">Gotowy</system:String>
+    <system:String x:Key="General_Start">Start</system:String>
+    <system:String x:Key="General_Stop">Stop</system:String>
+
+    <system:String x:Key="Status_GameProcessFound">Znaleziono proces gry.</system:String>
+    <system:String x:Key="Status_GameProcessLost">Utracono proces gry.</system:String>
+    <system:String x:Key="Status_AutomationEnabled">Automatyzacja włączona.</system:String>
+    <system:String x:Key="Status_AutomationDisabled">Automatyzacja wyłączona.</system:String>
+    <system:String x:Key="Status_GamePathSet">Ścieżka do gry ustawiona na: {0}</system:String>
+    <system:String x:Key="Status_GameExecutableNotFound">Nie znaleziono pliku wykonywalnego gry.</system:String>
+    <system:String x:Key="Status_LaunchingGame">Uruchamianie gry.</system:String>
+    <system:String x:Key="MessageBox_ErrorTitle">Błąd</system:String>
+    <system:String x:Key="MessageBox_WarningTitle">Ostrzeżenie</system:String>
+    <system:String x:Key="MessageBox_InfoTitle">Informacja</system:String>
+    <system:String x:Key="DetectionTest_ResultTitle">Wynik testu wykrywania</system:String>
+    <system:String x:Key="DetectionTest_ServiceNotInitialized">Usługa Auto Gold Box nie jest zainicjowana.</system:String>
+    <system:String x:Key="Log_ChatOpened">Czat otwarty: Powerupy wstrzymane.</system:String>
+    <system:String x:Key="Log_ChatClosed">Czat zamknięty: Wznowienie powerupów za 500ms.</system:String>
+
+    <!--  Settings Window  -->
+    <system:String x:Key="Settings_Title">Ustawienia</system:String>
+    <system:String x:Key="Settings_General">Ogólne</system:String>
+    <system:String x:Key="Settings_ProcessName">Nazwa procesu gry</system:String>
+    <system:String x:Key="Settings_ProcessNameTooltip">Nazwa pliku wykonywalnego bez .exe</system:String>
+    <system:String x:Key="Settings_UnlockTooltip">Odblokuj, aby edytować</system:String>
+    <system:String x:Key="Settings_Language">Język</system:String>
+    <system:String x:Key="Settings_GamePath">Ścieżka do pliku wykonywalnego gry</system:String>
+    <system:String x:Key="Settings_GamePathPlaceholder">Wybierz plik .exe z katalogu gry...</system:String>
+    <system:String x:Key="Settings_Browse">Przeglądaj</system:String>
+    <system:String x:Key="Settings_Automation">Automatyzacja</system:String>
+    <system:String x:Key="Settings_ClickSpeed">Prędkość auto-klikacza zespołowego</system:String>
+    <system:String x:Key="Settings_ClickSpeedTooltip">Opóźnienie między kliknięciami w milisekundach</system:String>
+    <system:String x:Key="Settings_SmartRepairFps">FPS Inteligentnego Zestawu Naprawczego</system:String>
+    <system:String x:Key="Settings_SmartRepairFpsTooltip">Liczba klatek na sekundę przechwytywania ekranu (Wyższa = płynniej, ale większe użycie CPU)</system:String>
+    <system:String x:Key="Settings_ClickerCoords">Współrzędne klikacza zespołowego</system:String>
+    <system:String x:Key="Settings_RedTeam">Czerwoni:</system:String>
+    <system:String x:Key="Settings_BlueTeam">Niebiescy:</system:String>
+    <system:String x:Key="Settings_PickCoordTooltip">Wybierz współrzędną</system:String>
+    <system:String x:Key="Settings_Hotkeys">Skróty klawiszowe</system:String>
+    <system:String x:Key="Settings_Controls">Sterowanie</system:String>
+    <system:String x:Key="Settings_Hotkey_Global">Przełącznik globalny</system:String>
+    <system:String x:Key="Settings_Hotkey_Red">Auto Czerwoni</system:String>
+    <system:String x:Key="Settings_Hotkey_Blue">Auto Niebiescy</system:String>
+    <system:String x:Key="Settings_Hotkey_Gold">Licznik złotej skrzyni</system:String>
+    <system:String x:Key="Settings_Hotkey_SmartToggle">Monitor inteligentnej naprawy (Przełącz)</system:String>
+    <system:String x:Key="Settings_Hotkey_SmartDebug">Debug inteligentnej naprawy (Zrzut ekranu)</system:String>
+    <system:String x:Key="Settings_Powerups">Powerupy</system:String>
+    <system:String x:Key="Settings_Powerup_Repair">Zestaw naprawczy</system:String>
+    <system:String x:Key="Settings_Powerup_Armor">Podwójny pancerz</system:String>
+    <system:String x:Key="Settings_Powerup_Damage">Podwójne obrażenia</system:String>
+    <system:String x:Key="Settings_Powerup_Speed">Przyspieszenie</system:String>
+    <system:String x:Key="Settings_Powerup_Mine">Mina</system:String>
+    <system:String x:Key="Settings_Appearance">Wygląd</system:String>
+    <system:String x:Key="Settings_AppTheme">Motyw aplikacji</system:String>
+    <system:String x:Key="Settings_AppThemeTooltip">Wybierz preferowany styl wizualny</system:String>
+    <system:String x:Key="Settings_CreateThemeTooltip">Utwórz nowy motyw niestandardowy</system:String>
+    <system:String x:Key="Settings_DeleteThemeTooltip">Usuń wybrany motyw</system:String>
+    <system:String x:Key="Settings_TransparentTimer">Użyj przezroczystego tła dla licznika złotej skrzyni</system:String>
+    <system:String x:Key="Settings_About">O programie i aktualizacje</system:String>
+    <system:String x:Key="Settings_CheckUpdates">Sprawdź aktualizacje</system:String>
+    <system:String x:Key="Settings_UpdateRestart">Zaktualizuj i uruchom ponownie</system:String>
+    <system:String x:Key="Settings_Save">Zapisz ustawienia</system:String>
+    <system:String x:Key="Settings_Logs">Logi</system:String>
+    <system:String x:Key="Settings_Cancel">Anuluj</system:String>
+    <system:String x:Key="Settings_CurrentVersion">Obecna wersja: {0}</system:String>
+    <system:String x:Key="Settings_LatestVersion">Najnowsza wersja: {0}</system:String>
+    <system:String x:Key="Settings_CheckingUpdates">Sprawdzanie aktualizacji...</system:String>
+    <system:String x:Key="Settings_UpdateAvailable">Dostępna aktualizacja!</system:String>
+    <system:String x:Key="Settings_UpToDate">Masz najnowszą wersję.</system:String>
+    <system:String x:Key="Settings_ErrorCheckingUpdates">Błąd podczas sprawdzania aktualizacji.</system:String>
+    <system:String x:Key="Settings_DownloadingUpdate">Pobieranie aktualizacji...</system:String>
+    <system:String x:Key="Settings_UpdateDownloaded">Aktualizacja pobrana. Uruchamianie instalatora...</system:String>
+    <system:String x:Key="Settings_DownloadFailed">Pobieranie nie powiodło się.</system:String>
+    <system:String x:Key="Settings_Error">Błąd: {0}</system:String>
+
+    <!--  Discount Calculator  -->
+    <system:String x:Key="Discount_Title">Kalkulator zniżek</system:String>
+    <system:String x:Key="Discount_Search">Szukaj przedmiotów...</system:String>
+    <system:String x:Key="Discount_Sort_NameAZ">Nazwa (A-Z)</system:String>
+    <system:String x:Key="Discount_Sort_NameZA">Nazwa (Z-A)</system:String>
+    <system:String x:Key="Discount_Sort_PriceLowHigh">Cena (Rosnąco)</system:String>
+    <system:String x:Key="Discount_Sort_PriceHighLow">Cena (Malejąco)</system:String>
+    <system:String x:Key="Discount_Turrets">Wieże</system:String>
+    <system:String x:Key="Discount_Hulls">Kadłuby</system:String>
+
+    <system:String x:Key="Label_Ranks">Rangi</system:String>
+    <system:String x:Key="Label_Discount">Zniżka</system:String>
+    <system:String x:Key="Label_Contains">Zawiera</system:String>
+
+    <system:String x:Key="Label_Hull">Kadłub</system:String>
+    <system:String x:Key="Label_Turret">Wieża</system:String>
+    <system:String x:Key="Label_Paint">Farba</system:String>
+
+    <system:String x:Key="Discount_Paints">Farby</system:String>
+    <system:String x:Key="Discount_Supplies">Zaopatrzenie</system:String>
+    <system:String x:Key="Discount_Details">Szczegóły</system:String>
+    <system:String x:Key="Discount_Cumulative">Kumulacyjne</system:String>
+    <system:String x:Key="Discount_CompareMode">Tryb porównania</system:String>
+    <system:String x:Key="Discount_SelectItem">Wybierz przedmiot</system:String>
+    <system:String x:Key="Discount_Quantity">Ilość:</system:String>
+    <system:String x:Key="Discount_VS">VS</system:String>
+    <system:String x:Key="Discount_SelectItemB">Wybierz przedmiot B</system:String>
+    <system:String x:Key="Discount_Percentage">Procent zniżki</system:String>
+    <system:String x:Key="Discount_Save">Zapisz</system:String>
+    <system:String x:Key="Discount_TotalCost">Całkowity koszt:</system:String>
+    <system:String x:Key="Discount_TotalSaved">Razem zaoszczędzono:</system:String>
+    <system:String x:Key="Discount_ProductKits">Zestawy produktów</system:String>
+    <system:String x:Key="Discount_SuppliesKits">Zestawy zaopatrzenia</system:String>
+
+    <!--  Smart Repair Kit Window  -->
+    <system:String x:Key="SmartRepair_Title">Inteligentny zestaw naprawczy</system:String>
+    <system:String x:Key="SmartRepair_HealthMonitor">Monitor zdrowia</system:String>
+    <system:String x:Key="SmartRepair_Stopped">Zatrzymany</system:String>
+    <system:String x:Key="SmartRepair_Running">Uruchomiony</system:String>
+    <system:String x:Key="SmartRepair_Configuration">Konfiguracja</system:String>
+    <system:String x:Key="SmartRepair_CalibrationWarning">Jeśli wykrywanie jest niedokładne, wybierz kolory ręcznie.</system:String>
+    <system:String x:Key="SmartRepair_Calibration">Kalibracja kolorów</system:String>
+    <system:String x:Key="SmartRepair_FullColor">Kolor pełnego zdrowia</system:String>
+    <system:String x:Key="SmartRepair_PickFull">Wybierz kolor 'Pełny' (5s opóźnienia)</system:String>
+    <system:String x:Key="SmartRepair_EmptyColor">Kolor pustego zdrowia</system:String>
+    <system:String x:Key="SmartRepair_PickEmpty">Wybierz kolor 'Pusty' (5s opóźnienia)</system:String>
+    <system:String x:Key="SmartRepair_ApplyCustom">Zastosuj niestandardowe kolory</system:String>
+    <system:String x:Key="SmartRepair_Threshold">Próg aktywacji (% paska HP)</system:String>
+    <system:String x:Key="SmartRepair_Cooldown">Cooldown (ms)</system:String>
+    <system:String x:Key="SmartRepair_ActivationKey">Klawisz aktywacji (Skrót w grze)</system:String>
+    <system:String x:Key="SmartRepair_TestInput">Testuj wejście</system:String>
+    <system:String x:Key="SmartRepair_Start">Rozpocznij monitorowanie</system:String>
+    <system:String x:Key="SmartRepair_Stop">Zatrzymaj monitorowanie</system:String>
+    <system:String x:Key="SmartRepair_DebugScreenshot">Zapisz zrzut ekranu debugowania</system:String>
+
+    <!--  Theme Creator  -->
+    <system:String x:Key="Theme_Title">Utwórz niestandardowy motyw</system:String>
+    <system:String x:Key="Theme_NamePlaceholder">Nazwa motywu (np. Błękit oceanu)</system:String>
+    <system:String x:Key="Theme_WindowBg">Tło okna</system:String>
+    <system:String x:Key="Theme_Solid">Jednolity</system:String>
+    <system:String x:Key="Theme_Gradient">Gradient</system:String>
+    <system:String x:Key="Theme_Image">Obraz</system:String>
+    <system:String x:Key="Theme_PrimaryColor">Kolor podstawowy</system:String>
+    <system:String x:Key="Theme_PrimaryDesc">Tło lub początek gradientu</system:String>
+    <system:String x:Key="Theme_GradientEnd">Koniec gradientu</system:String>
+    <system:String x:Key="Theme_GradientEndDesc">Kolor zanikania</system:String>
+    <system:String x:Key="Theme_ImagePath">Ścieżka obrazu</system:String>
+    <system:String x:Key="Theme_UIColors">Kolory interfejsu</system:String>
+    <system:String x:Key="Theme_TextColor">Kolor tekstu</system:String>
+    <system:String x:Key="Theme_AccentColor">Kolor akcentu</system:String>
+    <system:String x:Key="Theme_ButtonFill">Wypełnienie przycisku</system:String>
+    <system:String x:Key="Theme_ButtonHover">Najechanie na przycisk</system:String>
+    <system:String x:Key="Theme_Preview">Podgląd tutaj</system:String>
+    <system:String x:Key="Theme_Randomize">Losuj</system:String>
+    <system:String x:Key="Theme_Save">Zapisz motyw</system:String>
+
+    <!--  Log Viewer  -->
+    <system:String x:Key="Logs_Title">Przeglądarka logów</system:String>
+    <system:String x:Key="Logs_OpenFolder">Otwórz folder</system:String>
+    <system:String x:Key="Logs_Refresh">Odśwież</system:String>
+    <system:String x:Key="Logs_Close">Zamknij</system:String>
+
+    <!--  Coordinate Picker  -->
+    <system:String x:Key="Picker_Instructions">Kliknij lewym przyciskiem, aby wybrać współrzędną | Kliknij prawym przyciskiem lub Esc, aby anulować</system:String>
+
+    <!--  Admin Password Dialog  -->
+    <system:String x:Key="Password_Title">Kontrola bezpieczeństwa</system:String>
+    <system:String x:Key="Password_Prompt">Podaj hasło administratora:</system:String>
+    <system:String x:Key="Password_Placeholder">Hasło...</system:String>
+    <system:String x:Key="Password_Incorrect">Nieprawidłowe hasło</system:String>
+    <system:String x:Key="Password_Unlock">Odblokuj</system:String>
+    <system:String x:Key="Password_Cancel">Anuluj</system:String>
+
+    <!--  Gold Box Timer  -->
+    <system:String x:Key="Timer_GoldBox">ZŁOTA SKRZYNIA</system:String>
+    <system:String x:Key="Timer_Taken">ZABRANA</system:String>
+    <system:String x:Key="Timer_Pause">Pauza</system:String>
+    <system:String x:Key="Timer_Remove">Usuń</system:String>
+
+</ResourceDictionary>

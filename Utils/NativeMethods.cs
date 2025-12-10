@@ -108,5 +108,18 @@ namespace Automatization.Utils
 
         public const int SM_CXSCREEN = 0;
         public const int SM_CYSCREEN = 1;
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct POINT
+        {
+            public int X;
+            public int Y;
+        }
+
+        [DllImport("user32.dll")]
+        public static extern bool ClientToScreen(IntPtr hWnd, ref POINT lpPoint);
+
+        [DllImport("user32.dll")]
+        public static extern bool ScreenToClient(IntPtr hWnd, ref POINT lpPoint);
     }
 }

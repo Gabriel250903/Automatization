@@ -18,7 +18,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <ui:TitleBar Title="Log Viewer" Grid.Row="0" />
+        <ui:TitleBar Title="{DynamicResource Logs_Title}" Grid.Row="0" />
 
         <ScrollViewer
             x:Name="LogScrollViewer"
@@ -49,22 +49,22 @@
                     Margin="0,0,10,0"
                     Appearance="Info"
                     Click="OpenFolderButton_Click"
-                    Content="Open Folder"
+                    Content="{DynamicResource Logs_OpenFolder}"
                     Icon="{ui:SymbolIcon Folder24}" />
 
                 <ui:Button
                     x:Name="RefreshButton"
-                    Width="100"
+                    MinWidth="100"
                     Margin="0,0,10,0"
                     Click="RefreshButton_Click"
-                    Content="Refresh"
+                    Content="{DynamicResource Logs_Refresh}"
                     Icon="{ui:SymbolIcon ArrowSync24}" />
 
                 <ui:Button
                     x:Name="CloseButton"
-                    Width="100"
+                    MinWidth="100"
                     Click="CloseButton_Click"
-                    Content="Close"
+                    Content="{DynamicResource Logs_Close}"
                     IsCancel="True" />
             </StackPanel>
         </Border>

@@ -13,10 +13,12 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
 using Wpf.Ui.Controls;
+using Application = System.Windows.Application;
 using MessageBox = System.Windows.MessageBox;
 using MessageBoxButton = System.Windows.MessageBoxButton;
 using MessageBoxImage = System.Windows.MessageBoxImage;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
+using Point = System.Windows.Point;
 
 namespace Automatization
 {
@@ -40,6 +42,8 @@ namespace Automatization
 
         private bool _arePowerupsPausedForChat = false;
         private readonly List<PowerupType> _activePowerups = [];
+        private string _currentStatusKey = "Status_Ready";
+
 
         #region Win32
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
@@ -78,6 +82,18 @@ namespace Automatization
 
             PauseHotkeysCheckBox.IsChecked = GlobalHotKeyManager.IsPaused;
             PauseHotkeysCheckBox.IsEnabled = true;
+            Status = "Status_Ready";
+            LanguageService.LanguageChanged += OnLanguageChanged;
+        }
+
+        private void OnLanguageChanged(object? sender, EventArgs e)
+        {
+            UpdateTranslatedStatus();
+        }
+
+        private void UpdateTranslatedStatus()
+        {
+            Status = _currentStatusKey;
         }
 
         private void OnSourceInitialized(object? sender, EventArgs e)
@@ -92,7 +108,10 @@ namespace Automatization
 
             AutoGoldBoxCheckBox.IsChecked = _settings.EnableAutoGoldBox;
 
-            if (_settings.EnableAutoGoldBox) _autoGoldBoxService.Start();
+            if (_settings.EnableAutoGoldBox)
+            {
+                _autoGoldBoxService.Start();
+            }
 
             GlobalHotKeyManager.Initialize();
             GlobalHotKeyManager.HotKeyPressed += OnHotKeyPressed;
@@ -127,12 +146,18 @@ namespace Automatization
 
                 _smartRepairWindow?.ToggleMonitoring();
             }
-            else _smartRepairWindow.ToggleMonitoring();
+            else
+            {
+                _smartRepairWindow.ToggleMonitoring();
+            }
         }
 
         private void DebugSmartRepair()
         {
-            if (_smartRepairWindow != null && _smartRepairWindow.IsLoaded) _smartRepairWindow.SaveDebugSnapshot();
+            if (_smartRepairWindow != null && _smartRepairWindow.IsLoaded)
+            {
+                _smartRepairWindow.SaveDebugSnapshot();
+            }
         }
 
         private bool KeyboardListener_OnKeyPressed(Key e)
@@ -173,7 +198,10 @@ namespace Automatization
                             foreach (PowerupType type in powerupsToResume)
                             {
                                 ViewModels.PowerupViewModel? vm = _powerupUtils.Powerups.FirstOrDefault(x => x.PowerupType == type);
-                                if (vm != null) vm.IsActive = true;
+                                if (vm != null)
+                                {
+                                    vm.IsActive = true;
+                                }
                             }
                         }
                     });
@@ -209,7 +237,10 @@ namespace Automatization
                     EnableAutomation();
                 }
 
-                if (_powerupUtils != null) _powerupUtils.GameProcess = gameProcess;
+                if (_powerupUtils != null)
+                {
+                    _powerupUtils.GameProcess = gameProcess;
+                }
             }
 
             string? actionEntry = _settings.GetActionForHotKey(hotKey);
@@ -284,7 +315,10 @@ namespace Automatization
 
             newTimer.Closed += (sender, args) =>
             {
-                if (sender is TimerWindow closedTimer) _ = _activeTimerWindows.Remove(closedTimer);
+                if (sender is TimerWindow closedTimer)
+                {
+                    _ = _activeTimerWindows.Remove(closedTimer);
+                }
             };
 
             _activeTimerWindows.Add(newTimer);
@@ -295,6 +329,16 @@ namespace Automatization
         private void InitializeTeamClickers()
         {
             _clickerService = new ClickerService(_settings);
+        }
+
+        private NativeMethods.POINT GetScreenCoordinates(Point clientPt)
+        {
+            NativeMethods.POINT pt = new() { X = (int)clientPt.X, Y = (int)clientPt.Y };
+            if (_gameProcess != null && _gameProcess.MainWindowHandle != IntPtr.Zero)
+            {
+                _ = NativeMethods.ClientToScreen(_gameProcess.MainWindowHandle, ref pt);
+            }
+            return pt;
         }
 
         private void ClickTeamButton(IntPtr windowHandle, int x, int y, ClickType clickType)
@@ -335,8 +379,8 @@ namespace Automatization
 
                 Dispatcher.Invoke(() =>
                 {
-                    RedTeamButton.Content = "Auto Red Team";
-                    Status = "Red Team auto-clicker stopped";
+                    RedTeamButton.Content = (string)Application.Current.Resources["Team_AutoRed"];
+                    Status = "Status_RedTeamStopped";
                 });
 
                 LogService.LogInfo("Red Team auto-clicker stopped.");
@@ -346,15 +390,18 @@ namespace Automatization
                 ClickType clickType = (ClickType)ClickTypeComboBox.SelectedItem;
 
                 _redClickerId = _clickerService?.Register(
-                    (handle, ct) => ClickTeamButton(handle, (int)_settings.RedTeamCoordinates.X, (int)_settings.RedTeamCoordinates.Y, ct),
+                    (handle, ct) =>
+                    {
+                        ClickTeamButton(handle, (int)_settings.RedTeamCoordinates.X, (int)_settings.RedTeamCoordinates.Y, ct);
+                    },
                     clickType,
                     _settings.GameProcessName
                 );
 
                 Dispatcher.Invoke(() =>
                 {
-                    RedTeamButton.Content = "Stop Red Team";
-                    Status = "Red Team auto-clicker started";
+                    RedTeamButton.Content = (string)Application.Current.Resources["Team_StopRed"];
+                    Status = "Status_RedTeamStarted";
                 });
 
                 LogService.LogInfo("Red Team auto-clicker started.");
@@ -371,8 +418,8 @@ namespace Automatization
 
                 Dispatcher.Invoke(() =>
                 {
-                    BlueTeamButton.Content = "Auto Blue Team";
-                    Status = "Blue Team auto-clicker stopped";
+                    BlueTeamButton.Content = (string)Application.Current.Resources["Team_AutoBlue"];
+                    Status = "Status_BlueTeamStopped";
                 });
 
                 LogService.LogInfo("Blue Team auto-clicker stopped.");
@@ -382,15 +429,18 @@ namespace Automatization
                 ClickType clickType = (ClickType)ClickTypeComboBox.SelectedItem;
 
                 _blueClickerId = _clickerService?.Register(
-                    (handle, ct) => ClickTeamButton(handle, (int)_settings.BlueTeamCoordinates.X, (int)_settings.BlueTeamCoordinates.Y, ct),
+                    (handle, ct) =>
+                    {
+                        ClickTeamButton(handle, (int)_settings.BlueTeamCoordinates.X, (int)_settings.BlueTeamCoordinates.Y, ct);
+                    },
                     clickType,
                     _settings.GameProcessName
                 );
 
                 Dispatcher.Invoke(() =>
                 {
-                    BlueTeamButton.Content = "Stop Blue Team";
-                    Status = "Blue Team auto-clicker started";
+                    BlueTeamButton.Content = (string)Application.Current.Resources["Team_StopBlue"];
+                    Status = "Status_BlueTeamStarted";
                 });
 
                 LogService.LogInfo("Blue Team auto-clicker started.");
@@ -448,9 +498,12 @@ namespace Automatization
             PowerupsGroup.Visibility = Visibility.Visible;
             SmartFeaturesGroup.Visibility = Visibility.Visible;
             LaunchButton.Visibility = Visibility.Collapsed;
-            Status = "Game is running!";
+            Status = "Status_GameRunning";
 
-            if (_settings.EnableAutoGoldBox) _autoGoldBoxService?.Start();
+            if (_settings.EnableAutoGoldBox)
+            {
+                _autoGoldBoxService?.Start();
+            }
 
             LogService.LogInfo("Automation enabled.");
         }
@@ -462,7 +515,7 @@ namespace Automatization
             PowerupsGroup.Visibility = Visibility.Collapsed;
             SmartFeaturesGroup.Visibility = Visibility.Collapsed;
             LaunchButton.Visibility = Visibility.Visible;
-            Status = "Game not running. Click Launch to start.";
+            Status = "Status_GameNotRunning";
 
             LogService.LogInfo("Automation disabled.");
         }
@@ -502,12 +555,18 @@ namespace Automatization
                 foreach (RegistryKey baseKey in new[] { Microsoft.Win32.Registry.LocalMachine, Microsoft.Win32.Registry.CurrentUser })
                 {
                     using RegistryKey? key = baseKey.OpenSubKey(path);
-                    if (key == null) continue;
+                    if (key == null)
+                    {
+                        continue;
+                    }
 
                     foreach (string subKeyName in key.GetSubKeyNames())
                     {
                         using RegistryKey? subKey = key.OpenSubKey(subKeyName);
-                        if (subKey == null) continue;
+                        if (subKey == null)
+                        {
+                            continue;
+                        }
 
                         string? displayName = subKey.GetValue("DisplayName")?.ToString();
                         if (displayName != null && displayName.Contains(gameProcessName + " Online", StringComparison.OrdinalIgnoreCase))
@@ -516,7 +575,10 @@ namespace Automatization
                             if (!string.IsNullOrEmpty(installLocation))
                             {
                                 string executablePath = Path.Combine(installLocation, gameProcessName + ".exe");
-                                if (File.Exists(executablePath)) return executablePath;
+                                if (File.Exists(executablePath))
+                                {
+                                    return executablePath;
+                                }
                             }
                         }
                     }
@@ -539,13 +601,22 @@ namespace Automatization
             foreach (string basePath in commonPaths)
             {
                 string directPath = Path.Combine(basePath, gameProcessName + ".exe");
-                if (File.Exists(directPath)) return directPath;
+                if (File.Exists(directPath))
+                {
+                    return directPath;
+                }
 
                 string subDirPath = Path.Combine(basePath, gameProcessName + " Online", gameProcessName + ".exe");
-                if (File.Exists(subDirPath)) return subDirPath;
+                if (File.Exists(subDirPath))
+                {
+                    return subDirPath;
+                }
 
                 subDirPath = Path.Combine(basePath, gameProcessName, gameProcessName + ".exe");
-                if (File.Exists(subDirPath)) return subDirPath;
+                if (File.Exists(subDirPath))
+                {
+                    return subDirPath;
+                }
             }
 
             return null;
@@ -557,7 +628,7 @@ namespace Automatization
             {
                 if (!File.Exists(_gameExecutablePath))
                 {
-                    Status = "Game executable not found. Please select it.";
+                    Status = "Status_GameNotFound";
                     LogService.LogWarning("Game executable not found.");
 
                     OpenFileDialog dlg = new()
@@ -574,18 +645,24 @@ namespace Automatization
 
                         LogService.LogInfo($"Game executable path set to: {_gameExecutablePath}");
                     }
-                    else return;
+                    else
+                    {
+                        return;
+                    }
                 }
 
                 LogService.LogInfo("Launching game.");
 
                 _gameProcess = Process.Start(new ProcessStartInfo { FileName = _gameExecutablePath, UseShellExecute = true });
 
-                if (_gameProcess != null) EnableAutomation();
+                if (_gameProcess != null)
+                {
+                    EnableAutomation();
+                }
             }
             catch (Exception ex)
             {
-                Status = "Error launching game.";
+                Status = "Status_LaunchError";
                 LogService.LogError("Error launching game.", ex);
             }
         }
@@ -595,13 +672,24 @@ namespace Automatization
 
         private string Status
         {
-            set => Dispatcher.Invoke(() => StatusText.Text = value);
+            set
+            {
+                _currentStatusKey = value;
+                _ = Dispatcher.Invoke(() => StatusText.Text = (string)Application.Current.Resources[_currentStatusKey]);
+            }
         }
 
         private void LaunchButton_Click(object sender, RoutedEventArgs e)
         {
             LogService.LogInfo("Launch button clicked.");
             LaunchGame();
+        }
+
+        private void DiscountCalculatorButton_Click(object sender, RoutedEventArgs e)
+        {
+            LogService.LogInfo("Opening Discount Calculator.");
+            DiscountCalculatorWindow wnd = new() { Owner = this };
+            wnd.Show();
         }
 
         private void SmartRepairButton_Click(object sender, RoutedEventArgs? e)
@@ -618,6 +706,12 @@ namespace Automatization
             {
                 _ = _smartRepairWindow.Activate();
             }
+        }
+
+        private void RoadmapButton_Click(object sender, RoutedEventArgs e)
+        {
+            RoadmapWindow wnd = new() { Owner = this };
+            wnd.Show();
         }
 
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
@@ -642,8 +736,6 @@ namespace Automatization
 
             if (_autoGoldBoxService != null)
             {
-                _autoGoldBoxService.UpdateSettings(_settings.EnableAutoGoldBox, _settings.GoldBoxColor);
-
                 if (_settings.EnableAutoGoldBox && _gameProcess != null)
                 {
                     _autoGoldBoxService.Start();
@@ -693,7 +785,7 @@ namespace Automatization
             }
             else
             {
-                Status = "Auto Gold Box Service not initialized.";
+                Status = "Status_AutoGoldBoxNotInit";
             }
         }
 
@@ -701,7 +793,7 @@ namespace Automatization
         {
             if (_autoGoldBoxService == null)
             {
-                _ = MessageBox.Show("Auto Gold Box Service is not initialized.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                LogService.LogError("Auto Gold Box Service is not initialized.");
                 return;
             }
 
@@ -718,11 +810,11 @@ namespace Automatization
                     using Bitmap bmp = new(dlg.FileName);
 
                     string result = _autoGoldBoxService.TestDetection(bmp);
-                    _ = MessageBox.Show(result, "Detection Test Result", MessageBoxButton.OK, result.StartsWith("Success") ? MessageBoxImage.Information : MessageBoxImage.Warning);
+                    _ = MessageBox.Show(result, "Detection Test Result", MessageBoxButton.OK, result.Contains("detected!") ? MessageBoxImage.Information : MessageBoxImage.Warning);
                 }
                 catch (Exception ex)
                 {
-                    _ = MessageBox.Show($"Failed to load image: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    _ = MessageBox.Show(string.Format("Error loading image: {0}", ex.Message), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
@@ -744,6 +836,8 @@ namespace Automatization
                 timer.Close();
             }
             _activeTimerWindows.Clear();
+
+            LanguageService.LanguageChanged -= OnLanguageChanged;
 
             base.OnClosed(e);
 

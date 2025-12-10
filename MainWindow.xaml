@@ -10,8 +10,9 @@
     xmlns:utils="clr-namespace:Automatization.Utils"
     xmlns:viewmodels="clr-namespace:Automatization.ViewModels"
     Title="Automatization"
-    Width="500"
+    Width="600"
     Height="750"
+    MinWidth="500"
     ExtendsContentIntoTitleBar="True"
     FontFamily="Segoe UI"
     WindowBackdropType="Acrylic"
@@ -19,18 +20,17 @@
     mc:Ignorable="d">
     <Window.Resources>
         <DataTemplate DataType="{x:Type viewmodels:PowerupViewModel}">
-            <Grid Margin="5,5">
+            <Grid Margin="5,5,10,10">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition MinWidth="150" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
                 <Button
                     Grid.Column="0"
-                    Width="160"
                     Height="35"
-                    HorizontalAlignment="Left"
+                    HorizontalAlignment="Stretch"
                     Command="{Binding TogglePowerupCommand}"
                     Content="{Binding ButtonContent}" />
 
@@ -67,7 +67,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <ui:TitleBar Title="{Binding Title, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}" Grid.Row="0" />
+        <ui:TitleBar Title="{DynamicResource Main_Title}" Grid.Row="0" />
 
         <Grid Grid.Row="1" Margin="10,5,10,5">
             <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
@@ -76,23 +76,31 @@
                     Margin="0,0,15,0"
                     VerticalAlignment="Center"
                     Checked="PauseHotkeysCheckBox_Checked"
-                    Content="Pause Hotkeys"
+                    Content="{DynamicResource Main_PauseHotkeys}"
                     ToolTip="Temporarily disable all global hotkeys."
                     Unchecked="PauseHotkeysCheckBox_Unchecked" />
+
+                <Button
+                    x:Name="RoadmapButton"
+                    Height="30"
+                    Padding="15,0"
+                    Margin="0,0,10,0"
+                    Click="RoadmapButton_Click"
+                    Content="Roadmap" />
 
                 <Button
                     x:Name="SettingsButton"
                     Height="30"
                     Padding="15,0"
                     Click="SettingsButton_Click"
-                    Content="Settings" />
+                    Content="{DynamicResource Main_Settings}" />
                 <Button
                     x:Name="ShowDebugButton"
                     Height="30"
                     Margin="10,0,0,0"
                     Padding="15,0"
                     Click="ShowDebugButton_Click"
-                    Content="Debug" />
+                    Content="{DynamicResource Main_Debug}" />
             </StackPanel>
         </Grid>
 
@@ -107,14 +115,25 @@
                     HorizontalAlignment="Center"
                     Appearance="Primary"
                     Click="LaunchButton_Click"
-                    Content="Launch Game"
+                    Content="{DynamicResource Main_LaunchGame}"
                     Icon="{ui:SymbolIcon Rocket24}"
                     Visibility="Collapsed" />
+
+                <GroupBox Margin="0,0,0,10" Header="{DynamicResource Group_Tools}">
+                    <StackPanel Margin="5">
+                        <ui:Button
+                            Margin="0,0,0,10"
+                            HorizontalAlignment="Stretch"
+                            Click="DiscountCalculatorButton_Click"
+                            Content="{DynamicResource Tool_DiscountCalculator}"
+                            Icon="{ui:SymbolIcon Calculator24}" />
+                    </StackPanel>
+                </GroupBox>
 
                 <GroupBox
                     x:Name="SmartFeaturesGroup"
                     Margin="0,0,0,10"
-                    Header="Smart Features"
+                    Header="{DynamicResource Group_SmartFeatures}"
                     Visibility="Collapsed">
                     <StackPanel Margin="5">
                         <ui:Button
@@ -123,25 +142,28 @@
                             HorizontalAlignment="Stretch"
                             Appearance="Secondary"
                             Click="SmartRepairButton_Click"
-                            Content="Smart Repair Kit"
+                            Content="{DynamicResource Smart_RepairKit}"
                             Icon="{ui:SymbolIcon HeartPulse24}" />
 
                         <CheckBox
                             x:Name="AutoGoldBoxCheckBox"
+                            Grid.Column="0"
                             Margin="-10,0,0,0"
                             Checked="AutoGoldBoxCheckBox_Checked"
-                            Content="Smart Gold Box Detection"
+                            Content="{DynamicResource Smart_GoldBox}"
                             Unchecked="AutoGoldBoxCheckBox_Unchecked" />
+
+                        <TextBlock FontWeight="Bold" Foreground="Red">Smart Gold Box Detection might not work as expected, please avoid using it.</TextBlock>
                     </StackPanel>
                 </GroupBox>
 
-                <GroupBox x:Name="PowerupsGroup" Header="Powerups">
+                <GroupBox x:Name="PowerupsGroup" Header="{DynamicResource Group_Powerups}">
                     <ItemsControl ItemsSource="{Binding Powerups}" />
                 </GroupBox>
 
-                <GroupBox Margin="0,10" Header="Team Auto-Clickers">
+                <GroupBox Margin="0,10" Header="{DynamicResource Group_TeamAutoClickers}">
                     <StackPanel Margin="5">
-                        <TextBlock Margin="5,0,5,5" Text="Click Type:" />
+                        <TextBlock Margin="5,0,5,5" Text="{DynamicResource Team_ClickType}" />
                         <ComboBox
                             x:Name="ClickTypeComboBox"
                             Margin="0,0,0,10"
@@ -149,9 +171,9 @@
 
                         <Grid Margin="0,5">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="200" />
                                 <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="200" />
+                                <ColumnDefinition Width="10" />
+                                <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
 
                             <ui:Button
@@ -161,7 +183,7 @@
                                 HorizontalAlignment="Stretch"
                                 Appearance="Danger"
                                 Click="RedTeamButton_Click"
-                                Content="Auto Click Red"
+                                Content="{DynamicResource Team_AutoRed}"
                                 Icon="{ui:SymbolIcon Flag24}" />
 
                             <ui:Button
@@ -171,7 +193,7 @@
                                 HorizontalAlignment="Stretch"
                                 Appearance="Primary"
                                 Click="BlueTeamButton_Click"
-                                Content="Auto Click Blue"
+                                Content="{DynamicResource Team_AutoBlue}"
                                 Icon="{ui:SymbolIcon Flag24}" />
                         </Grid>
                     </StackPanel>
@@ -180,19 +202,19 @@
                 <GroupBox
                     x:Name="DebugGroup"
                     Margin="0,10"
-                    Header="Debug"
+                    Header="{DynamicResource Group_Debug}"
                     Visibility="Collapsed">
                     <StackPanel Margin="5">
                         <ui:Button
                             Margin="0,0,0,5"
                             HorizontalAlignment="Stretch"
                             Click="SimulateGoldBox_Click"
-                            Content="Simulate Gold Box"
+                            Content="{DynamicResource Debug_SimulateGoldBox}"
                             Icon="{ui:SymbolIcon Box24}" />
                         <ui:Button
                             HorizontalAlignment="Stretch"
                             Click="TestImageDetection_Click"
-                            Content="Test Image Detection"
+                            Content="{DynamicResource Debug_TestImage}"
                             Icon="{ui:SymbolIcon Image24}" />
                     </StackPanel>
                 </GroupBox>
@@ -205,7 +227,7 @@
                     x:Name="StatusText"
                     Margin="10,0"
                     FontWeight="SemiBold"
-                    Text="Ready" />
+                    Text="{DynamicResource Status_Ready}" />
             </StatusBarItem>
         </StatusBar>
     </Grid>

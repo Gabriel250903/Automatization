@@ -6,12 +6,16 @@ using Automatization.UI;
 using Automatization.UI.Coordinate;
 using Automatization.Utils;
 using Automatization.ViewModels;
-using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Wpf.Ui.Controls;
+using Application = System.Windows.Application;
+using MessageBox = Wpf.Ui.Controls.MessageBox;
+using MessageBoxResult = Wpf.Ui.Controls.MessageBoxResult;
+using Navigation = System.Windows.Navigation;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using Point = System.Windows.Point;
 
@@ -37,7 +41,10 @@ namespace Automatization
 
         private void SettingsWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            VersionTextBlock.Text = $"Current Version: {UpdaterService.GetCurrentVersion().ToString(3)}";
+            VersionTextBlock.Text = string.Format(
+                (string)Application.Current.Resources["Settings_CurrentVersion"],
+                UpdaterService.GetCurrentVersion().ToString(3)
+            );
             GlobalHotKeyManager.UnregisterAll();
 
             ThemeService.LoadThemes();
@@ -83,6 +90,9 @@ namespace Automatization
                     break;
                 }
             }
+
+            LanguageComboBox.ItemsSource = LanguageService.GetLanguages();
+            LanguageComboBox.SelectedValue = _settings.Language;
         }
 
         private void PopulateThemeComboBox()
@@ -123,6 +133,17 @@ namespace Automatization
             }
 
             ThemeComboBox.SelectionChanged += ThemeComboBox_SelectionChanged;
+        }
+
+        private void LanguageComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!_isInitialized || LanguageComboBox.SelectedValue is not string selectedLangCode)
+            {
+                return;
+            }
+
+            _settings.Language = selectedLangCode;
+            LanguageService.SetLanguage(selectedLangCode);
         }
 
         private void ThemeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -170,7 +191,7 @@ namespace Automatization
         {
             if (ThemeComboBox.SelectedItem is ComboBoxItem item && item.Tag is CustomTheme themeToDelete)
             {
-                Wpf.Ui.Controls.MessageBox uiMessageBox = new()
+                MessageBox uiMessageBox = new()
                 {
                     Title = "Delete Theme",
                     Content = $"Are you sure you want to delete '{themeToDelete.Name}'?",
@@ -178,9 +199,9 @@ namespace Automatization
                     CloseButtonText = "Cancel"
                 };
 
-                Wpf.Ui.Controls.MessageBoxResult result = await uiMessageBox.ShowDialogAsync();
+                MessageBoxResult result = await uiMessageBox.ShowDialogAsync();
 
-                if (result == Wpf.Ui.Controls.MessageBoxResult.Primary)
+                if (result == MessageBoxResult.Primary)
                 {
                     ThemeService.DeleteTheme(themeToDelete);
                     _settings.CustomThemeName = null;
@@ -196,7 +217,7 @@ namespace Automatization
 
             if (HasDuplicateHotkeys(out string duplicateMessage))
             {
-                Wpf.Ui.Controls.MessageBox uiMessageBox = new() { Title = "Duplicate Hotkeys", Content = duplicateMessage, CloseButtonText = "OK" };
+                MessageBox uiMessageBox = new() { Title = "Duplicate Hotkeys", Content = duplicateMessage, CloseButtonText = "OK" };
                 _ = await uiMessageBox.ShowDialogAsync();
                 return;
             }
@@ -211,6 +232,12 @@ namespace Automatization
             if (SmartRepairFpsComboBox.SelectedItem is ComboBoxItem selectedFpsItem && int.TryParse(selectedFpsItem.Tag.ToString(), out int fps))
             {
                 _settings.SmartRepairFps = fps;
+            }
+
+            if (LanguageComboBox.SelectedValue is string langCode)
+            {
+                _settings.Language = langCode;
+                LanguageService.SetLanguage(langCode);
             }
 
             _settings.GameProcessName = !string.IsNullOrWhiteSpace(GameProcessNameTextBox.Text) ? GameProcessNameTextBox.Text.Trim() : "ProTanki";
@@ -267,6 +294,7 @@ namespace Automatization
                 App.Settings.GameExecutablePath = _settings.GameExecutablePath;
                 App.Settings.RedTeamCoordinates = _settings.RedTeamCoordinates;
                 App.Settings.BlueTeamCoordinates = _settings.BlueTeamCoordinates;
+                App.Settings.GoldBoxColor = _settings.GoldBoxColor;
                 App.Settings.GlobalHotKey = _settings.GlobalHotKey;
                 App.Settings.RedTeamHotKey = _settings.RedTeamHotKey;
                 App.Settings.BlueTeamHotKey = _settings.BlueTeamHotKey;
@@ -391,8 +419,20 @@ namespace Automatization
 
             if (result == true)
             {
-                RedTeamXTextBox.Text = picker.SelectedPoint.X.ToString(CultureInfo.InvariantCulture);
-                RedTeamYTextBox.Text = picker.SelectedPoint.Y.ToString(CultureInfo.InvariantCulture);
+                Point finalPoint = picker.SelectedPoint;
+                Point? clientPoint = ConvertScreenToClient(picker.SelectedPoint);
+
+                if (clientPoint.HasValue)
+                {
+                    finalPoint = clientPoint.Value;
+                }
+                else
+                {
+                    _ = System.Windows.MessageBox.Show("Game process not found. Coordinates saved as absolute screen coordinates. Ensure the game is running for accurate relative positioning.", "Warning", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                }
+
+                RedTeamXTextBox.Text = finalPoint.X.ToString(CultureInfo.InvariantCulture);
+                RedTeamYTextBox.Text = finalPoint.Y.ToString(CultureInfo.InvariantCulture);
             }
         }
 
@@ -410,15 +450,46 @@ namespace Automatization
 
             if (result == true)
             {
-                BlueTeamXTextBox.Text = picker.SelectedPoint.X.ToString(CultureInfo.InvariantCulture);
-                BlueTeamYTextBox.Text = picker.SelectedPoint.Y.ToString(CultureInfo.InvariantCulture);
+                Point finalPoint = picker.SelectedPoint;
+                Point? clientPoint = ConvertScreenToClient(picker.SelectedPoint);
+
+                if (clientPoint.HasValue)
+                {
+                    finalPoint = clientPoint.Value;
+                }
+                else
+                {
+                    _ = System.Windows.MessageBox.Show("Game process not found. Coordinates saved as absolute screen coordinates. Ensure the game is running for accurate relative positioning.", "Warning", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                }
+
+                BlueTeamXTextBox.Text = finalPoint.X.ToString(CultureInfo.InvariantCulture);
+                BlueTeamYTextBox.Text = finalPoint.Y.ToString(CultureInfo.InvariantCulture);
             }
+        }
+
+        private Point? ConvertScreenToClient(Point screenPoint)
+        {
+            Process? gameProcess = Process.GetProcessesByName(_settings.GameProcessName).FirstOrDefault();
+            if (gameProcess == null || gameProcess.MainWindowHandle == IntPtr.Zero)
+            {
+                return null;
+            }
+
+            NativeMethods.POINT pt = new() { X = (int)screenPoint.X, Y = (int)screenPoint.Y };
+            _ = NativeMethods.ScreenToClient(gameProcess.MainWindowHandle, ref pt);
+            return new Point(pt.X, pt.Y);
         }
 
         private void LogsButton_Click(object sender, RoutedEventArgs e)
         {
             LogViewerWindow logViewer = new() { Owner = this };
             _ = logViewer.ShowDialog();
+        }
+
+        private void ViewReportsButton_Click(object sender, RoutedEventArgs e)
+        {
+            ReportViewerWindow reportViewerWindow = new() { Owner = this };
+            _ = reportViewerWindow.ShowDialog();
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
@@ -428,25 +499,28 @@ namespace Automatization
 
         private async void CheckForUpdatesButton_Click(object sender, RoutedEventArgs e)
         {
-            StatusTextBlock.Text = "Checking for updates...";
+            StatusTextBlock.Text = (string)Application.Current.Resources["Settings_CheckingUpdates"];
             try
             {
                 (Version? latestVersion, string? releaseNotes) = await _updaterService.GetLatestVersionAsync();
-                LatestVersionTextBlock.Text = $"Latest Version: {latestVersion?.ToString(3)}";
+                LatestVersionTextBlock.Text = string.Format(
+                    (string)Application.Current.Resources["Settings_LatestVersion"],
+                    latestVersion?.ToString(3)
+                );
 
                 if (latestVersion != null && latestVersion > UpdaterService.GetCurrentVersion())
                 {
-                    StatusTextBlock.Text = "Update available!";
+                    StatusTextBlock.Text = (string)Application.Current.Resources["Settings_UpdateAvailable"];
                     UpdateNowButton.Visibility = Visibility.Visible;
                 }
                 else
                 {
-                    StatusTextBlock.Text = "You are up to date.";
+                    StatusTextBlock.Text = (string)Application.Current.Resources["Settings_UpToDate"];
                 }
             }
             catch (Exception ex)
             {
-                StatusTextBlock.Text = "Error checking for updates.";
+                StatusTextBlock.Text = (string)Application.Current.Resources["Settings_ErrorCheckingUpdates"];
                 LogService.LogError($"Error checking for updates: {ex}");
             }
         }
@@ -455,12 +529,12 @@ namespace Automatization
         {
             UpdateNowButton.IsEnabled = false;
             CheckForUpdatesButton.IsEnabled = false;
-            StatusTextBlock.Text = "Downloading update...";
+            StatusTextBlock.Text = (string)Application.Current.Resources["Settings_DownloadingUpdate"];
             DownloadProgressBar.Visibility = Visibility.Visible;
 
             try
             {
-                (bool uninstalled, string? installerPath) = await _updaterService.DownloadAndInstallUpdateAsync((bytesReceived, totalBytes) =>
+                string? installerPath = await _updaterService.DownloadUpdateAsync((bytesReceived, totalBytes) =>
                 {
                     _ = Dispatcher.BeginInvoke(() =>
                     {
@@ -468,23 +542,48 @@ namespace Automatization
                     });
                 });
 
-                if (uninstalled)
+                if (!string.IsNullOrEmpty(installerPath))
                 {
-                    StatusTextBlock.Text = "Update installed. Relaunching...";
-                    UpdaterService.RelaunchApplication();
+                    StatusTextBlock.Text = (string)Application.Current.Resources["Settings_UpdateDownloaded"];
+                    UpdaterService.InstallUpdate(installerPath);
                 }
                 else
                 {
-                    StatusTextBlock.Text = "Please run installer manually.";
+                    StatusTextBlock.Text = (string)Application.Current.Resources["Settings_DownloadFailed"];
+                    UpdateNowButton.IsEnabled = true;
                     CheckForUpdatesButton.IsEnabled = true;
                 }
             }
             catch (Exception ex)
             {
-                StatusTextBlock.Text = $"Error: {ex.Message}";
+                StatusTextBlock.Text = string.Format(
+                    (string)Application.Current.Resources["Settings_Error"],
+                    ex.Message
+                );
                 UpdateNowButton.IsEnabled = true;
                 CheckForUpdatesButton.IsEnabled = true;
                 DownloadProgressBar.Visibility = Visibility.Collapsed;
+            }
+        }
+        private void Hyperlink_RequestNavigate(object sender, Navigation.RequestNavigateEventArgs e)
+        {
+            _ = Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+            e.Handled = true;
+        }
+
+        private void BtnCreateNewLanguage_Click(object sender, RoutedEventArgs e)
+        {
+            LanguageEditorWindow editor = new() { Owner = this };
+            _ = editor.ShowDialog();
+        }
+
+        private void BtnEditLanguage_Click(object sender, RoutedEventArgs e)
+        {
+            LanguagePickerWindow picker = new(true) { Owner = this };
+            if (picker.ShowDialog() == true && !string.IsNullOrEmpty(picker.SelectedLanguageCode))
+            {
+                LanguageEditorWindow editor = new(picker.SelectedLanguageCode) { Owner = this };
+                _ = editor.ShowDialog();
             }
         }
     }

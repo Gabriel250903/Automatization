@@ -1,9 +1,11 @@
+using Automatization.Services;
 using Automatization.Settings;
 using Automatization.Types;
 using Automatization.Utils;
 using System.ComponentModel;
 using System.Windows.Input;
 using System.Windows.Threading;
+using Application = System.Windows.Application;
 
 namespace Automatization.ViewModels
 {
@@ -24,7 +26,7 @@ namespace Automatization.ViewModels
                 {
                     _powerupType = value;
                     OnPropertyChanged(nameof(PowerupType));
-                    OnPropertyChanged(nameof(ButtonContent));
+                    UpdateLocalization();
                 }
             }
         }
@@ -80,12 +82,24 @@ namespace Automatization.ViewModels
                         _timer.Stop();
                     }
 
-                    OnPropertyChanged(nameof(ButtonContent));
+                    UpdateLocalization();
                 }
             }
         }
 
-        public string ButtonContent => IsActive ? $"Stop {PowerupType}" : $"Start {PowerupType}";
+        private string _buttonContent = string.Empty;
+        public string ButtonContent
+        {
+            get => _buttonContent;
+            set
+            {
+                if (_buttonContent != value)
+                {
+                    _buttonContent = value;
+                    OnPropertyChanged(nameof(ButtonContent));
+                }
+            }
+        }
 
         public ICommand TogglePowerupCommand { get; }
 
@@ -110,11 +124,34 @@ namespace Automatization.ViewModels
                 Interval = TimeSpan.FromMilliseconds(_delay)
             };
             _timer.Tick += (s, e) => _usePowerupAction?.Invoke(PowerupType);
+
+            LanguageService.LanguageChanged += (s, e) => UpdateLocalization();
+            UpdateLocalization();
         }
 
         private void TogglePowerup(object? parameter)
         {
             IsActive = !IsActive;
+        }
+
+        private void UpdateLocalization()
+        {
+            string actionKey = IsActive ? "General_Stop" : "General_Start";
+            string actionText = (string)Application.Current.Resources[actionKey] ?? (IsActive ? "Stop" : "Start");
+
+            string powerupKey = PowerupType switch
+            {
+                PowerupType.RepairKit => "Settings_Powerup_Repair",
+                PowerupType.DoubleArmor => "Settings_Powerup_Armor",
+                PowerupType.DoubleDamage => "Settings_Powerup_Damage",
+                PowerupType.SpeedBoost => "Settings_Powerup_Speed",
+                PowerupType.Mine => "Settings_Powerup_Mine",
+                _ => ""
+            };
+
+            string powerupText = (string)Application.Current.Resources[powerupKey] ?? PowerupType.ToString();
+
+            ButtonContent = $"{actionText} {powerupText}";
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

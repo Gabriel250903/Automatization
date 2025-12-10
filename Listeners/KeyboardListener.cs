@@ -61,6 +61,5 @@ namespace Automatization.Listeners
 
             return CallNextHookEx(_hookID, nCode, wParam, lParam);
         }
-
     }
 }

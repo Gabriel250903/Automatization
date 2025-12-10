@@ -3,6 +3,12 @@ using Automatization.Types;
 using Automatization.ViewModels;
 using System.Windows;
 using Wpf.Ui.Controls;
+using Button = System.Windows.Controls.Button;
+using Color = System.Drawing.Color;
+using Media = System.Windows.Media;
+using MessageBox = Wpf.Ui.Controls.MessageBox;
+using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
+using TextBox = System.Windows.Controls.TextBox;
 
 namespace Automatization.UI
 {
@@ -33,6 +39,68 @@ namespace Automatization.UI
             return theme;
         }
 
+        private void Randomize_Click(object sender, RoutedEventArgs e)
+        {
+            Random rnd = new();
+
+            bool isDarkTheme = rnd.Next(2) == 0;
+
+            Color bgPrimary;
+            Color text;
+            Color btnBg;
+            Color btnHover;
+
+            if (isDarkTheme)
+            {
+                bgPrimary = Color.FromArgb(255, rnd.Next(10, 40), rnd.Next(10, 40), rnd.Next(10, 45));
+                text = Color.FromArgb(255, 220, 220, 220);
+                btnBg = Color.FromArgb(40, 255, 255, 255);
+                btnHover = Color.FromArgb(60, 255, 255, 255);
+            }
+            else
+            {
+                bgPrimary = Color.FromArgb(255, rnd.Next(230, 256), rnd.Next(230, 256), rnd.Next(235, 256));
+                text = Color.FromArgb(255, 20, 20, 20);
+                btnBg = Color.FromArgb(30, 0, 0, 0);
+                btnHover = Color.FromArgb(50, 0, 0, 0);
+            }
+
+            Color accent = Color.FromArgb(255, rnd.Next(50, 255), rnd.Next(50, 255), rnd.Next(50, 255));
+
+            bool useGradient = rnd.Next(100) < 30;
+            Color bgSecondary = bgPrimary;
+
+            if (useGradient)
+            {
+                RadioGradient.IsChecked = true;
+
+                int shift = 30;
+                int r = Math.Clamp(bgPrimary.R + rnd.Next(-shift, shift), 0, 255);
+                int g = Math.Clamp(bgPrimary.G + rnd.Next(-shift, shift), 0, 255);
+                int b = Math.Clamp(bgPrimary.B + rnd.Next(-shift, shift), 0, 255);
+
+                bgSecondary = Color.FromArgb(255, r, g, b);
+            }
+            else
+            {
+                RadioSolid.IsChecked = true;
+            }
+
+            WindowBgHex.Text = ColorToHex(bgPrimary);
+            GradientEndHex.Text = ColorToHex(bgSecondary);
+            TextColorHex.Text = ColorToHex(text);
+            BtnBgHex.Text = ColorToHex(btnBg);
+            BtnHoverHex.Text = ColorToHex(btnHover);
+            AccentHex.Text = ColorToHex(accent);
+
+            Preview_Click(sender, e);
+        }
+
+        private static string ColorToHex(Color c)
+        {
+            return $"#{c.A:X2}{c.R:X2}{c.G:X2}{c.B:X2}";
+        }
+
         private void Preview_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -43,14 +111,14 @@ namespace Automatization.UI
 
                 WindowBackdropType = WindowBackdropType.None;
 
-                if (Resources["ApplicationBackgroundBrush"] is System.Windows.Media.Brush bgBrush)
+                if (Resources["ApplicationBackgroundBrush"] is Media.Brush bgBrush)
                 {
                     Background = bgBrush;
                 }
             }
             catch
             {
-                Wpf.Ui.Controls.MessageBox uiMessageBox = new()
+                MessageBox uiMessageBox = new()
                 {
                     Title = "Error",
                     Content = "Invalid Color Code. Check your hex values.",
@@ -64,7 +132,7 @@ namespace Automatization.UI
         {
             if (string.IsNullOrWhiteSpace(ThemeNameBox.Text))
             {
-                Wpf.Ui.Controls.MessageBox uiMessageBox = new()
+                MessageBox uiMessageBox = new()
                 {
                     Title = "Missing Name",
                     Content = "Please enter a theme name.",
@@ -83,7 +151,7 @@ namespace Automatization.UI
             }
             catch (Exception ex)
             {
-                Wpf.Ui.Controls.MessageBox uiMessageBox = new()
+                MessageBox uiMessageBox = new()
                 {
                     Title = "Save Error",
                     Content = ex.Message,
@@ -95,15 +163,15 @@ namespace Automatization.UI
 
         private void PickColor_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is System.Windows.Controls.Button btn && btn.Tag is System.Windows.Controls.TextBox targetBox)
+            if (sender is Button btn && btn.Tag is TextBox targetBox)
             {
                 using ColorDialog colorDialog = new();
 
                 try
                 {
-                    System.Windows.Media.Color wpfColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(targetBox.Text);
+                    Media.Color wpfColor = (Media.Color)Media.ColorConverter.ConvertFromString(targetBox.Text);
 
-                    colorDialog.Color = System.Drawing.Color.FromArgb(wpfColor.A, wpfColor.R, wpfColor.G, wpfColor.B);
+                    colorDialog.Color = Color.FromArgb(wpfColor.A, wpfColor.R, wpfColor.G, wpfColor.B);
                 }
                 catch
                 {
@@ -111,17 +179,17 @@ namespace Automatization.UI
 
                 if (colorDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                 {
-                    System.Drawing.Color c = colorDialog.Color;
+                    Color c = colorDialog.Color;
                     targetBox.Text = $"#{c.A:X2}{c.R:X2}{c.G:X2}{c.B:X2}";
 
-                    targetBox.GetBindingExpression(System.Windows.Controls.TextBox.TextProperty)?.UpdateSource();
+                    targetBox.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
                 }
             }
         }
 
         private void BrowseImage_Click(object sender, RoutedEventArgs e)
         {
-            Microsoft.Win32.OpenFileDialog dlg = new()
+            OpenFileDialog dlg = new()
             {
                 Filter = "Images (*.jpg;*.png;*.bmp)|*.jpg;*.png;*.bmp|All files (*.*)|*.*"
             };

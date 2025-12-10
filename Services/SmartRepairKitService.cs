@@ -9,6 +9,7 @@ namespace Automatization.Services
     public class SmartRepairKitService : IDisposable
     {
         public HealthBarDetector Detector { get; }
+        private readonly ScreenCaptureService _captureService;
 
         private CancellationTokenSource? _cts;
         private bool _isRunning;
@@ -25,6 +26,7 @@ namespace Automatization.Services
         public SmartRepairKitService()
         {
             Detector = new HealthBarDetector();
+            _captureService = new ScreenCaptureService();
         }
 
         public void UpdateColors(Color bright, Color dark)
@@ -65,7 +67,7 @@ namespace Automatization.Services
                 {
                     long startTime = DateTime.Now.Ticks;
 
-                    using (Bitmap frame = ScreenCaptureService.CaptureScreen())
+                    using (Bitmap frame = _captureService.Capture())
                     {
                         HealthBarStruct state = Detector.Detect(frame);
 
@@ -80,7 +82,6 @@ namespace Automatization.Services
                         }
                     }
 
-                    // Cap framerate based on TargetFps
                     int targetDelay = 1000 / Math.Max(1, TargetFps);
                     int elapsedMs = (int)((DateTime.Now.Ticks - startTime) / 10000);
                     int delay = Math.Max(1, targetDelay - elapsedMs);
@@ -143,6 +144,7 @@ namespace Automatization.Services
         {
             Stop();
             _cts?.Dispose();
+            _captureService?.Dispose();
         }
     }
 }
