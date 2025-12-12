@@ -13,6 +13,16 @@ namespace Automatization.Listeners
         public event Func<Key, bool>? KeyDown;
         private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
 
+        [StructLayout(LayoutKind.Sequential)]
+        private struct KBDLLHOOKSTRUCT
+        {
+            public uint vkCode;
+            public uint scanCode;
+            public uint flags;
+            public uint time;
+            public IntPtr dwExtraInfo;
+        }
+
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
 
@@ -49,8 +59,14 @@ namespace Automatization.Listeners
         {
             if (nCode >= 0 && wParam == WM_KEYDOWN && lParam != IntPtr.Zero)
             {
-                int vkCode = Marshal.ReadInt32(lParam);
-                Key key = KeyInterop.KeyFromVirtualKey(vkCode);
+                KBDLLHOOKSTRUCT kbStruct = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
+
+                if ((kbStruct.flags & 0x10) != 0)
+                {
+                    return CallNextHookEx(_hookID, nCode, wParam, lParam);
+                }
+
+                Key key = KeyInterop.KeyFromVirtualKey((int)kbStruct.vkCode);
                 bool handled = KeyDown?.Invoke(key) ?? false;
 
                 if (handled)

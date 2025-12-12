@@ -4,6 +4,8 @@ VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Automatization", "Automatization.csproj", "{2BC116F4-1BB2-ABA7-A756-02C570698CF8}"
 EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Automatization Installer", "..\Automatization Installer\Automatization Installer.vdproj", "{92DD805D-E70D-3B30-722C-D6DB33FA4B72}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -14,6 +16,10 @@ Global
 		{2BC116F4-1BB2-ABA7-A756-02C570698CF8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2BC116F4-1BB2-ABA7-A756-02C570698CF8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2BC116F4-1BB2-ABA7-A756-02C570698CF8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{92DD805D-E70D-3B30-722C-D6DB33FA4B72}.Debug|Any CPU.ActiveCfg = Debug
+		{92DD805D-E70D-3B30-722C-D6DB33FA4B72}.Debug|Any CPU.Build.0 = Debug
+		{92DD805D-E70D-3B30-722C-D6DB33FA4B72}.Release|Any CPU.ActiveCfg = Release
+		{92DD805D-E70D-3B30-722C-D6DB33FA4B72}.Release|Any CPU.Build.0 = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

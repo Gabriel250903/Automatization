@@ -11,11 +11,6 @@ namespace Automatization.Utils
 {
     public class PowerupUtils
     {
-        [DllImport("user32.dll", CharSet = CharSet.Auto)]
-        private static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
-        private const uint WM_KEYDOWN = 0x0100;
-        private const uint WM_KEYUP = 0x0101;
-
         public AppSettings Settings { get; set; }
         public Process? GameProcess { get; set; }
 
@@ -145,6 +140,12 @@ namespace Automatization.Utils
                     return;
                 }
 
+                if (key == Key.None)
+                {
+                    LogService.LogWarning($"Skipping powerup {powerup}: Key is set to None.");
+                    return;
+                }
+
                 SendKey(key);
 
                 LogService.LogInfo($"Sent powerup {powerup} with key {key}.");
@@ -163,13 +164,25 @@ namespace Automatization.Utils
             }
 
             ushort virtualKey = (ushort)KeyInterop.VirtualKeyFromKey(key);
-            uint scanCode = NativeMethods.MapVirtualKey(virtualKey, 0);
+            ushort scanCode = (ushort)NativeMethods.MapVirtualKey(virtualKey, 0);
 
-            IntPtr lParamDown = (IntPtr)((scanCode << 16) | 1);
-            IntPtr lParamUp = (IntPtr)((scanCode << 16) | 0xC0000001);
+            NativeMethods.INPUT[] inputs = new NativeMethods.INPUT[2];
 
-            _ = PostMessage(GameProcess.MainWindowHandle, WM_KEYDOWN, virtualKey, lParamDown);
-            _ = PostMessage(GameProcess.MainWindowHandle, WM_KEYUP, virtualKey, lParamUp);
+            inputs[0].type = NativeMethods.INPUT_KEYBOARD;
+            inputs[0].U.ki.wVk = virtualKey;
+            inputs[0].U.ki.wScan = scanCode;
+            inputs[0].U.ki.dwFlags = 0; // KeyDown
+            inputs[0].U.ki.time = 0;
+            inputs[0].U.ki.dwExtraInfo = IntPtr.Zero;
+
+            inputs[1].type = NativeMethods.INPUT_KEYBOARD;
+            inputs[1].U.ki.wVk = virtualKey;
+            inputs[1].U.ki.wScan = scanCode;
+            inputs[1].U.ki.dwFlags = NativeMethods.KEYEVENTF_KEYUP;
+            inputs[1].U.ki.time = 0;
+            inputs[1].U.ki.dwExtraInfo = IntPtr.Zero;
+
+            _ = NativeMethods.SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(NativeMethods.INPUT)));
         }
     }
 }

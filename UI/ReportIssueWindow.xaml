@@ -130,9 +130,7 @@
                 Margin="0,0,10,0"
                 Content="Issue"
                 IsChecked="{Binding IsIdea, Converter={StaticResource InverseBooleanConverter}}" />
-            <RadioButton
-                Content="Idea"
-                IsChecked="{Binding IsIdea}" />
+            <RadioButton Content="Idea" IsChecked="{Binding IsIdea}" />
         </StackPanel>
 
         <StackPanel

@@ -1,20 +1,22 @@
-<Window x:Class="Automatization.UI.Coordinate.CoordinatePickerWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        WindowStyle="None"
-        AllowsTransparency="True"
-        Background="#80000000"
-        WindowState="Maximized"
-        Cursor="Cross"
-        MouseLeftButtonDown="Window_MouseLeftButtonDown"
-        MouseRightButtonDown="Window_MouseRightButtonDown"
-        KeyDown="Window_KeyDown">
+<Window
+    x:Class="Automatization.UI.Coordinate.CoordinatePickerWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    AllowsTransparency="True"
+    Background="#80000000"
+    Cursor="Cross"
+    KeyDown="Window_KeyDown"
+    MouseLeftButtonDown="Window_MouseLeftButtonDown"
+    MouseRightButtonDown="Window_MouseRightButtonDown"
+    WindowState="Maximized"
+    WindowStyle="None">
     <Grid>
-        <TextBlock Text="{DynamicResource Picker_Instructions}"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center"
-                   FontSize="24"
-                   FontWeight="Bold"
-                   Foreground="White"/>
+        <TextBlock
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            FontSize="24"
+            FontWeight="Bold"
+            Foreground="White"
+            Text="{DynamicResource Picker_Instructions}" />
     </Grid>
 </Window>

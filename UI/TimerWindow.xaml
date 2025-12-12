@@ -17,8 +17,11 @@
 
     <Window.ContextMenu>
         <ContextMenu>
-            <MenuItem x:Name="PauseMenuItem" Header="{DynamicResource Timer_Pause}" Click="PauseMenuItem_Click"/>
-            <MenuItem Header="{DynamicResource Timer_Remove}" Click="RemoveMenuItem_Click"/>
+            <MenuItem
+                x:Name="PauseMenuItem"
+                Click="PauseMenuItem_Click"
+                Header="{DynamicResource Timer_Pause}" />
+            <MenuItem Click="RemoveMenuItem_Click" Header="{DynamicResource Timer_Remove}" />
         </ContextMenu>
     </Window.ContextMenu>
 

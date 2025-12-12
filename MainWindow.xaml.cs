@@ -260,6 +260,8 @@ namespace Automatization
                 LogService.LogInfo($"Used powerup {powerupMapping.Key} via hotkey.");
                 return;
             }
+
+            LogService.LogWarning($"Hotkey {hotKey} pressed but no action or powerup mapping found.");
         }
 
         public void RegisterHotkeysFromSettings()

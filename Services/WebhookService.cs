@@ -8,16 +8,9 @@ using Json = System.Text.Json;
 
 namespace Automatization.Services
 {
-    public class WebhookService
+    public class WebhookService(AppSettings appSettings)
     {
-        private readonly string _webhookUrl;
-        private readonly AppSettings _appSettings;
-
-        public WebhookService(AppSettings appSettings)
-        {
-            _webhookUrl = AdminSecret.GetDiscordWebhookUrl();
-            _appSettings = appSettings;
-        }
+        private readonly string _webhookUrl = AdminSecret.GetDiscordWebhookUrl();
 
         public async Task<bool> SendTranslationAsync(string filePath, string nickname, string languageCode, string threadName)
         {
@@ -83,7 +76,7 @@ namespace Automatization.Services
                 using HttpClient client = new();
                 using MultipartFormDataContent form = [];
 
-                ulong tagId = isIdea ? _appSettings.DiscordIdeaTagId : _appSettings.DiscordIssueTagId;
+                ulong tagId = isIdea ? appSettings.DiscordIdeaTagId : appSettings.DiscordIssueTagId;
 
                 var payload = new
                 {

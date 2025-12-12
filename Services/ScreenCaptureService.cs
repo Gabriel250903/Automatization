@@ -29,35 +29,120 @@ namespace Automatization.Services
 
             try
             {
-                D3D11.D3D11CreateDevice(
-                    null,
-                    DriverType.Hardware,
-                    DeviceCreationFlags.VideoSupport,
-                    [FeatureLevel.Level_11_0],
-                    out _device,
-                    out _context
-                ).CheckError();
+                using IDXGIFactory1 factory = DXGI.CreateDXGIFactory1<IDXGIFactory1>();
 
-                if (_device == null)
+                List<IDXGIAdapter1> adapters = [];
+                List<ID3D11Device> devices = [];
+                List<ID3D11DeviceContext> contexts = [];
+
+                for (int i = 0; ; i++)
                 {
-                    throw new Exception("Failed to create D3D11 Device.");
+                    Result result = factory.EnumAdapters1((uint)i, out IDXGIAdapter1? adapter);
+
+                    if (result.Failure)
+                    {
+                        break;
+                    }
+
+                    adapters.Add(adapter);
+
+                    try
+                    {
+                        D3D11.D3D11CreateDevice(
+                            adapter,
+                            DriverType.Unknown,
+                            DeviceCreationFlags.BgraSupport,
+                            null,
+                            out ID3D11Device device,
+                            out ID3D11DeviceContext context
+                        ).CheckError();
+
+                        devices.Add(device);
+                        contexts.Add(context);
+                        LogService.LogInfo($"Created D3D11 Device on Adapter {i}: {adapter.Description.Description}");
+                    }
+                    catch (Exception ex)
+                    {
+                        LogService.LogWarning($"Failed to create device on Adapter {i}: {ex.Message}");
+                    }
                 }
 
-                using IDXGIDevice dxgiDevice = _device.QueryInterface<IDXGIDevice>();
-                using IDXGIAdapter adapter = dxgiDevice.GetAdapter();
-                using IDXGIFactory1 factory = adapter.GetParent<IDXGIFactory1>();
+                foreach (IDXGIAdapter1 adapter in adapters)
+                {
+                    for (int j = 0; ; j++)
+                    {
+                        Result result = adapter.EnumOutputs((uint)j, out IDXGIOutput? output);
+                        if (result.Failure || output == null)
+                        {
+                            break;
+                        }
 
-                adapter.EnumOutputs(0, out IDXGIOutput output).CheckError();
-                using IDXGIOutput1 output1 = output.QueryInterface<IDXGIOutput1>();
-                output.Dispose();
+                        if (!output.Description.AttachedToDesktop)
+                        {
+                            output.Dispose();
+                            continue;
+                        }
 
-                _duplication = output1.DuplicateOutput(_device);
-                _initialized = true;
+                        using IDXGIOutput1 output1 = output.QueryInterface<IDXGIOutput1>();
+                        output.Dispose();
+
+                        LogService.LogInfo($"Testing Output {output1.Description.DeviceName} (found on {adapter.Description.Description})");
+
+                        foreach (ID3D11Device device in devices)
+                        {
+                            try
+                            {
+                                _duplication = output1.DuplicateOutput(device);
+                                _device = device;
+                                _context = contexts[devices.IndexOf(device)];
+                                _initialized = true;
+
+                                LogService.LogInfo("Success! Desktop Duplication initialized.");
+
+                                CleanupResources(adapters, devices, contexts, _device, _context);
+                                return;
+                            }
+                            catch
+                            {
+                            }
+                        }
+                    }
+                }
+
+                CleanupResources(adapters, devices, contexts, null, null);
+                LogService.LogWarning("Desktop Duplication not available (common on hybrid graphics). Falling back to GDI capture.");
             }
             catch (Exception ex)
             {
-                LogService.LogError($"Failed to initialize Desktop Duplication: {ex.Message}");
-                Dispose();
+                LogService.LogWarning($"Desktop Duplication initialization failed: {ex.Message}. Falling back to GDI capture.");
+                DisposeResources();
+            }
+        }
+
+        private static void CleanupResources(
+            List<IDXGIAdapter1> adapters,
+            List<ID3D11Device> devices,
+            List<ID3D11DeviceContext> contexts,
+            ID3D11Device? keptDevice,
+            ID3D11DeviceContext? keptContext)
+        {
+            foreach (ID3D11Device d in devices)
+            {
+                if (d != keptDevice)
+                {
+                    d.Dispose();
+                }
+            }
+            foreach (ID3D11DeviceContext c in contexts)
+            {
+                if (c != keptContext)
+                {
+                    c.Dispose();
+                }
+            }
+            foreach (IDXGIAdapter1 a in adapters)
+            {
+                a.Dispose();
             }
         }
 
