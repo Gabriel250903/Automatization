@@ -97,7 +97,11 @@ namespace Automatization.Services
 
                     foreach (JsonElement asset in assets.EnumerateArray())
                     {
-                        if (asset.GetProperty("name").GetString() == "Automatization.Installer.msi")
+                        string assetName = asset.GetProperty("name").GetString() ?? string.Empty;
+                        bool isMsi = assetName.EndsWith(".msi", StringComparison.OrdinalIgnoreCase);
+                        bool isExe = assetName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
+
+                        if (isMsi || isExe)
                         {
                             string? downloadUrl = asset.GetProperty("browser_download_url").GetString();
                             if (downloadUrl == null)
@@ -112,11 +116,10 @@ namespace Automatization.Services
                                 _ = Directory.CreateDirectory(targetDirectory);
                             }
 
-                            string tempPath = Path.Combine(targetDirectory, "Automatization.Installer.msi");
+                            string tempPath = Path.Combine(targetDirectory, assetName);
                             LogService.LogInfo($"Downloading installer from {downloadUrl} to {tempPath}");
 
                             using (Stream downloadStream = await _httpClient.GetStreamAsync(downloadUrl))
-
                             using (FileStream fileStream = new(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
                             {
                                 long totalBytes = asset.GetProperty("size").GetInt64();
@@ -148,19 +151,24 @@ namespace Automatization.Services
             return null;
         }
 
-        public static void InstallUpdate(string msiPath)
+        public static void InstallUpdate(string filePath)
         {
             try
             {
-                string logPath = Path.ChangeExtension(msiPath, ".log");
-                LogService.LogInfo($"Starting installer: {msiPath} with log: {logPath}");
+                LogService.LogInfo($"Starting installer: {filePath}");
 
                 ProcessStartInfo psi = new()
                 {
-                    FileName = "msiexec.exe",
-                    Arguments = $"/i \"{msiPath}\" /qf /l*v \"{logPath}\"",
+                    FileName = filePath,
                     UseShellExecute = true
                 };
+
+                if (filePath.EndsWith(".msi", StringComparison.OrdinalIgnoreCase))
+                {
+                    string logPath = Path.ChangeExtension(filePath, ".log");
+                    psi.FileName = "msiexec.exe";
+                    psi.Arguments = $"/i \"{filePath}\" /qf /l*v \"{logPath}\"";
+                }
 
                 _ = Process.Start(psi);
 
@@ -177,10 +185,10 @@ namespace Automatization.Services
 
         public static void RelaunchApplication()
         {
-            Assembly? entryAssembly = Assembly.GetEntryAssembly();
-            if (entryAssembly != null)
+            string? exePath = Process.GetCurrentProcess().MainModule?.FileName;
+            if (exePath != null)
             {
-                _ = Process.Start(entryAssembly.Location);
+                _ = Process.Start(new ProcessStartInfo { FileName = exePath, UseShellExecute = true });
             }
 
             Environment.Exit(0);
@@ -191,13 +199,13 @@ namespace Automatization.Services
             try
             {
                 string targetDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TankAutomation");
-                string msiPath = Path.Combine(targetDirectory, "Automatization.Installer.msi");
-                string logPath = Path.ChangeExtension(msiPath, ".log");
+                if (!Directory.Exists(targetDirectory)) return;
 
-                bool msiExists = File.Exists(msiPath);
-                bool logExists = File.Exists(logPath);
+                string[] updateFiles = Directory.GetFiles(targetDirectory, "Automatization*.*")
+                    .Where(f => f.EndsWith(".msi") || f.EndsWith(".exe") || f.EndsWith(".log"))
+                    .ToArray();
 
-                if (!msiExists && !logExists)
+                if (updateFiles.Length == 0)
                 {
                     return;
                 }
@@ -208,16 +216,17 @@ namespace Automatization.Services
 
                 if (latestVersion != null && currentVersion >= latestVersion)
                 {
-                    if (msiExists)
+                    foreach (string file in updateFiles)
                     {
-                        File.Delete(msiPath);
-                        LogService.LogInfo($"Deleted temporary installer: {msiPath}");
-                    }
-
-                    if (logExists)
-                    {
-                        File.Delete(logPath);
-                        LogService.LogInfo($"Deleted installer log: {logPath}");
+                        try
+                        {
+                            File.Delete(file);
+                            LogService.LogInfo($"Deleted temporary update file: {file}");
+                        }
+                        catch (Exception ex)
+                        {
+                            LogService.LogWarning($"Could not delete {file}: {ex.Message}");
+                        }
                     }
                 }
                 else

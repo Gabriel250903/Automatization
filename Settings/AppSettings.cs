@@ -49,8 +49,6 @@ public class AppSettings
     public int SmartRepairCooldown { get; set; } = 5000;
     public Key SmartRepairKey { get; set; } = Key.D1;
     public int SmartRepairFps { get; set; } = 60;
-    public bool EnableAutoGoldBox { get; set; } = false;
-    public string GoldBoxColor { get; set; } = "#F69001";
     public string Language { get; set; } = "en-US";
     public ulong DiscordIssueTagId { get; set; } = 1447898377009365002;
     public ulong DiscordIdeaTagId { get; set; } = 1447898389046890497;

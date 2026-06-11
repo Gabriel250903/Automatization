@@ -294,7 +294,6 @@ namespace Automatization
                 App.Settings.GameExecutablePath = _settings.GameExecutablePath;
                 App.Settings.RedTeamCoordinates = _settings.RedTeamCoordinates;
                 App.Settings.BlueTeamCoordinates = _settings.BlueTeamCoordinates;
-                App.Settings.GoldBoxColor = _settings.GoldBoxColor;
                 App.Settings.GlobalHotKey = _settings.GlobalHotKey;
                 App.Settings.RedTeamHotKey = _settings.RedTeamHotKey;
                 App.Settings.BlueTeamHotKey = _settings.BlueTeamHotKey;

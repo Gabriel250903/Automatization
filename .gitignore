@@ -401,6 +401,8 @@ FodyWeavers.xsd
 *.sln.iml
 
 Secrets/
+Output/
+*.iss
 
 # Node.js specific ignores for Vercel backend
 node_modules/

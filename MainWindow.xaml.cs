@@ -38,7 +38,6 @@ namespace Automatization
 
         private readonly List<TimerWindow> _activeTimerWindows = [];
         private SmartRepairKitWindow? _smartRepairWindow;
-        private AutoGoldBoxService? _autoGoldBoxService;
 
         private bool _arePowerupsPausedForChat = false;
         private readonly List<PowerupType> _activePowerups = [];
@@ -103,16 +102,6 @@ namespace Automatization
             InitializeTeamClickers();
             _powerupUtils?.Initialize();
 
-            _autoGoldBoxService = new AutoGoldBoxService();
-            _autoGoldBoxService.OnTriggered += AutoGoldBoxService_OnTriggered;
-
-            AutoGoldBoxCheckBox.IsChecked = _settings.EnableAutoGoldBox;
-
-            if (_settings.EnableAutoGoldBox)
-            {
-                _autoGoldBoxService.Start();
-            }
-
             GlobalHotKeyManager.Initialize();
             GlobalHotKeyManager.HotKeyPressed += OnHotKeyPressed;
             RegisterHotkeysFromSettings();
@@ -127,15 +116,6 @@ namespace Automatization
 
             _hotkeyActions["SmartRepairToggle"] = ToggleSmartRepair;
             _hotkeyActions["SmartRepairDebug"] = DebugSmartRepair;
-        }
-
-        private void AutoGoldBoxService_OnTriggered()
-        {
-            Dispatcher.Invoke(() =>
-            {
-                System.Media.SystemSounds.Asterisk.Play();
-                StartGoldBoxTimer();
-            });
         }
 
         private void ToggleSmartRepair()
@@ -273,34 +253,6 @@ namespace Automatization
             _ = GlobalHotKeyManager.Register(_settings.GoldBoxTimerHotKey);
             _ = GlobalHotKeyManager.Register(_settings.SmartRepairToggleHotKey);
             _ = GlobalHotKeyManager.Register(_settings.SmartRepairDebugHotKey);
-        }
-
-        private void AutoGoldBoxCheckBox_Checked(object sender, RoutedEventArgs e)
-        {
-            _settings.EnableAutoGoldBox = true;
-            _settings.Save();
-
-            if (_autoGoldBoxService != null)
-            {
-                _autoGoldBoxService.IsEnabled = true;
-                _autoGoldBoxService.Start();
-            }
-
-            LogService.LogInfo("Auto Gold Box enabled via Main Window.");
-        }
-
-        private void AutoGoldBoxCheckBox_Unchecked(object sender, RoutedEventArgs e)
-        {
-            _settings.EnableAutoGoldBox = false;
-            _settings.Save();
-
-            if (_autoGoldBoxService != null)
-            {
-                _autoGoldBoxService.IsEnabled = false;
-                _autoGoldBoxService.Stop();
-            }
-
-            LogService.LogInfo("Auto Gold Box disabled via Main Window.");
         }
 
         private void StartGoldBoxTimer()
@@ -502,18 +454,12 @@ namespace Automatization
             LaunchButton.Visibility = Visibility.Collapsed;
             Status = "Status_GameRunning";
 
-            if (_settings.EnableAutoGoldBox)
-            {
-                _autoGoldBoxService?.Start();
-            }
-
             LogService.LogInfo("Automation enabled.");
         }
 
         private void DisableAutomation()
         {
             _powerupUtils?.StopAll();
-            _autoGoldBoxService?.Stop();
             PowerupsGroup.Visibility = Visibility.Collapsed;
             SmartFeaturesGroup.Visibility = Visibility.Collapsed;
             LaunchButton.Visibility = Visibility.Visible;
@@ -736,18 +682,6 @@ namespace Automatization
                 _powerupUtils.Initialize();
             }
 
-            if (_autoGoldBoxService != null)
-            {
-                if (_settings.EnableAutoGoldBox && _gameProcess != null)
-                {
-                    _autoGoldBoxService.Start();
-                }
-                else
-                {
-                    _autoGoldBoxService.Stop();
-                }
-            }
-
             _ = GameCheckAsync();
 
             if (_settings.CustomThemeName == null)
@@ -772,53 +706,6 @@ namespace Automatization
 
         private void ShowDebugButton_Click(object sender, RoutedEventArgs e)
         {
-            AdminPasswordDialog passwordDialog = new() { Owner = this };
-            if (passwordDialog.ShowDialog() == true)
-            {
-                DebugGroup.Visibility = Visibility.Visible;
-            }
-        }
-
-        private void SimulateGoldBox_Click(object sender, RoutedEventArgs e)
-        {
-            if (_autoGoldBoxService != null)
-            {
-                _autoGoldBoxService.SimulateTrigger();
-            }
-            else
-            {
-                Status = "Status_AutoGoldBoxNotInit";
-            }
-        }
-
-        private void TestImageDetection_Click(object sender, RoutedEventArgs e)
-        {
-            if (_autoGoldBoxService == null)
-            {
-                LogService.LogError("Auto Gold Box Service is not initialized.");
-                return;
-            }
-
-            OpenFileDialog dlg = new()
-            {
-                Filter = "Image files (*.png;*.jpg;*.jpeg;*.bmp)|*.png;*.jpg;*.jpeg;*.bmp|All files (*.*)|*.*",
-                Title = "Select Screenshot for Detection Test"
-            };
-
-            if (dlg.ShowDialog() == true)
-            {
-                try
-                {
-                    using Bitmap bmp = new(dlg.FileName);
-
-                    string result = _autoGoldBoxService.TestDetection(bmp);
-                    _ = MessageBox.Show(result, "Detection Test Result", MessageBoxButton.OK, result.Contains("detected!") ? MessageBoxImage.Information : MessageBoxImage.Warning);
-                }
-                catch (Exception ex)
-                {
-                    _ = MessageBox.Show(string.Format("Error loading image: {0}", ex.Message), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
         }
         #endregion
 
@@ -829,7 +716,6 @@ namespace Automatization
             _gameCheckTimer?.Stop();
             _powerupUtils?.StopAll();
             _clickerService?.Dispose();
-            _autoGoldBoxService?.Dispose();
             GlobalHotKeyManager.Shutdown();
             _keyboardListener?.Dispose();
 

@@ -52,7 +52,7 @@ namespace Automatization.Services
                             adapter,
                             DriverType.Unknown,
                             DeviceCreationFlags.BgraSupport,
-                            null,
+                            [],
                             out ID3D11Device device,
                             out ID3D11DeviceContext context
                         ).CheckError();

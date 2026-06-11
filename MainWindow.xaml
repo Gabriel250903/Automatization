@@ -144,16 +144,6 @@
                             Click="SmartRepairButton_Click"
                             Content="{DynamicResource Smart_RepairKit}"
                             Icon="{ui:SymbolIcon HeartPulse24}" />
-
-                        <CheckBox
-                            x:Name="AutoGoldBoxCheckBox"
-                            Grid.Column="0"
-                            Margin="-10,0,0,0"
-                            Checked="AutoGoldBoxCheckBox_Checked"
-                            Content="{DynamicResource Smart_GoldBox}"
-                            Unchecked="AutoGoldBoxCheckBox_Unchecked" />
-
-                        <TextBlock FontWeight="Bold" Foreground="Red">Smart Gold Box Detection might not work as expected, please avoid using it.</TextBlock>
                     </StackPanel>
                 </GroupBox>
 
@@ -196,26 +186,6 @@
                                 Content="{DynamicResource Team_AutoBlue}"
                                 Icon="{ui:SymbolIcon Flag24}" />
                         </Grid>
-                    </StackPanel>
-                </GroupBox>
-
-                <GroupBox
-                    x:Name="DebugGroup"
-                    Margin="0,10"
-                    Header="{DynamicResource Group_Debug}"
-                    Visibility="Collapsed">
-                    <StackPanel Margin="5">
-                        <ui:Button
-                            Margin="0,0,0,5"
-                            HorizontalAlignment="Stretch"
-                            Click="SimulateGoldBox_Click"
-                            Content="{DynamicResource Debug_SimulateGoldBox}"
-                            Icon="{ui:SymbolIcon Box24}" />
-                        <ui:Button
-                            HorizontalAlignment="Stretch"
-                            Click="TestImageDetection_Click"
-                            Content="{DynamicResource Debug_TestImage}"
-                            Icon="{ui:SymbolIcon Image24}" />
                     </StackPanel>
                 </GroupBox>
             </StackPanel>

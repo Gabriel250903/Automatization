@@ -19,16 +19,12 @@
     <system:String x:Key="Tool_DiscountCalculator">Калькулятор знижок</system:String>
 
     <system:String x:Key="Smart_RepairKit">Розумний Ремкомплект</system:String>
-    <system:String x:Key="Smart_GoldBox">Розумне виявлення Голда</system:String>
 
     <system:String x:Key="Team_ClickType">Тип кліку:</system:String>
     <system:String x:Key="Team_AutoRed">Авто-клік Червоні</system:String>
     <system:String x:Key="Team_AutoBlue">Авто-клік Сині</system:String>
     <system:String x:Key="Team_StopRed">Зупинити Червоних</system:String>
     <system:String x:Key="Team_StopBlue">Зупинити Синіх</system:String>
-
-    <system:String x:Key="Debug_SimulateGoldBox">Симулювати Голд</system:String>
-    <system:String x:Key="Debug_TestImage">Тест виявлення зображення</system:String>
 
     <system:String x:Key="Status_Ready">Готово</system:String>
     <system:String x:Key="General_Start">Почати</system:String>
@@ -41,7 +37,6 @@
     <system:String x:Key="Status_GameNotRunning">Гра не запущена. Натисніть Запустити.</system:String>
     <system:String x:Key="Status_GameNotFound">Файл гри не знайдено. Виберіть його.</system:String>
     <system:String x:Key="Status_LaunchError">Помилка запуску гри.</system:String>
-    <system:String x:Key="Status_AutoGoldBoxNotInit">Сервіс Авто-Голда не ініціалізовано.</system:String>
     <system:String x:Key="Status_ImageLoadError">Не вдалося завантажити зображення: {0}</system:String>
 
     <!--  Settings Window  -->

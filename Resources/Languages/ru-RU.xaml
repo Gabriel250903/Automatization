@@ -19,16 +19,12 @@
     <system:String x:Key="Tool_DiscountCalculator">Калькулятор скидок</system:String>
 
     <system:String x:Key="Smart_RepairKit">Умный ремкомплект</system:String>
-    <system:String x:Key="Smart_GoldBox">Умное обнаружение голдбокса</system:String>
 
     <system:String x:Key="Team_ClickType">Тип клика:</system:String>
     <system:String x:Key="Team_AutoRed">Автоклик Красные</system:String>
     <system:String x:Key="Team_AutoBlue">Автоклик Синие</system:String>
     <system:String x:Key="Team_StopRed">Остановить Красную команду</system:String>
     <system:String x:Key="Team_StopBlue">Остановить Синюю команду</system:String>
-
-    <system:String x:Key="Debug_SimulateGoldBox">Симулировать Голдбокс</system:String>
-    <system:String x:Key="Debug_TestImage">Тест обнаружения изображения</system:String>
 
     <system:String x:Key="Status_RedTeamStopped">Автокликер Красной команды остановлен</system:String>
     <system:String x:Key="Status_RedTeamStarted">Автокликер Красной команды запущен</system:String>
@@ -38,7 +34,6 @@
     <system:String x:Key="Status_GameNotRunning">Игра не запущена. Нажмите Запустить, чтобы начать.</system:String>
     <system:String x:Key="Status_GameNotFound">Исполняемый файл игры не найден. Пожалуйста, выберите его.</system:String>
     <system:String x:Key="Status_LaunchError">Ошибка запуска игры.</system:String>
-    <system:String x:Key="Status_AutoGoldBoxNotInit">Сервис автоголдбокса не инициализирован.</system:String>
     <system:String x:Key="Status_Ready">Готово</system:String>
     <system:String x:Key="General_Start">Начать</system:String>
     <system:String x:Key="General_Stop">Остановить</system:String>

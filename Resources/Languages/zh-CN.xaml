@@ -19,16 +19,12 @@
     <system:String x:Key="Tool_DiscountCalculator">折扣计算器</system:String>
 
     <system:String x:Key="Smart_RepairKit">智能修理包</system:String>
-    <system:String x:Key="Smart_GoldBox">智能金箱检测</system:String>
 
     <system:String x:Key="Team_ClickType">点击类型：</system:String>
     <system:String x:Key="Team_AutoRed">自动点击红队</system:String>
     <system:String x:Key="Team_AutoBlue">自动点击蓝队</system:String>
     <system:String x:Key="Team_StopRed">停止红队</system:String>
     <system:String x:Key="Team_StopBlue">停止蓝队</system:String>
-
-    <system:String x:Key="Debug_SimulateGoldBox">模拟金箱</system:String>
-    <system:String x:Key="Debug_TestImage">测试图像检测</system:String>
 
     <system:String x:Key="Status_RedTeamStopped">红队自动点击器已停止</system:String>
     <system:String x:Key="Status_RedTeamStarted">红队自动点击器已启动</system:String>
@@ -38,7 +34,6 @@
     <system:String x:Key="Status_GameNotRunning">游戏未运行。点击启动。</system:String>
     <system:String x:Key="Status_GameNotFound">未找到游戏可执行文件。请选择它。</system:String>
     <system:String x:Key="Status_LaunchError">启动游戏时出错。</system:String>
-    <system:String x:Key="Status_AutoGoldBoxNotInit">自动金箱服务未初始化。</system:String>
     <system:String x:Key="Status_Ready">就绪</system:String>
     <system:String x:Key="General_Start">开始</system:String>
     <system:String x:Key="General_Stop">停止</system:String>

@@ -19,16 +19,12 @@
     <system:String x:Key="Tool_DiscountCalculator">Calculadora de Descontos</system:String>
 
     <system:String x:Key="Smart_RepairKit">Kit de Reparo Inteligente</system:String>
-    <system:String x:Key="Smart_GoldBox">Detecção Inteligente de Gold Box</system:String>
 
     <system:String x:Key="Team_ClickType">Tipo de Clique:</system:String>
     <system:String x:Key="Team_AutoRed">Auto Clique Vermelho</system:String>
     <system:String x:Key="Team_AutoBlue">Auto Clique Azul</system:String>
     <system:String x:Key="Team_StopRed">Parar Equipe Vermelha</system:String>
     <system:String x:Key="Team_StopBlue">Parar Equipe Azul</system:String>
-
-    <system:String x:Key="Debug_SimulateGoldBox">Simular Gold Box</system:String>
-    <system:String x:Key="Debug_TestImage">Testar Detecção de Imagem</system:String>
 
     <system:String x:Key="Status_RedTeamStopped">Auto-clicker da Equipe Vermelha parado</system:String>
     <system:String x:Key="Status_RedTeamStarted">Auto-clicker da Equipe Vermelha iniciado</system:String>
@@ -38,7 +34,6 @@
     <system:String x:Key="Status_GameNotRunning">Jogo não está rodando. Clique em Iniciar.</system:String>
     <system:String x:Key="Status_GameNotFound">Executável do jogo não encontrado. Por favor selecione-o.</system:String>
     <system:String x:Key="Status_LaunchError">Erro ao iniciar o jogo.</system:String>
-    <system:String x:Key="Status_AutoGoldBoxNotInit">Serviço Auto Gold Box não inicializado.</system:String>
     <system:String x:Key="Status_Ready">Pronto</system:String>
     <system:String x:Key="General_Start">Iniciar</system:String>
     <system:String x:Key="General_Stop">Parar</system:String>

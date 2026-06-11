@@ -164,25 +164,13 @@ namespace Automatization.Utils
             }
 
             ushort virtualKey = (ushort)KeyInterop.VirtualKeyFromKey(key);
-            ushort scanCode = (ushort)NativeMethods.MapVirtualKey(virtualKey, 0);
+            uint scanCode = NativeMethods.MapVirtualKey(virtualKey, 0);
 
-            NativeMethods.INPUT[] inputs = new NativeMethods.INPUT[2];
+            IntPtr lParamDown = (IntPtr)((scanCode << 16) | 1);
+            IntPtr lParamUp = (IntPtr)((scanCode << 16) | 0xC0000001);
 
-            inputs[0].type = NativeMethods.INPUT_KEYBOARD;
-            inputs[0].U.ki.wVk = virtualKey;
-            inputs[0].U.ki.wScan = scanCode;
-            inputs[0].U.ki.dwFlags = 0; // KeyDown
-            inputs[0].U.ki.time = 0;
-            inputs[0].U.ki.dwExtraInfo = IntPtr.Zero;
-
-            inputs[1].type = NativeMethods.INPUT_KEYBOARD;
-            inputs[1].U.ki.wVk = virtualKey;
-            inputs[1].U.ki.wScan = scanCode;
-            inputs[1].U.ki.dwFlags = NativeMethods.KEYEVENTF_KEYUP;
-            inputs[1].U.ki.time = 0;
-            inputs[1].U.ki.dwExtraInfo = IntPtr.Zero;
-
-            _ = NativeMethods.SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(NativeMethods.INPUT)));
+            _ = NativeMethods.PostMessage(GameProcess.MainWindowHandle, NativeMethods.WM_KEYDOWN, (IntPtr)virtualKey, lParamDown);
+            _ = NativeMethods.PostMessage(GameProcess.MainWindowHandle, NativeMethods.WM_KEYUP, (IntPtr)virtualKey, lParamUp);
         }
     }
 }

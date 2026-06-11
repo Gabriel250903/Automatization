@@ -43,13 +43,7 @@ Intelligent health monitoring that uses a Repair Kit only when your health drops
     *   **Cooldown:** Set the minimum time (ms) between triggers. Recommended & Default: 5000ms to avoid issues & spamming.
     *   **Key:** Select the keybind for Repair Kit (Default: 1).
 
-### 3. Auto Gold Box Detection
-Automatically detects the "Gold Box will be dropped soon" notification and starts a timer.
-*   **Mechanism:** Uses Optical Character Recognition (OCR) to read the screen for the text "Gold box will be dropped soon" and color detection for the orange notification text.
-*   **Auto-Timer:** When detected, a visual **Timer Window** automatically appears on your screen, counting down 40 seconds (standard Gold Box drop time).
-*   **Settings:** You can enable/disable this feature in the Settings menu. If disabled or failed to detect the text, you can still use the manual timer hotkey to spawn the timer on your screen.
-
-### 4. Team Auto-Clicker
+### 3. Team Auto-Clicker
 Automatically joins battles by clicking the Red or Blue team button repeatedly.
 *   **Usage:**
     1.  Select **Click Type** (Left, Right, Middle, Double).
@@ -105,5 +99,4 @@ Access by clicking **Logs** in the Settings window.
 ## ⚠️ Troubleshooting & Notes
 
 *   **Admin Privileges:** Some features (like simulating input or capturing screens) require a password. To get the password, please DM Noizy on discord - noizy3345.
-*   **Anti-Virus:** If the tool is blocked, add an exclusion folder for the application.
-*   **Screen Scaling:** If coordinates (Auto-Clicker) or detection (Smart Repair) seem off, ensure your Windows Display Scale is set to 100% or re-calibrate your coordinates.
+*   **Screen Scaling:** If coordinates (Auto-Clicker) or detection (Smart Repair) seem off, ensure your Windows Display Scale is set to 100% and re-calibrate your coordinates.
