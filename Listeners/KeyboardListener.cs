@@ -1,3 +1,4 @@
+using Automatization.Services;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
@@ -67,7 +68,16 @@ namespace Automatization.Listeners
                 }
 
                 Key key = KeyInterop.KeyFromVirtualKey((int)kbStruct.vkCode);
-                bool handled = KeyDown?.Invoke(key) ?? false;
+                bool handled = false;
+
+                try
+                {
+                    handled = KeyDown?.Invoke(key) ?? false;
+                }
+                catch (Exception ex)
+                {
+                    LogService.LogError("Error in KeyboardListener KeyDown callback.", ex);
+                }
 
                 if (handled)
                 {

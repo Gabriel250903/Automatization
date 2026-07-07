@@ -6,8 +6,12 @@ namespace Automatization.Services
 {
     public class ClickerService : IDisposable
     {
-        private Dictionary<Guid, System.Threading.Timer> _timers = [];
-        private AppSettings _settings;
+        private readonly Dictionary<Guid, System.Threading.Timer> _timers = [];
+        private readonly AppSettings _settings;
+
+        private Process? _cachedProcess;
+        private DateTime _lastProcessCheck = DateTime.MinValue;
+        private readonly object _processLock = new();
 
         public ClickerService(AppSettings settings)
         {
@@ -25,6 +29,40 @@ namespace Automatization.Services
             }
         }
 
+        private Process? GetGameProcess(string gameProcessName)
+        {
+            lock (_processLock)
+            {
+                if (_cachedProcess == null || (DateTime.Now - _lastProcessCheck).TotalSeconds >= 2.0)
+                {
+                    if (_cachedProcess != null)
+                    {
+                        try
+                        {
+                            _cachedProcess.Refresh();
+                            if (_cachedProcess.HasExited)
+                            {
+                                _cachedProcess = null;
+                            }
+                        }
+                        catch
+                        {
+                            _cachedProcess = null;
+                        }
+                    }
+
+                    if (_cachedProcess == null)
+                    {
+                        _cachedProcess = Process.GetProcessesByName(gameProcessName).FirstOrDefault();
+                    }
+
+                    _lastProcessCheck = DateTime.Now;
+                }
+
+                return _cachedProcess;
+            }
+        }
+
         public Guid Register(Action<IntPtr, ClickType> clickAction, ClickType clickType, string gameProcessName)
         {
             Guid id = Guid.NewGuid();
@@ -32,48 +70,71 @@ namespace Automatization.Services
             System.Threading.Timer timer = new(
                 _ =>
                 {
-                    Process? gameProcess = Process.GetProcessesByName(gameProcessName).FirstOrDefault();
-                    if (gameProcess != null && gameProcess.MainWindowHandle != IntPtr.Zero)
+                    Process? gameProcess = GetGameProcess(gameProcessName);
+                    if (gameProcess != null)
                     {
-                        clickAction(gameProcess.MainWindowHandle, clickType);
+                        try
+                        {
+                            IntPtr handle = gameProcess.MainWindowHandle;
+                            if (handle != IntPtr.Zero)
+                            {
+                                clickAction(handle, clickType);
+                            }
+                        }
+                        catch
+                        {
+                            // Process might have exited or been disposed
+                        }
                     }
                 },
                 null,
                 0,
                 (int)ClickSpeed);
 
-            _timers[id] = timer;
+            lock (_timers)
+            {
+                _timers[id] = timer;
+            }
             return id;
         }
 
         public void Unregister(Guid id)
         {
-            if (_timers.TryGetValue(id, out System.Threading.Timer? timerInfo))
+            lock (_timers)
             {
-                timerInfo.Dispose();
-                _ = _timers.Remove(id);
+                if (_timers.TryGetValue(id, out System.Threading.Timer? timerInfo))
+                {
+                    timerInfo.Dispose();
+                    _ = _timers.Remove(id);
 
-                LogService.LogInfo($"Clicker unregistered with ID: {id}");
+                    LogService.LogInfo($"Clicker unregistered with ID: {id}");
+                }
             }
         }
 
         public void Dispose()
         {
-            foreach (System.Threading.Timer timer in _timers.Values)
+            lock (_timers)
             {
-                timer.Dispose();
-            }
+                foreach (System.Threading.Timer timer in _timers.Values)
+                {
+                    timer.Dispose();
+                }
 
-            _timers.Clear();
+                _timers.Clear();
+            }
 
             LogService.LogInfo("Clicker service disposed.");
         }
 
         private void UpdateTimersInterval()
         {
-            foreach (System.Threading.Timer timer in _timers.Values)
+            lock (_timers)
             {
-                _ = timer.Change(0, (int)ClickSpeed);
+                foreach (System.Threading.Timer timer in _timers.Values)
+                {
+                    _ = timer.Change(0, (int)ClickSpeed);
+                }
             }
 
             LogService.LogInfo($"Click speed updated to: {ClickSpeed}ms");

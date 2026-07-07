@@ -408,3 +408,6 @@ Output/
 node_modules/
 .env
 .vercel/
+
+# Local Secrets Configuration
+secrets.json

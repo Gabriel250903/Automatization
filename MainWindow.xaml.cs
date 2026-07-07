@@ -109,7 +109,11 @@ namespace Automatization
             _keyboardListener = new KeyboardListener();
             _keyboardListener.KeyDown += KeyboardListener_OnKeyPressed;
 
-            _hotkeyActions["ToggleAll"] = () => _powerupUtils?.ToggleAll();
+            _hotkeyActions["ToggleAll"] = () =>
+            {
+                _arePowerupsPausedForChat = false;
+                _powerupUtils?.ToggleAll();
+            };
             _hotkeyActions["RedTeam"] = () => RedTeamButton_Click(this, null);
             _hotkeyActions["BlueTeam"] = () => BlueTeamButton_Click(this, null);
             _hotkeyActions["StartTimer"] = StartGoldBoxTimer;
@@ -656,11 +660,7 @@ namespace Automatization
             }
         }
 
-        private void RoadmapButton_Click(object sender, RoutedEventArgs e)
-        {
-            RoadmapWindow wnd = new() { Owner = this };
-            wnd.Show();
-        }
+
 
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
         {
@@ -702,10 +702,6 @@ namespace Automatization
         {
             GlobalHotKeyManager.IsPaused = false;
             LogService.LogInfo("Hotkeys resumed by checkbox.");
-        }
-
-        private void ShowDebugButton_Click(object sender, RoutedEventArgs e)
-        {
         }
         #endregion
 

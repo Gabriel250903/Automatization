@@ -52,6 +52,8 @@ public class AppSettings
     public string Language { get; set; } = "en-US";
     public ulong DiscordIssueTagId { get; set; } = 1447898377009365002;
     public ulong DiscordIdeaTagId { get; set; } = 1447898389046890497;
+    public string DiscordWebhookUrl { get; set; } = string.Empty;
+    public string AdminPassword { get; set; } = "test";
 
     public string? GetActionForHotKey(HotKey hotKey)
     {
@@ -83,6 +85,28 @@ public class AppSettings
         catch (Exception ex)
         {
             LogService.LogError("Failed to load settings.", ex);
+        }
+
+        if (string.IsNullOrEmpty(settings.DiscordWebhookUrl))
+        {
+            string secretsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "secrets.json");
+            if (File.Exists(secretsPath))
+            {
+                try
+                {
+                    string secretsJson = File.ReadAllText(secretsPath);
+                    using JsonDocument doc = JsonDocument.Parse(secretsJson);
+                    if (doc.RootElement.TryGetProperty("DiscordWebhookUrl", out JsonElement prop))
+                    {
+                        settings.DiscordWebhookUrl = prop.GetString() ?? string.Empty;
+                    }
+                    if (doc.RootElement.TryGetProperty("AdminPassword", out JsonElement passProp))
+                    {
+                        settings.AdminPassword = passProp.GetString() ?? "test";
+                    }
+                }
+                catch { }
+            }
         }
 
         return settings;

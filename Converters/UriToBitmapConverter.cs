@@ -13,20 +13,28 @@ namespace Automatization.Converters
             {
                 try
                 {
-                    string? localPath = ImageCacheService.GetCachedImagePath(url);
+                    string? localPath = ImageCacheService.GetCachedImagePathNonBlocking(url, out string fullLocalPath);
+
+                    BitmapImage bitmap = new();
+                    bitmap.BeginInit();
+                    bitmap.DecodePixelWidth = 100;
+                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
 
                     if (localPath != null)
                     {
-                        BitmapImage bitmap = new();
-                        bitmap.BeginInit();
                         bitmap.UriSource = new Uri(localPath);
-                        bitmap.DecodePixelWidth = 100;
-                        bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                        bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
                         bitmap.EndInit();
                         bitmap.Freeze();
-                        return bitmap;
                     }
+                    else
+                    {
+                        bitmap.UriSource = new Uri(url);
+                        bitmap.EndInit();
+                        // Do not freeze since it is loading asynchronously from the web
+                    }
+
+                    return bitmap;
                 }
                 catch
                 {

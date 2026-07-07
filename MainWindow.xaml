@@ -80,13 +80,7 @@
                     ToolTip="Temporarily disable all global hotkeys."
                     Unchecked="PauseHotkeysCheckBox_Unchecked" />
 
-                <Button
-                    x:Name="RoadmapButton"
-                    Height="30"
-                    Margin="0,0,10,0"
-                    Padding="15,0"
-                    Click="RoadmapButton_Click"
-                    Content="Roadmap" />
+
 
                 <Button
                     x:Name="SettingsButton"
@@ -94,13 +88,6 @@
                     Padding="15,0"
                     Click="SettingsButton_Click"
                     Content="{DynamicResource Main_Settings}" />
-                <Button
-                    x:Name="ShowDebugButton"
-                    Height="30"
-                    Margin="10,0,0,0"
-                    Padding="15,0"
-                    Click="ShowDebugButton_Click"
-                    Content="{DynamicResource Main_Debug}" />
             </StackPanel>
         </Grid>
 

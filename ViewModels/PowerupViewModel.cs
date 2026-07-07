@@ -9,7 +9,7 @@ using Application = System.Windows.Application;
 
 namespace Automatization.ViewModels
 {
-    public class PowerupViewModel : INotifyPropertyChanged
+    public class PowerupViewModel : INotifyPropertyChanged, IDisposable
     {
         private AppSettings _settings;
         private Action<PowerupType> _usePowerupAction;
@@ -125,7 +125,12 @@ namespace Automatization.ViewModels
             };
             _timer.Tick += (s, e) => _usePowerupAction?.Invoke(PowerupType);
 
-            LanguageService.LanguageChanged += (s, e) => UpdateLocalization();
+            LanguageService.LanguageChanged += OnLanguageChanged;
+            UpdateLocalization();
+        }
+
+        private void OnLanguageChanged(object? sender, EventArgs e)
+        {
             UpdateLocalization();
         }
 
@@ -159,6 +164,12 @@ namespace Automatization.ViewModels
         protected virtual void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        public void Dispose()
+        {
+            LanguageService.LanguageChanged -= OnLanguageChanged;
+            _timer.Stop();
         }
     }
 }

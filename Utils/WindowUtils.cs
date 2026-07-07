@@ -7,14 +7,37 @@ namespace Automatization.Utils
 {
     public static class WindowUtils
     {
-        [DllImport("user32.dll")]
-        private static extern IntPtr GetFocus();
+        [StructLayout(LayoutKind.Sequential)]
+        private struct RECT
+        {
+            public int Left;
+            public int Top;
+            public int Right;
+            public int Bottom;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct GUITHREADINFO
+        {
+            public int cbSize;
+            public int flags;
+            public IntPtr hwndActive;
+            public IntPtr hwndFocus;
+            public IntPtr hwndCapture;
+            public IntPtr hwndMenuOwner;
+            public IntPtr hwndMoveSize;
+            public IntPtr hwndCaret;
+            public RECT rcCaret;
+        }
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool GetGUIThreadInfo(uint idThread, ref GUITHREADINFO lpgui);
 
         [DllImport("user32.dll")]
         private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
 
         [DllImport("user32.dll")]
-        private static extern IntPtr GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+        private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
 
         [DllImport("user32.dll")]
         private static extern IntPtr GetForegroundWindow();
@@ -29,9 +52,13 @@ namespace Automatization.Utils
             }
 
             IntPtr foregroundWindowHandle = GetForegroundWindow();
-            IntPtr gameWindowHandle = gameProcess.MainWindowHandle;
+            if (foregroundWindowHandle == IntPtr.Zero)
+            {
+                return false;
+            }
 
-            bool isInForeground = foregroundWindowHandle == gameWindowHandle;
+            _ = GetWindowThreadProcessId(foregroundWindowHandle, out uint foregroundProcessId);
+            bool isInForeground = foregroundProcessId == gameProcess.Id;
 
             if (isInForeground)
             {
@@ -41,7 +68,7 @@ namespace Automatization.Utils
             {
                 if (_foregroundCheckFailCount < MAX_LOG_COUNT)
                 {
-                    LogService.LogInfo($"Foreground check failed: Foreground window handle is {foregroundWindowHandle}, game window handle is {gameWindowHandle}.");
+                    LogService.LogInfo($"Foreground check failed: Foreground process ID is {foregroundProcessId}, game process ID is {gameProcess.Id}.");
                     _foregroundCheckFailCount++;
                 }
             }
@@ -56,22 +83,38 @@ namespace Automatization.Utils
                 return false;
             }
 
-            IntPtr focusedControlHandle = GetFocus();
-            if (focusedControlHandle == IntPtr.Zero)
-            {
-                return true;
-            }
-
-            _ = GetWindowThreadProcessId(focusedControlHandle, out uint focusedControlProcessId);
-            if (gameProcess != null && focusedControlProcessId != gameProcess.Id)
+            IntPtr foregroundWindowHandle = GetForegroundWindow();
+            if (foregroundWindowHandle == IntPtr.Zero)
             {
                 return false;
             }
 
-            StringBuilder className = new();
-            _ = GetClassName(focusedControlHandle, className, className.Capacity);
+            uint threadId = GetWindowThreadProcessId(foregroundWindowHandle, out _);
+            if (threadId == 0)
+            {
+                return true;
+            }
 
-            return !className.ToString().Equals("EDIT", StringComparison.OrdinalIgnoreCase);
+            GUITHREADINFO gui = new()
+            {
+                cbSize = Marshal.SizeOf<GUITHREADINFO>()
+            };
+
+            if (GetGUIThreadInfo(threadId, ref gui))
+            {
+                IntPtr focusedControlHandle = gui.hwndFocus;
+                if (focusedControlHandle == IntPtr.Zero)
+                {
+                    return true;
+                }
+
+                StringBuilder className = new(256);
+                _ = GetClassName(focusedControlHandle, className, className.Capacity);
+
+                return !className.ToString().Equals("EDIT", StringComparison.OrdinalIgnoreCase);
+            }
+
+            return true;
         }
     }
 }

@@ -50,6 +50,39 @@ namespace Automatization.Services
             }
         }
 
+        public static string? GetCachedImagePathNonBlocking(string url, out string localPath)
+        {
+            if (string.IsNullOrEmpty(url))
+            {
+                localPath = string.Empty;
+                return null;
+            }
+
+            string fileName = GetHashString(url) + ".png";
+            localPath = Path.Combine(CacheDirectory, fileName);
+
+            if (File.Exists(localPath))
+            {
+                return localPath;
+            }
+
+            string targetPath = localPath;
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    byte[] data = await HttpClient.GetByteArrayAsync(url);
+                    await File.WriteAllBytesAsync(targetPath, data);
+                }
+                catch (Exception ex)
+                {
+                    LogService.LogError($"Failed to cache image in background: {ex.Message}");
+                }
+            });
+
+            return null;
+        }
+
         public static string? GetIssueImagePath(string url, int issueId)
         {
             if (string.IsNullOrEmpty(url))
@@ -88,6 +121,51 @@ namespace Automatization.Services
                 LogService.LogError($"Failed to download issue image: {ex.Message}");
                 return null;
             }
+        }
+
+        public static string? GetIssueImagePathNonBlocking(string url, int issueId, out string localPath)
+        {
+            if (string.IsNullOrEmpty(url))
+            {
+                localPath = string.Empty;
+                return null;
+            }
+
+            string issueDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TankAutomation", "Issues", issueId.ToString(), "Images");
+
+            if (!Directory.Exists(issueDir))
+            {
+                _ = Directory.CreateDirectory(issueDir);
+            }
+
+            string fileName = GetHashString(url) + Path.GetExtension(url);
+            if (string.IsNullOrEmpty(Path.GetExtension(url)))
+            {
+                fileName += ".png";
+            }
+
+            localPath = Path.Combine(issueDir, fileName);
+
+            if (File.Exists(localPath))
+            {
+                return localPath;
+            }
+
+            string targetPath = localPath;
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    byte[] data = await HttpClient.GetByteArrayAsync(url);
+                    await File.WriteAllBytesAsync(targetPath, data);
+                }
+                catch (Exception ex)
+                {
+                    LogService.LogError($"Failed to download issue image in background: {ex.Message}");
+                }
+            });
+
+            return null;
         }
 
         public static async Task PreloadImagesAsync(IEnumerable<string> urls)
