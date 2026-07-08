@@ -1,5 +1,6 @@
 using Automatization.Services;
 using Automatization.Settings;
+using Automatization.Utils;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
@@ -114,9 +115,22 @@ namespace Automatization.Hotkeys
                 return;
             }
 
-            Process? game = Process.GetProcessesByName(_settings?.GameProcessName ?? "ProTanki").FirstOrDefault();
-            if (game == null || Utils.WindowUtils.IsGameWindowInForeground(game) == false)
+            Process[] processes = Process.GetProcessesByName(_settings?.GameProcessName ?? "ProTanki");
+            if (processes.Length == 0)
             {
+                handled = false;
+                return;
+            }
+
+            Process game = processes[0];
+            for (int i = 1; i < processes.Length; i++)
+            {
+                processes[i].Dispose();
+            }
+
+            if (WindowUtils.IsGameWindowInForeground(game) == false)
+            {
+                game.Dispose();
                 handled = false;
                 return;
             }
@@ -128,6 +142,10 @@ namespace Automatization.Hotkeys
                 handled = true;
 
                 LogService.LogInfo($"Hotkey pressed: {hotKey}");
+            }
+            else
+            {
+                game.Dispose();
             }
         }
 

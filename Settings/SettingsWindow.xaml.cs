@@ -81,6 +81,10 @@ namespace Automatization
             MineKeyBox.HotKey = new HotKey(_settings.PowerupKeys.GetValueOrDefault(PowerupType.Mine, Key.D5), ModifierKeys.None);
 
             TransparentTimerWindowCheckBox.IsChecked = _settings.IsTimerWindowTransparent;
+            EnableDiscordRpcCheckBox.IsChecked = _settings.EnableDiscordRpc;
+            DiscordRpcAppIdTextBox.Text = _settings.DiscordRpcAppId;
+            DiscordRpcDetailsTextBox.Text = _settings.DiscordRpcDetails;
+            DiscordRpcStateTextBox.Text = _settings.DiscordRpcState;
 
             foreach (ComboBoxItem item in SmartRepairFpsComboBox.Items)
             {
@@ -268,6 +272,10 @@ namespace Automatization
             _settings.PowerupKeys[PowerupType.Mine] = MineKeyBox.HotKey.Key;
 
             _settings.IsTimerWindowTransparent = TransparentTimerWindowCheckBox.IsChecked ?? false;
+            _settings.EnableDiscordRpc = EnableDiscordRpcCheckBox.IsChecked ?? false;
+            _settings.DiscordRpcAppId = DiscordRpcAppIdTextBox.Text;
+            _settings.DiscordRpcDetails = DiscordRpcDetailsTextBox.Text;
+            _settings.DiscordRpcState = DiscordRpcStateTextBox.Text;
 
             CustomTheme? themeToApply = null;
             if (ThemeComboBox.SelectedItem is ComboBoxItem item)
@@ -302,9 +310,22 @@ namespace Automatization
                 App.Settings.SmartRepairDebugHotKey = _settings.SmartRepairDebugHotKey;
                 App.Settings.PowerupKeys = _settings.PowerupKeys;
                 App.Settings.IsTimerWindowTransparent = _settings.IsTimerWindowTransparent;
+                App.Settings.EnableDiscordRpc = _settings.EnableDiscordRpc;
+                App.Settings.DiscordRpcAppId = _settings.DiscordRpcAppId;
+                App.Settings.DiscordRpcDetails = _settings.DiscordRpcDetails;
+                App.Settings.DiscordRpcState = _settings.DiscordRpcState;
                 App.Settings.Theme = _settings.Theme;
                 App.Settings.CustomThemeName = _settings.CustomThemeName;
                 App.Settings.SmartRepairFps = _settings.SmartRepairFps;
+            }
+
+            if (_settings.EnableDiscordRpc)
+            {
+                DiscordRpcService.Initialize();
+            }
+            else
+            {
+                DiscordRpcService.Shutdown();
             }
 
             RegisterSettingsHotkeys();

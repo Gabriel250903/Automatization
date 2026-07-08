@@ -14,11 +14,14 @@ namespace Automatization.Services
         private CancellationTokenSource? _cts;
         private bool _isRunning;
 
+        private readonly object _processLock = new();
+        private Process? _gameProcess;
+
+        public string GameProcessName { get; set; } = "ProTanki";
         public int HealthThreshold { get; set; } = 40;
         public int CooldownMs { get; set; } = 5000;
         public Key ActivationKey { get; set; } = Key.D1;
         public int TargetFps { get; set; } = 60;
-
         private DateTime _lastActivationTime = DateTime.MinValue;
         public event Action<HealthBarStruct>? OnStateUpdated;
         public event Action? OnActivated;
@@ -27,6 +30,20 @@ namespace Automatization.Services
         {
             Detector = new HealthBarDetector();
             _captureService = new ScreenCaptureService();
+
+            try
+            {
+                AppSettings settings = AppSettings.Load();
+                GameProcessName = settings.GameProcessName;
+                HealthThreshold = settings.SmartRepairThreshold;
+                CooldownMs = settings.SmartRepairCooldown;
+                ActivationKey = settings.SmartRepairKey;
+                TargetFps = settings.SmartRepairFps;
+            }
+            catch (Exception ex)
+            {
+                LogService.LogError($"Failed to load settings in SmartRepairKitService constructor: {ex.Message}.");
+            }
         }
 
         public void UpdateColors(Color bright, Color dark)
@@ -56,6 +73,11 @@ namespace Automatization.Services
 
             _isRunning = false;
             _cts?.Cancel();
+            lock (_processLock)
+            {
+                _gameProcess?.Dispose();
+                _gameProcess = null;
+            }
             LogService.LogInfo("Smart Repair Kit monitoring stopped.");
         }
 
@@ -95,6 +117,42 @@ namespace Automatization.Services
             }
         }
 
+        private void RefreshGameProcess()
+        {
+            lock (_processLock)
+            {
+                if (_gameProcess == null || HasProcessExited(_gameProcess))
+                {
+                    _gameProcess?.Dispose();
+                    Process[] processes = Process.GetProcessesByName(GameProcessName);
+                    if (processes.Length > 0)
+                    {
+                        _gameProcess = processes[0];
+                        for (int i = 1; i < processes.Length; i++)
+                        {
+                            processes[i].Dispose();
+                        }
+                    }
+                    else
+                    {
+                        _gameProcess = null;
+                    }
+                }
+            }
+        }
+
+        private static bool HasProcessExited(Process process)
+        {
+            try
+            {
+                return process.HasExited;
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
         private void TryActivateRepair()
         {
             if ((DateTime.Now - _lastActivationTime).TotalMilliseconds < CooldownMs)
@@ -105,20 +163,18 @@ namespace Automatization.Services
             LogService.LogInfo($"Low health detected! Activating Repair Kit (Key: {ActivationKey})");
 
             int vKey = KeyInterop.VirtualKeyFromKey(ActivationKey);
-            SimulateKeyPress((ushort)vKey);
+            RefreshGameProcess();
+            SimulateKeyPress((ushort)vKey, _gameProcess);
 
             _lastActivationTime = DateTime.Now;
             OnActivated?.Invoke();
         }
 
-        private static void SimulateKeyPress(ushort virtualKey)
+        private static void SimulateKeyPress(ushort virtualKey, Process? process)
         {
-            AppSettings settings = AppSettings.Load();
-            Process? process = Process.GetProcessesByName(settings.GameProcessName).FirstOrDefault();
-
             if (process == null || process.MainWindowHandle == IntPtr.Zero)
             {
-                LogService.LogWarning($"Game process '{settings.GameProcessName}' not found. Cannot send key press.");
+                LogService.LogWarning("Game process not found or has no main window handle. Cannot send key press.");
                 return;
             }
 
@@ -136,7 +192,8 @@ namespace Automatization.Services
         public void ForceTrigger()
         {
             int vKey = KeyInterop.VirtualKeyFromKey(ActivationKey);
-            SimulateKeyPress((ushort)vKey);
+            RefreshGameProcess();
+            SimulateKeyPress((ushort)vKey, _gameProcess);
             OnActivated?.Invoke();
         }
 
@@ -145,6 +202,11 @@ namespace Automatization.Services
             Stop();
             _cts?.Dispose();
             _captureService?.Dispose();
+            lock (_processLock)
+            {
+                _gameProcess?.Dispose();
+                _gameProcess = null;
+            }
         }
     }
 }

@@ -7,6 +7,7 @@ using System.Windows.Input;
 using Point = System.Windows.Point;
 
 namespace Automatization.Settings;
+
 public class AppSettings
 {
     private static readonly JsonSerializerOptions _jsonWriteOption = new()
@@ -45,6 +46,10 @@ public class AppSettings
     public string? CustomHealthBrightColor { get; set; }
     public string? CustomHealthDarkColor { get; set; }
     public bool UseCustomHealthColors { get; set; } = false;
+    public bool EnableDiscordRpc { get; set; } = true;
+    public string DiscordRpcAppId { get; set; } = "1260233486121406464";
+    public string DiscordRpcDetails { get; set; } = "Automation Active";
+    public string DiscordRpcState { get; set; } = "Game: {GameStatus}";
     public int SmartRepairThreshold { get; set; } = 40;
     public int SmartRepairCooldown { get; set; } = 5000;
     public Key SmartRepairKey { get; set; } = Key.D1;
@@ -96,11 +101,11 @@ public class AppSettings
                 {
                     string secretsJson = File.ReadAllText(secretsPath);
                     using JsonDocument doc = JsonDocument.Parse(secretsJson);
-                    if (doc.RootElement.TryGetProperty("DiscordWebhookUrl", out JsonElement prop))
+                    if (doc.RootElement.TryGetProperty(nameof(DiscordWebhookUrl), out JsonElement prop))
                     {
                         settings.DiscordWebhookUrl = prop.GetString() ?? string.Empty;
                     }
-                    if (doc.RootElement.TryGetProperty("AdminPassword", out JsonElement passProp))
+                    if (doc.RootElement.TryGetProperty(nameof(AdminPassword), out JsonElement passProp))
                     {
                         settings.AdminPassword = passProp.GetString() ?? "test";
                     }

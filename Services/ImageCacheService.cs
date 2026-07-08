@@ -23,7 +23,7 @@ namespace Automatization.Services
             return Directory.Exists(CacheDirectory) && Directory.EnumerateFiles(CacheDirectory).Any();
         }
 
-        public static string? GetCachedImagePath(string url)
+        public static async Task<string?> GetCachedImagePathAsync(string url)
         {
             if (string.IsNullOrEmpty(url))
             {
@@ -40,8 +40,8 @@ namespace Automatization.Services
 
             try
             {
-                byte[] data = HttpClient.GetByteArrayAsync(url).GetAwaiter().GetResult();
-                File.WriteAllBytes(localPath, data);
+                byte[] data = await HttpClient.GetByteArrayAsync(url);
+                await File.WriteAllBytesAsync(localPath, data);
                 return localPath;
             }
             catch
@@ -83,7 +83,7 @@ namespace Automatization.Services
             return null;
         }
 
-        public static string? GetIssueImagePath(string url, int issueId)
+        public static async Task<string?> GetIssueImagePathAsync(string url, int issueId)
         {
             if (string.IsNullOrEmpty(url))
             {
@@ -112,8 +112,8 @@ namespace Automatization.Services
 
             try
             {
-                byte[] data = HttpClient.GetByteArrayAsync(url).GetAwaiter().GetResult();
-                File.WriteAllBytes(localPath, data);
+                byte[] data = await HttpClient.GetByteArrayAsync(url);
+                await File.WriteAllBytesAsync(localPath, data);
                 return localPath;
             }
             catch (Exception ex)

@@ -199,7 +199,10 @@ namespace Automatization.Services
             try
             {
                 string targetDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TankAutomation");
-                if (!Directory.Exists(targetDirectory)) return;
+                if (!Directory.Exists(targetDirectory))
+                {
+                    return;
+                }
 
                 string[] updateFiles = Directory.GetFiles(targetDirectory, "Automatization*.*")
                     .Where(f => f.EndsWith(".msi") || f.EndsWith(".exe") || f.EndsWith(".log"))

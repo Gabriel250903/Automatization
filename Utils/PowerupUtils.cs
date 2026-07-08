@@ -4,7 +4,6 @@ using Automatization.Types;
 using Automatization.ViewModels;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Windows.Input;
 
 namespace Automatization.Utils
@@ -173,8 +172,8 @@ namespace Automatization.Utils
             IntPtr lParamDown = (IntPtr)((scanCode << 16) | 1);
             IntPtr lParamUp = (IntPtr)((scanCode << 16) | 0xC0000001);
 
-            _ = NativeMethods.PostMessage(GameProcess.MainWindowHandle, NativeMethods.WM_KEYDOWN, (IntPtr)virtualKey, lParamDown);
-            _ = NativeMethods.PostMessage(GameProcess.MainWindowHandle, NativeMethods.WM_KEYUP, (IntPtr)virtualKey, lParamUp);
+            _ = NativeMethods.PostMessage(GameProcess.MainWindowHandle, NativeMethods.WM_KEYDOWN, virtualKey, lParamDown);
+            _ = NativeMethods.PostMessage(GameProcess.MainWindowHandle, NativeMethods.WM_KEYUP, virtualKey, lParamUp);
         }
     }
 }

@@ -127,28 +127,7 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Trigger.EnterActions>
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <ColorAnimation
-                                            Storyboard.TargetName="ButtonBorder"
-                                            Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                            To="{StaticResource ButtonHoverBackgroundColor}"
-                                            Duration="0:0:0.1" />
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </Trigger.EnterActions>
-                            <Trigger.ExitActions>
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <ColorAnimation
-                                            Storyboard.TargetName="ButtonBorder"
-                                            Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                            To="{StaticResource ButtonBackgroundColor}"
-                                            Duration="0:0:0.1" />
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </Trigger.ExitActions>
+                            <Setter TargetName="ButtonBorder" Property="Background" Value="{StaticResource ButtonHoverBackgroundColor}" />
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="ButtonBorder" Property="Background" Value="{StaticResource ButtonPressedBackground}" />

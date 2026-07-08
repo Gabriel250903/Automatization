@@ -31,7 +31,6 @@ namespace Automatization.Converters
                     {
                         bitmap.UriSource = new Uri(url);
                         bitmap.EndInit();
-                        // Do not freeze since it is loading asynchronously from the web
                     }
 
                     return bitmap;

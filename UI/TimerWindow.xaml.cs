@@ -121,9 +121,18 @@ namespace Automatization.UI
 
         private void HandleGameProcessFound(Process game)
         {
-            if (_gameProcess == null || _gameProcess.Id != game.Id)
+            if (_gameProcess == null)
             {
                 _gameProcess = game;
+            }
+            else if (_gameProcess.Id != game.Id)
+            {
+                _gameProcess.Dispose();
+                _gameProcess = game;
+            }
+            else
+            {
+                game.Dispose();
             }
 
             if (WindowUtils.IsGameWindowInForeground(_gameProcess))
@@ -138,6 +147,7 @@ namespace Automatization.UI
 
         private void HandleGameProcessLost()
         {
+            _gameProcess?.Dispose();
             _gameProcess = null;
             HideTimerWindow();
         }
@@ -184,6 +194,8 @@ namespace Automatization.UI
             _gameCheckTimer.Stop();
             _timer.Stop();
             _hideTimer.Stop();
+            _gameProcess?.Dispose();
+            _gameProcess = null;
             base.OnClosed(e);
         }
 

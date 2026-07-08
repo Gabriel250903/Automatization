@@ -12,6 +12,7 @@
     WindowBackdropType="Mica"
     WindowStartupLocation="CenterOwner">
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <Style BasedOn="{StaticResource {x:Type TextBox}}" TargetType="{x:Type controls:HotKeyBox}">
             <Setter Property="Height" Value="35" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -385,10 +386,45 @@
                     </StackPanel>
                 </Grid>
 
-                <CheckBox
-                    x:Name="TransparentTimerWindowCheckBox"
-                    Margin="-10,0,0,20"
-                    Content="{DynamicResource Settings_TransparentTimer}" />
+                <StackPanel Margin="-10,0,0,20">
+                    <CheckBox
+                        x:Name="TransparentTimerWindowCheckBox"
+                        Margin="0,0,0,10"
+                        Content="{DynamicResource Settings_TransparentTimer}" />
+                    <CheckBox
+                        x:Name="EnableDiscordRpcCheckBox"
+                        Margin="0,0,0,10"
+                        Content="Enable Discord Rich Presence" />
+
+                    <StackPanel Visibility="{Binding IsChecked, ElementName=EnableDiscordRpcCheckBox, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock 
+                            Margin="10,0,0,5" 
+                            FontWeight="SemiBold" 
+                            Text="Discord RPC Client ID" />
+                        <ui:TextBox
+                            x:Name="DiscordRpcAppIdTextBox"
+                            Margin="10,0,0,10"
+                            PlaceholderText="1260233486121406464" />
+                    
+                        <TextBlock 
+                            Margin="10,0,0,5" 
+                            FontWeight="SemiBold" 
+                            Text="Discord RPC Details template (Use {GameStatus})" />
+                        <ui:TextBox
+                            x:Name="DiscordRpcDetailsTextBox"
+                            Margin="10,0,0,10"
+                            PlaceholderText="Automation Active" />
+
+                        <TextBlock 
+                            Margin="10,0,0,5" 
+                            FontWeight="SemiBold" 
+                            Text="Discord RPC State template (Use {GameStatus})" />
+                        <ui:TextBox
+                            x:Name="DiscordRpcStateTextBox"
+                            Margin="10,0,0,10"
+                            PlaceholderText="Game: {GameStatus}" />
+                    </StackPanel>
+                </StackPanel>
 
                 <Separator Margin="0,0,0,20" Opacity="1" />
 

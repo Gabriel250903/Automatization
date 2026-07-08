@@ -1,12 +1,13 @@
 using Automatization.Settings;
 using Automatization.Types;
 using System.Diagnostics;
+using Timer = System.Threading.Timer;
 
 namespace Automatization.Services
 {
     public class ClickerService : IDisposable
     {
-        private readonly Dictionary<Guid, System.Threading.Timer> _timers = [];
+        private readonly Dictionary<Guid, Timer> _timers = [];
         private readonly AppSettings _settings;
 
         private Process? _cachedProcess;
@@ -51,10 +52,7 @@ namespace Automatization.Services
                         }
                     }
 
-                    if (_cachedProcess == null)
-                    {
-                        _cachedProcess = Process.GetProcessesByName(gameProcessName).FirstOrDefault();
-                    }
+                    _cachedProcess ??= Process.GetProcessesByName(gameProcessName).FirstOrDefault();
 
                     _lastProcessCheck = DateTime.Now;
                 }
@@ -81,9 +79,9 @@ namespace Automatization.Services
                                 clickAction(handle, clickType);
                             }
                         }
-                        catch
+                        catch (Exception ex)
                         {
-                            // Process might have exited or been disposed
+                            LogService.LogError("Process might have exited or been disposed.", ex.Message); 
                         }
                     }
                 },

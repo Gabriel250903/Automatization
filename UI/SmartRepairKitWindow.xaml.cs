@@ -48,6 +48,7 @@ namespace Automatization.UI
             CmbKey.SelectedItem = settings.SmartRepairKey;
 
             _service.TargetFps = settings.SmartRepairFps;
+            _service.GameProcessName = settings.GameProcessName;
 
             BtnToggle.Content = settings.SmartRepairToggleHotKey != null
                 ? $"{(string)Application.Current.Resources["SmartRepair_Start"]} ({settings.SmartRepairToggleHotKey})"
@@ -74,7 +75,7 @@ namespace Automatization.UI
                 }
                 catch (Exception ex)
                 {
-                    LogService.LogError("Failed to parse custom colors from settings.", ex);
+                    LogService.LogError($"Failed to parse custom colors from settings: {ex.Message}.");
                 }
             }
         }

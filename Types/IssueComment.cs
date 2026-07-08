@@ -4,7 +4,7 @@ namespace Automatization.Types
 {
     public class IssueComment
     {
-        public int ParentIssueNumber { get; set; } // Added to associate comment with its parent issue
+        public int ParentIssueNumber { get; set; }
 
         [JsonPropertyName("body")]
         public string Body { get; set; } = string.Empty;

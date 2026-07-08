@@ -248,15 +248,25 @@ namespace Automatization.Services
 
         public static Bitmap CaptureScreenGDI()
         {
-            int width = NativeMethods.GetSystemMetrics(NativeMethods.SM_CXSCREEN);
-            int height = NativeMethods.GetSystemMetrics(NativeMethods.SM_CYSCREEN);
+            int left = NativeMethods.GetSystemMetrics(NativeMethods.SM_XVIRTUALSCREEN);
+            int top = NativeMethods.GetSystemMetrics(NativeMethods.SM_YVIRTUALSCREEN);
+            int width = NativeMethods.GetSystemMetrics(NativeMethods.SM_CXVIRTUALSCREEN);
+            int height = NativeMethods.GetSystemMetrics(NativeMethods.SM_CYVIRTUALSCREEN);
+
+            if (width <= 0 || height <= 0)
+            {
+                left = 0;
+                top = 0;
+                width = NativeMethods.GetSystemMetrics(NativeMethods.SM_CXSCREEN);
+                height = NativeMethods.GetSystemMetrics(NativeMethods.SM_CYSCREEN);
+            }
 
             IntPtr hDesktopDC = NativeMethods.GetWindowDC(NativeMethods.GetDesktopWindow());
             IntPtr hMemoryDC = NativeMethods.CreateCompatibleDC(hDesktopDC);
             IntPtr hBitmap = NativeMethods.CreateCompatibleBitmap(hDesktopDC, width, height);
             IntPtr hOldBitmap = NativeMethods.SelectObject(hMemoryDC, hBitmap);
 
-            _ = NativeMethods.BitBlt(hMemoryDC, 0, 0, width, height, hDesktopDC, 0, 0, NativeMethods.SRCCOPY);
+            _ = NativeMethods.BitBlt(hMemoryDC, 0, 0, width, height, hDesktopDC, left, top, NativeMethods.SRCCOPY);
 
             Bitmap bmp = Image.FromHbitmap(hBitmap);
 

@@ -80,6 +80,8 @@ namespace Automatization.Services
                     else
                     {
                         _lastKnownRegion = Rectangle.Empty;
+                        _maxBarWidth = 0;
+                        _maxBarBounds = Rectangle.Empty;
                     }
 
                     return result;
@@ -105,6 +107,8 @@ namespace Automatization.Services
             int stepY = precise ? 1 : SearchStrideY;
             int stepX = precise ? 1 : SearchStrideX;
 
+            int modeCount = _colorModes.Count;
+
             for (int y = startY; y < endY; y += stepY)
             {
                 byte* row = ptr + (y * stride);
@@ -115,8 +119,9 @@ namespace Automatization.Services
                     int g = row[(x * bytesPerPixel) + 1];
                     int r = row[(x * bytesPerPixel) + 2];
 
-                    foreach (HealthColorStruct mode in _colorModes)
+                    for (int i = 0; i < modeCount; i++)
                     {
+                        HealthColorStruct mode = _colorModes[i];
                         if (IsColorMatch(r, g, b, mode.Bright))
                         {
                             if (VerifyBar(data, x, y, mode, out Rectangle barBounds, out double health))
@@ -150,10 +155,13 @@ namespace Automatization.Services
             int left = hitX;
             int right = hitX;
 
+            Color bright = mode.Bright;
+            Color dark = mode.Dark;
+
             while (left > 0)
             {
                 byte* p = ptr + (hitY * stride) + ((left - 1) * 3);
-                if (!IsColorMatch(p[2], p[1], p[0], mode.Bright) && !IsColorMatch(p[2], p[1], p[0], mode.Dark))
+                if (!IsColorMatch(p[2], p[1], p[0], bright) && !IsColorMatch(p[2], p[1], p[0], dark))
                 {
                     break;
                 }
@@ -164,7 +172,7 @@ namespace Automatization.Services
             while (right < width - 1)
             {
                 byte* p = ptr + (hitY * stride) + ((right + 1) * 3);
-                if (!IsColorMatch(p[2], p[1], p[0], mode.Bright) && !IsColorMatch(p[2], p[1], p[0], mode.Dark))
+                if (!IsColorMatch(p[2], p[1], p[0], bright) && !IsColorMatch(p[2], p[1], p[0], dark))
                 {
                     break;
                 }
@@ -185,7 +193,7 @@ namespace Automatization.Services
             while (top > 0)
             {
                 byte* p = ptr + ((top - 1) * stride) + (midX * 3);
-                if (!IsColorMatch(p[2], p[1], p[0], mode.Bright) && !IsColorMatch(p[2], p[1], p[0], mode.Dark))
+                if (!IsColorMatch(p[2], p[1], p[0], bright) && !IsColorMatch(p[2], p[1], p[0], dark))
                 {
                     break;
                 }
@@ -196,7 +204,7 @@ namespace Automatization.Services
             while (bottom < height - 1)
             {
                 byte* p = ptr + ((bottom + 1) * stride) + (midX * 3);
-                if (!IsColorMatch(p[2], p[1], p[0], mode.Bright) && !IsColorMatch(p[2], p[1], p[0], mode.Dark))
+                if (!IsColorMatch(p[2], p[1], p[0], bright) && !IsColorMatch(p[2], p[1], p[0], dark))
                 {
                     break;
                 }
@@ -227,11 +235,11 @@ namespace Automatization.Services
                 int g = scanRow[idx + 1];
                 int r = scanRow[idx + 2];
 
-                if (IsColorMatch(r, g, b, mode.Bright))
+                if (IsColorMatch(r, g, b, bright))
                 {
                     brightPixels++;
                 }
-                else if (IsColorMatch(r, g, b, mode.Dark))
+                else if (IsColorMatch(r, g, b, dark))
                 {
                     darkPixels++;
                 }

@@ -14,9 +14,6 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using Wpf.Ui.Controls;
 using Application = System.Windows.Application;
-using MessageBox = System.Windows.MessageBox;
-using MessageBoxButton = System.Windows.MessageBoxButton;
-using MessageBoxImage = System.Windows.MessageBoxImage;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using Point = System.Windows.Point;
 
@@ -40,6 +37,7 @@ namespace Automatization
         private SmartRepairKitWindow? _smartRepairWindow;
 
         private bool _arePowerupsPausedForChat = false;
+        private DateTime _chatPausedTime = DateTime.MinValue;
         private readonly List<PowerupType> _activePowerups = [];
         private string _currentStatusKey = "Status_Ready";
 
@@ -112,7 +110,7 @@ namespace Automatization
             _hotkeyActions["ToggleAll"] = () =>
             {
                 _arePowerupsPausedForChat = false;
-                _powerupUtils?.ToggleAll();
+                _ = (_powerupUtils?.ToggleAll());
             };
             _hotkeyActions["RedTeam"] = () => RedTeamButton_Click(this, null);
             _hotkeyActions["BlueTeam"] = () => BlueTeamButton_Click(this, null);
@@ -144,10 +142,68 @@ namespace Automatization
             }
         }
 
+        private void ResetChatPausedState()
+        {
+            if (_arePowerupsPausedForChat)
+            {
+                _arePowerupsPausedForChat = false;
+                List<PowerupType> powerupsToResume = [.. _activePowerups];
+                _activePowerups.Clear();
+
+                _ = Dispatcher.InvokeAsync(async () =>
+                {
+                    await Task.Delay(500);
+
+                    if (!_arePowerupsPausedForChat && _powerupUtils != null)
+                    {
+                        foreach (PowerupType type in powerupsToResume)
+                        {
+                            ViewModels.PowerupViewModel? vm = _powerupUtils.Powerups.FirstOrDefault(x => x.PowerupType == type);
+                            if (vm != null)
+                            {
+                                vm.IsActive = true;
+                            }
+                        }
+                    }
+                });
+
+                LogService.LogInfo("Chat closed/reset: Resuming powerups in 500ms.");
+            }
+        }
+
+        private void CheckChatPauseTimeout()
+        {
+            if (_arePowerupsPausedForChat && (DateTime.Now - _chatPausedTime).TotalSeconds > 15)
+            {
+                LogService.LogInfo("Defensive reset: Chat pause timed out due to inactivity. Resuming powerups.");
+                ResetChatPausedState();
+            }
+        }
+
         private bool KeyboardListener_OnKeyPressed(Key e)
         {
             if (_gameProcess != null && WindowUtils.IsGameWindowInForeground(_gameProcess))
             {
+                if (_arePowerupsPausedForChat)
+                {
+                    if (e is Key.W or Key.A or Key.S or Key.D or
+                        Key.Up or Key.Down or Key.Left or Key.Right or
+                        Key.Space)
+                    {
+                        LogService.LogInfo($"Defensive reset: Game control key {e} pressed while chat paused. Resuming powerups.");
+                        ResetChatPausedState();
+                    }
+                    else if ((DateTime.Now - _chatPausedTime).TotalSeconds > 15)
+                    {
+                        LogService.LogInfo("Defensive reset: Chat pause timed out during key activity check. Resuming powerups.");
+                        ResetChatPausedState();
+                    }
+                    else
+                    {
+                        _chatPausedTime = DateTime.Now;
+                    }
+                }
+
                 if (e == Key.Enter && !_arePowerupsPausedForChat)
                 {
                     if (_powerupUtils != null)
@@ -165,32 +221,12 @@ namespace Automatization
                     }
 
                     _arePowerupsPausedForChat = true;
+                    _chatPausedTime = DateTime.Now;
                     LogService.LogInfo("Chat opened: Paused powerups.");
                 }
                 else if ((e == Key.Enter || e == Key.Escape) && _arePowerupsPausedForChat)
                 {
-                    _arePowerupsPausedForChat = false;
-                    List<PowerupType> powerupsToResume = [.. _activePowerups];
-                    _activePowerups.Clear();
-
-                    _ = Dispatcher.InvokeAsync(async () =>
-                    {
-                        await Task.Delay(500);
-
-                        if (!_arePowerupsPausedForChat && _powerupUtils != null)
-                        {
-                            foreach (PowerupType type in powerupsToResume)
-                            {
-                                ViewModels.PowerupViewModel? vm = _powerupUtils.Powerups.FirstOrDefault(x => x.PowerupType == type);
-                                if (vm != null)
-                                {
-                                    vm.IsActive = true;
-                                }
-                            }
-                        }
-                    });
-
-                    LogService.LogInfo($"Chat closed: Resuming powerups in 500ms.");
+                    ResetChatPausedState();
                 }
 
                 if (!_arePowerupsPausedForChat && !GlobalHotKeyManager.IsPaused && _powerupUtils != null)
@@ -215,15 +251,25 @@ namespace Automatization
 
             if (gameProcess != null)
             {
-                if (_gameProcess == null || _gameProcess.Id != gameProcess.Id)
+                if (_gameProcess == null)
                 {
                     _gameProcess = gameProcess;
                     EnableAutomation();
                 }
+                else if (_gameProcess.Id != gameProcess.Id)
+                {
+                    _gameProcess.Dispose();
+                    _gameProcess = gameProcess;
+                    EnableAutomation();
+                }
+                else
+                {
+                    gameProcess.Dispose();
+                }
 
                 if (_powerupUtils != null)
                 {
-                    _powerupUtils.GameProcess = gameProcess;
+                    _powerupUtils.GameProcess = _gameProcess;
                 }
             }
 
@@ -267,7 +313,13 @@ namespace Automatization
             {
                 TimerWindow lastTimer = _activeTimerWindows.Last();
 
-                newTimer.Left = lastTimer.Left + lastTimer.ActualWidth + 5;
+                double lastWidth = lastTimer.ActualWidth;
+                if (lastWidth <= 0)
+                {
+                    lastWidth = double.IsNaN(lastTimer.Width) ? 120 : lastTimer.Width;
+                }
+
+                newTimer.Left = lastTimer.Left + lastWidth + 5;
                 newTimer.Top = lastTimer.Top;
             }
 
@@ -421,7 +473,7 @@ namespace Automatization
 
             if (game != null)
             {
-                if (_gameProcess == null || _gameProcess.Id != game.Id)
+                if (_gameProcess == null)
                 {
                     _gameProcess = game;
                     if (_powerupUtils != null)
@@ -432,11 +484,28 @@ namespace Automatization
                     EnableAutomation();
                     LogService.LogInfo("Game process found.");
                 }
+                else if (_gameProcess.Id != game.Id)
+                {
+                    _gameProcess.Dispose();
+                    _gameProcess = game;
+                    if (_powerupUtils != null)
+                    {
+                        _powerupUtils.GameProcess = _gameProcess;
+                    }
+
+                    EnableAutomation();
+                    LogService.LogInfo("Game process changed.");
+                }
+                else
+                {
+                    game.Dispose();
+                }
             }
             else
             {
                 if (_gameProcess != null)
                 {
+                    _gameProcess.Dispose();
                     _gameProcess = null;
                     if (_powerupUtils != null)
                     {
@@ -447,6 +516,8 @@ namespace Automatization
                     LogService.LogInfo("Game process lost.");
                 }
             }
+
+            CheckChatPauseTimeout();
         }
         #endregion
 
@@ -457,6 +528,7 @@ namespace Automatization
             SmartFeaturesGroup.Visibility = Visibility.Visible;
             LaunchButton.Visibility = Visibility.Collapsed;
             Status = "Status_GameRunning";
+            DiscordRpcService.UpdatePresence(true);
 
             LogService.LogInfo("Automation enabled.");
         }
@@ -468,6 +540,7 @@ namespace Automatization
             SmartFeaturesGroup.Visibility = Visibility.Collapsed;
             LaunchButton.Visibility = Visibility.Visible;
             Status = "Status_GameNotRunning";
+            DiscordRpcService.UpdatePresence(false);
 
             LogService.LogInfo("Automation disabled.");
         }
@@ -605,6 +678,7 @@ namespace Automatization
 
                 LogService.LogInfo("Launching game.");
 
+                _gameProcess?.Dispose();
                 _gameProcess = Process.Start(new ProcessStartInfo { FileName = _gameExecutablePath, UseShellExecute = true });
 
                 if (_gameProcess != null)
@@ -723,8 +797,10 @@ namespace Automatization
 
             LanguageService.LanguageChanged -= OnLanguageChanged;
 
-            base.OnClosed(e);
+            _gameProcess?.Dispose();
+            _gameProcess = null;
 
+            base.OnClosed(e);
         }
 
         protected override void OnStateChanged(EventArgs e)

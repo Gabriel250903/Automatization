@@ -108,6 +108,10 @@ namespace Automatization.Utils
 
         public const int SM_CXSCREEN = 0;
         public const int SM_CYSCREEN = 1;
+        public const int SM_XVIRTUALSCREEN = 76;
+        public const int SM_YVIRTUALSCREEN = 77;
+        public const int SM_CXVIRTUALSCREEN = 78;
+        public const int SM_CYVIRTUALSCREEN = 79;
 
         [StructLayout(LayoutKind.Sequential)]
         public struct POINT

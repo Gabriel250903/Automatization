@@ -2,6 +2,7 @@ using Automatization.Hotkeys;
 using Automatization.Services;
 using Automatization.Settings;
 using Automatization.Types;
+using System.Diagnostics;
 using System.Windows;
 using Wpf.Ui.Appearance;
 using Application = System.Windows.Application;
@@ -16,6 +17,8 @@ public partial class App : Application
 
     private void Application_Startup(object sender, StartupEventArgs e)
     {
+        PresentationTraceSources.AnimationSource.Switch.Level = SourceLevels.Off;
+
         LogService.Initialize();
         LogService.LogInfo("Application starting.");
 
@@ -65,6 +68,7 @@ public partial class App : Application
         }
 
         GlobalHotKeyManager.Initialize();
+        DiscordRpcService.Initialize();
 
         LogService.LogInfo("Main window shown.");
         LogService.CleanupOldLogsAsync();
@@ -74,6 +78,7 @@ public partial class App : Application
     {
         LogService.LogInfo("Application shutting down.");
         GlobalHotKeyManager.Shutdown();
+        DiscordRpcService.Shutdown();
         LogService.Shutdown();
     }
 

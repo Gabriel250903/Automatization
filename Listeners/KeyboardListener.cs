@@ -68,20 +68,31 @@ namespace Automatization.Listeners
                 }
 
                 Key key = KeyInterop.KeyFromVirtualKey((int)kbStruct.vkCode);
-                bool handled = false;
 
                 try
                 {
-                    handled = KeyDown?.Invoke(key) ?? false;
+                    Delegate[]? handlers = KeyDown?.GetInvocationList();
+                    if (handlers != null)
+                    {
+                        foreach (Func<Key, bool> handler in handlers.Cast<Func<Key, bool>>())
+                        {
+                            _ = Task.Run(() =>
+                            {
+                                try
+                                {
+                                    _ = handler(key);
+                                }
+                                catch (Exception innerEx)
+                                {
+                                    LogService.LogError("Error in asynchronous KeyDown callback handler.", innerEx);
+                                }
+                            });
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
-                    LogService.LogError("Error in KeyboardListener KeyDown callback.", ex);
-                }
-
-                if (handled)
-                {
-                    return 1;
+                    LogService.LogError("Error dispatching KeyDown callbacks in KeyboardListener.", ex);
                 }
             }
 
