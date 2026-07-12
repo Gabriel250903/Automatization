@@ -81,7 +81,7 @@ namespace Automatization.Services
                         }
                         catch (Exception ex)
                         {
-                            LogService.LogError("Process might have exited or been disposed.", ex.Message); 
+                            LogService.LogError("Process might have exited or been disposed.", ex); 
                         }
                     }
                 },

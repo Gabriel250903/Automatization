@@ -123,7 +123,13 @@ namespace Automatization.ViewModels
             {
                 Interval = TimeSpan.FromMilliseconds(_delay)
             };
-            _timer.Tick += (s, e) => _usePowerupAction?.Invoke(PowerupType);
+            _timer.Tick += (s, e) =>
+            {
+                if (IsActive)
+                {
+                    _usePowerupAction?.Invoke(PowerupType);
+                }
+            };
 
             LanguageService.LanguageChanged += OnLanguageChanged;
             UpdateLocalization();

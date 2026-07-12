@@ -36,10 +36,15 @@ namespace Automatization
         private readonly List<TimerWindow> _activeTimerWindows = [];
         private SmartRepairKitWindow? _smartRepairWindow;
 
-        private bool _arePowerupsPausedForChat = false;
+        private volatile bool _arePowerupsPausedForChat = false;
         private DateTime _chatPausedTime = DateTime.MinValue;
         private readonly List<PowerupType> _activePowerups = [];
         private string _currentStatusKey = "Status_Ready";
+        private int _consecutiveMissingProcessTicks = 0;
+        private const int MaxMissingProcessTicks = 5;
+
+        private readonly object _chatStateLock = new();
+        private DateTime _lastChatStateChangeTime = DateTime.MinValue;
 
 
         #region Win32
@@ -109,7 +114,12 @@ namespace Automatization
 
             _hotkeyActions["ToggleAll"] = () =>
             {
-                _arePowerupsPausedForChat = false;
+                lock (_chatStateLock)
+                {
+                    _arePowerupsPausedForChat = false;
+                    _activePowerups.Clear();
+                    _lastChatStateChangeTime = DateTime.Now;
+                }
                 _ = (_powerupUtils?.ToggleAll());
             };
             _hotkeyActions["RedTeam"] = () => RedTeamButton_Click(this, null);
@@ -144,39 +154,48 @@ namespace Automatization
 
         private void ResetChatPausedState()
         {
-            if (_arePowerupsPausedForChat)
+            lock (_chatStateLock)
             {
-                _arePowerupsPausedForChat = false;
-                List<PowerupType> powerupsToResume = [.. _activePowerups];
-                _activePowerups.Clear();
-
-                _ = Dispatcher.InvokeAsync(async () =>
+                if (_arePowerupsPausedForChat)
                 {
-                    await Task.Delay(500);
+                    _arePowerupsPausedForChat = false;
+                    _lastChatStateChangeTime = DateTime.Now;
 
-                    if (!_arePowerupsPausedForChat && _powerupUtils != null)
+                    _ = Dispatcher.InvokeAsync(async () =>
                     {
-                        foreach (PowerupType type in powerupsToResume)
+                        await Task.Delay(500);
+
+                        lock (_chatStateLock)
                         {
-                            ViewModels.PowerupViewModel? vm = _powerupUtils.Powerups.FirstOrDefault(x => x.PowerupType == type);
-                            if (vm != null)
+                            if (!_arePowerupsPausedForChat && _powerupUtils != null)
                             {
-                                vm.IsActive = true;
+                                foreach (PowerupType type in _activePowerups)
+                                {
+                                    ViewModels.PowerupViewModel? vm = _powerupUtils.Powerups.FirstOrDefault(x => x.PowerupType == type);
+                                    if (vm != null)
+                                    {
+                                        vm.IsActive = true;
+                                    }
+                                }
+                                _activePowerups.Clear();
                             }
                         }
-                    }
-                });
+                    });
 
-                LogService.LogInfo("Chat closed/reset: Resuming powerups in 500ms.");
+                    LogService.LogInfo("Chat closed/reset: Resuming powerups in 500ms.");
+                }
             }
         }
 
         private void CheckChatPauseTimeout()
         {
-            if (_arePowerupsPausedForChat && (DateTime.Now - _chatPausedTime).TotalSeconds > 15)
+            lock (_chatStateLock)
             {
-                LogService.LogInfo("Defensive reset: Chat pause timed out due to inactivity. Resuming powerups.");
-                ResetChatPausedState();
+                if (_arePowerupsPausedForChat && (DateTime.Now - _chatPausedTime).TotalSeconds > 120)
+                {
+                    LogService.LogInfo("Defensive reset: Chat pause timed out due to inactivity. Resuming powerups.");
+                    ResetChatPausedState();
+                }
             }
         }
 
@@ -184,49 +203,49 @@ namespace Automatization
         {
             if (_gameProcess != null && WindowUtils.IsGameWindowInForeground(_gameProcess))
             {
-                if (_arePowerupsPausedForChat)
+                lock (_chatStateLock)
                 {
-                    if (e is Key.W or Key.A or Key.S or Key.D or
-                        Key.Up or Key.Down or Key.Left or Key.Right or
-                        Key.Space)
+                    if (_arePowerupsPausedForChat)
                     {
-                        LogService.LogInfo($"Defensive reset: Game control key {e} pressed while chat paused. Resuming powerups.");
-                        ResetChatPausedState();
-                    }
-                    else if ((DateTime.Now - _chatPausedTime).TotalSeconds > 15)
-                    {
-                        LogService.LogInfo("Defensive reset: Chat pause timed out during key activity check. Resuming powerups.");
-                        ResetChatPausedState();
-                    }
-                    else
-                    {
-                        _chatPausedTime = DateTime.Now;
-                    }
-                }
-
-                if (e == Key.Enter && !_arePowerupsPausedForChat)
-                {
-                    if (_powerupUtils != null)
-                    {
-                        _activePowerups.Clear();
-                        foreach (ViewModels.PowerupViewModel powerup in _powerupUtils.Powerups)
+                        if ((DateTime.Now - _chatPausedTime).TotalSeconds > 120)
                         {
-                            if (powerup.IsActive)
+                            LogService.LogInfo("Defensive reset: Chat pause timed out during key activity check. Resuming powerups.");
+                            ResetChatPausedState();
+                        }
+                        else
+                        {
+                            _chatPausedTime = DateTime.Now;
+                        }
+                    }
+
+                    if (e == Key.Enter && !_arePowerupsPausedForChat)
+                    {
+
+                        if (_powerupUtils != null)
+                        {
+                            if (_activePowerups.Count == 0)
                             {
-                                _activePowerups.Add(powerup.PowerupType);
+                                foreach (ViewModels.PowerupViewModel powerup in _powerupUtils.Powerups)
+                                {
+                                    if (powerup.IsActive)
+                                    {
+                                        _activePowerups.Add(powerup.PowerupType);
+                                    }
+                                }
                             }
+
+                            _powerupUtils.StopAll();
                         }
 
-                        _powerupUtils.StopAll();
+                        _arePowerupsPausedForChat = true;
+                        _chatPausedTime = DateTime.Now;
+                        _lastChatStateChangeTime = DateTime.Now;
+                        LogService.LogInfo("Chat opened: Paused powerups.");
                     }
-
-                    _arePowerupsPausedForChat = true;
-                    _chatPausedTime = DateTime.Now;
-                    LogService.LogInfo("Chat opened: Paused powerups.");
-                }
-                else if ((e == Key.Enter || e == Key.Escape) && _arePowerupsPausedForChat)
-                {
-                    ResetChatPausedState();
+                    else if ((e == Key.Enter || e == Key.Escape) && _arePowerupsPausedForChat)
+                    {
+                        ResetChatPausedState();
+                    }
                 }
 
                 if (!_arePowerupsPausedForChat && !GlobalHotKeyManager.IsPaused && _powerupUtils != null)
@@ -473,6 +492,7 @@ namespace Automatization
 
             if (game != null)
             {
+                _consecutiveMissingProcessTicks = 0;
                 if (_gameProcess == null)
                 {
                     _gameProcess = game;
@@ -505,15 +525,20 @@ namespace Automatization
             {
                 if (_gameProcess != null)
                 {
-                    _gameProcess.Dispose();
-                    _gameProcess = null;
-                    if (_powerupUtils != null)
+                    _consecutiveMissingProcessTicks++;
+                    if (_consecutiveMissingProcessTicks >= MaxMissingProcessTicks)
                     {
-                        _powerupUtils.GameProcess = null;
-                    }
+                        _gameProcess.Dispose();
+                        _gameProcess = null;
+                        if (_powerupUtils != null)
+                        {
+                            _powerupUtils.GameProcess = null;
+                        }
 
-                    DisableAutomation();
-                    LogService.LogInfo("Game process lost.");
+                        DisableAutomation();
+                        LogService.LogInfo($"Game process lost after {_consecutiveMissingProcessTicks} checks.");
+                        _consecutiveMissingProcessTicks = 0;
+                    }
                 }
             }
 

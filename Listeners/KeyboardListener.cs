@@ -9,10 +9,14 @@ namespace Automatization.Listeners
     {
         private const int WH_KEYBOARD_LL = 13;
         private const int WM_KEYDOWN = 0x0100;
+        private const int WM_KEYUP = 0x0101;
+        private const int WM_SYSKEYDOWN = 0x0104;
+        private const int WM_SYSKEYUP = 0x0105;
         private LowLevelKeyboardProc _proc;
         private IntPtr _hookID = IntPtr.Zero;
         public event Func<Key, bool>? KeyDown;
         private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
+        private readonly HashSet<Key> _pressedKeys = [];
 
         [StructLayout(LayoutKind.Sequential)]
         private struct KBDLLHOOKSTRUCT
@@ -58,41 +62,52 @@ namespace Automatization.Listeners
 
         private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
-            if (nCode >= 0 && wParam == WM_KEYDOWN && lParam != IntPtr.Zero)
+            if (nCode >= 0 && lParam != IntPtr.Zero)
             {
-                KBDLLHOOKSTRUCT kbStruct = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
-
-                if ((kbStruct.flags & 0x10) != 0)
+                int msg = (int)wParam;
+                if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN || msg == WM_KEYUP || msg == WM_SYSKEYUP)
                 {
-                    return CallNextHookEx(_hookID, nCode, wParam, lParam);
-                }
+                    KBDLLHOOKSTRUCT kbStruct = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
 
-                Key key = KeyInterop.KeyFromVirtualKey((int)kbStruct.vkCode);
-
-                try
-                {
-                    Delegate[]? handlers = KeyDown?.GetInvocationList();
-                    if (handlers != null)
+                    if ((kbStruct.flags & 0x10) != 0)
                     {
-                        foreach (Func<Key, bool> handler in handlers.Cast<Func<Key, bool>>())
+                        return CallNextHookEx(_hookID, nCode, wParam, lParam);
+                    }
+
+                    Key key = KeyInterop.KeyFromVirtualKey((int)kbStruct.vkCode);
+
+                    if (msg == WM_KEYUP || msg == WM_SYSKEYUP)
+                    {
+                        _pressedKeys.Remove(key);
+                    }
+                    else if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN)
+                    {
+                        if (_pressedKeys.Add(key))
                         {
-                            _ = Task.Run(() =>
+                            try
                             {
-                                try
+                                Delegate[]? handlers = KeyDown?.GetInvocationList();
+                                if (handlers != null)
                                 {
-                                    _ = handler(key);
+                                    foreach (Func<Key, bool> handler in handlers.Cast<Func<Key, bool>>())
+                                    {
+                                        try
+                                        {
+                                            _ = handler(key);
+                                        }
+                                        catch (Exception innerEx)
+                                        {
+                                            LogService.LogError("Error in synchronous KeyDown callback handler.", innerEx);
+                                        }
+                                    }
                                 }
-                                catch (Exception innerEx)
-                                {
-                                    LogService.LogError("Error in asynchronous KeyDown callback handler.", innerEx);
-                                }
-                            });
+                            }
+                            catch (Exception ex)
+                            {
+                                LogService.LogError("Error dispatching KeyDown callbacks in KeyboardListener.", ex);
+                            }
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    LogService.LogError("Error dispatching KeyDown callbacks in KeyboardListener.", ex);
                 }
             }
 
