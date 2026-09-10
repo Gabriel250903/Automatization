@@ -1,7 +1,7 @@
-using Automatization.Services;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using Automatization.Services;
 
 namespace Automatization.Utils
 {
@@ -33,14 +33,19 @@ namespace Automatization.Utils
         [DllImport("user32.dll", SetLastError = true)]
         private static extern bool GetGUIThreadInfo(uint idThread, ref GUITHREADINFO lpgui);
 
-        [DllImport("user32.dll")]
-        private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern int GetClassName(
+            IntPtr hWnd,
+            StringBuilder lpClassName,
+            int nMaxCount
+        );
 
-        [DllImport("user32.dll")]
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
 
         [DllImport("user32.dll")]
         private static extern IntPtr GetForegroundWindow();
+
         private static int _foregroundCheckFailCount = 0;
         private const int MAX_LOG_COUNT = 5;
 
@@ -68,7 +73,9 @@ namespace Automatization.Utils
             {
                 if (_foregroundCheckFailCount < MAX_LOG_COUNT)
                 {
-                    LogService.LogInfo($"Foreground check failed: Foreground process ID is {foregroundProcessId}, game process ID is {gameProcess.Id}.");
+                    LogService.LogInfo(
+                        $"Foreground check failed: Foreground process ID is {foregroundProcessId}, game process ID is {gameProcess.Id}."
+                    );
                     _foregroundCheckFailCount++;
                 }
             }
@@ -95,10 +102,7 @@ namespace Automatization.Utils
                 return true;
             }
 
-            GUITHREADINFO gui = new()
-            {
-                cbSize = Marshal.SizeOf<GUITHREADINFO>()
-            };
+            GUITHREADINFO gui = new() { cbSize = Marshal.SizeOf<GUITHREADINFO>() };
 
             if (GetGUIThreadInfo(threadId, ref gui))
             {
@@ -115,6 +119,43 @@ namespace Automatization.Utils
             }
 
             return true;
+        }
+
+        public static Process? GetFirstProcessByName(string processName)
+        {
+            if (string.IsNullOrWhiteSpace(processName))
+            {
+                return null;
+            }
+
+            Process[] processes = Process.GetProcessesByName(processName);
+            if (processes.Length == 0)
+            {
+                return null;
+            }
+
+            Process target = processes[0];
+            for (int i = 1; i < processes.Length; i++)
+            {
+                processes[i].Dispose();
+            }
+            return target;
+        }
+
+        public static bool IsProcessRunning(string processName)
+        {
+            if (string.IsNullOrWhiteSpace(processName))
+            {
+                return false;
+            }
+
+            Process[] processes = Process.GetProcessesByName(processName);
+            bool running = processes.Length > 0;
+            foreach (Process p in processes)
+            {
+                p.Dispose();
+            }
+            return running;
         }
     }
 }

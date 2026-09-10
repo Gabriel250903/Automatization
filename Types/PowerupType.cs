@@ -6,6 +6,6 @@
         DoubleArmor,
         DoubleDamage,
         SpeedBoost,
-        Mine
+        Mine,
     }
 }

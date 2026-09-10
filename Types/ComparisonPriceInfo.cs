@@ -3,8 +3,8 @@ namespace Automatization.Types
     public class ComparisonPriceInfo
     {
         public string Modification { get; set; } = string.Empty;
-        public int PriceA { get; set; }
-        public int PriceB { get; set; }
-        public int Difference { get; set; }
+        public long PriceA { get; set; }
+        public long PriceB { get; set; }
+        public long Difference { get; set; }
     }
 }

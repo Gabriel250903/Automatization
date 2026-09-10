@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Windows;
 using Wpf.Ui.Controls;
 
@@ -26,18 +27,26 @@ namespace Automatization.Settings
                 }
 
                 DirectoryInfo directory = new(logDirectory);
-                FileInfo? logFile = directory.GetFiles("*.txt")
-                                       .OrderByDescending(f => f.LastWriteTime)
-                                       .FirstOrDefault();
+                FileInfo? logFile = directory
+                    .GetFiles("*.txt")
+                    .OrderByDescending(f => f.LastWriteTime)
+                    .FirstOrDefault();
 
                 if (logFile != null)
                 {
-                    string tempFilePath = Path.GetTempFileName();
-                    File.Copy(logFile.FullName, tempFilePath, true);
+                    using (
+                        FileStream fs = new(
+                            logFile.FullName,
+                            FileMode.Open,
+                            FileAccess.Read,
+                            FileShare.ReadWrite | FileShare.Delete
+                        )
+                    )
+                    using (StreamReader reader = new(fs, Encoding.UTF8))
+                    {
+                        LogTextBox.Text = reader.ReadToEnd();
+                    }
 
-                    LogTextBox.Text = File.ReadAllText(tempFilePath);
-
-                    File.Delete(tempFilePath);
                     LogScrollViewer.ScrollToBottom();
                 }
                 else
@@ -85,7 +94,7 @@ namespace Automatization.Settings
                     Title = "Error",
                     Content = $"Unable to open folder: {ex.Message}",
                     CloseButtonText = "OK",
-                    Owner = this
+                    Owner = this,
                 };
 
                 _ = await uiMessageBox.ShowDialogAsync();

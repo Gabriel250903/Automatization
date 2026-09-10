@@ -15,7 +15,7 @@ namespace Automatization.Services
                 return;
             }
 
-            AppSettings settings = AppSettings.Load();
+            AppSettings settings = App.Settings ?? AppSettings.Load();
             if (!settings.EnableDiscordRpc)
             {
                 return;
@@ -44,23 +44,27 @@ namespace Automatization.Services
 
             try
             {
-                AppSettings settings = AppSettings.Load();
+                AppSettings settings = App.Settings ?? AppSettings.Load();
                 string statusText = isGameRunning ? "Running" : "Not Running";
 
                 string details = settings.DiscordRpcDetails.Replace("{GameStatus}", statusText);
                 string state = settings.DiscordRpcState.Replace("{GameStatus}", statusText);
 
-                _client.SetPresence(new RichPresence
-                {
-                    Details = details,
-                    State = state,
-                    Timestamps = _startTime.HasValue ? new Timestamps { Start = _startTime.Value } : null,
-                    Assets = new Assets
+                _client.SetPresence(
+                    new RichPresence
                     {
-                        LargeImageKey = "icon",
-                        LargeImageText = "Automatization"
+                        Details = details,
+                        State = state,
+                        Timestamps = _startTime.HasValue
+                            ? new Timestamps { Start = _startTime.Value }
+                            : null,
+                        Assets = new Assets
+                        {
+                            LargeImageKey = "icon",
+                            LargeImageText = "Automatization",
+                        },
                     }
-                });
+                );
             }
             catch (Exception ex)
             {

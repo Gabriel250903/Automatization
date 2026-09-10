@@ -1,5 +1,5 @@
-using Automatization.Types;
 using System.Collections;
+using Automatization.Types;
 
 namespace Automatization.Utils
 {
@@ -11,11 +11,19 @@ namespace Automatization.Utils
                 ? 0
                 : sortIndex switch
                 {
-                    0 => string.Compare(a.LocalizedName, b.LocalizedName, StringComparison.OrdinalIgnoreCase),
-                    1 => string.Compare(b.LocalizedName, a.LocalizedName, StringComparison.OrdinalIgnoreCase),
+                    0 => string.Compare(
+                        a.LocalizedName,
+                        b.LocalizedName,
+                        StringComparison.OrdinalIgnoreCase
+                    ),
+                    1 => string.Compare(
+                        b.LocalizedName,
+                        a.LocalizedName,
+                        StringComparison.OrdinalIgnoreCase
+                    ),
                     2 => a.Prices.FirstOrDefault().CompareTo(b.Prices.FirstOrDefault()),
                     3 => b.Prices.FirstOrDefault().CompareTo(a.Prices.FirstOrDefault()),
-                    _ => 0
+                    _ => 0,
                 };
         }
     }

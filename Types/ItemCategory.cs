@@ -7,6 +7,6 @@ namespace Automatization.Types
         Paint,
         Supplies,
         ProductKit,
-        SuppliesKit
+        SuppliesKit,
     }
 }

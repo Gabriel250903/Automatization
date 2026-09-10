@@ -11,12 +11,17 @@ namespace Automatization.Converters
             return value;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object ConvertBack(
+            object value,
+            Type targetType,
+            object parameter,
+            CultureInfo culture
+        )
         {
             string? strValue = value?.ToString();
-            return string.IsNullOrWhiteSpace(strValue)
-                ? 0.0
-                : double.TryParse(strValue, out double doubleValue) ? doubleValue : DependencyProperty.UnsetValue;
+            return string.IsNullOrWhiteSpace(strValue) ? 0.0
+                : double.TryParse(strValue, out double doubleValue) ? doubleValue
+                : DependencyProperty.UnsetValue;
         }
     }
 }

@@ -1,3 +1,10 @@
+using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Threading;
 using Automatization.Hotkeys;
 using Automatization.Listeners;
 using Automatization.Services;
@@ -6,16 +13,9 @@ using Automatization.Types;
 using Automatization.UI;
 using Automatization.Utils;
 using Microsoft.Win32;
-using System.Diagnostics;
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Windows;
-using System.Windows.Input;
-using System.Windows.Threading;
 using Wpf.Ui.Controls;
 using Application = System.Windows.Application;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
-using Point = System.Windows.Point;
 
 namespace Automatization
 {
@@ -25,16 +25,19 @@ namespace Automatization
         private readonly PowerupUtils? _powerupUtils;
         private Process? _gameProcess;
         private string? _gameExecutablePath;
+        private Task? _gameInstallationCheckTask;
         private AppSettings _settings;
         private ClickerService? _clickerService;
         private Guid? _redClickerId;
         private Guid? _blueClickerId;
 
         private readonly Dictionary<string, Action> _hotkeyActions = [];
+        private readonly MacroService _macroService = new();
         private KeyboardListener? _keyboardListener;
 
         private readonly List<TimerWindow> _activeTimerWindows = [];
         private SmartRepairKitWindow? _smartRepairWindow;
+        private DiscountCalculatorWindow? _discountCalculatorWindow;
 
         private volatile bool _arePowerupsPausedForChat = false;
         private DateTime _chatPausedTime = DateTime.MinValue;
@@ -46,7 +49,6 @@ namespace Automatization
         private readonly object _chatStateLock = new();
         private DateTime _lastChatStateChangeTime = DateTime.MinValue;
 
-
         #region Win32
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         private static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
@@ -55,6 +57,7 @@ namespace Automatization
         {
             return (y << 16) | (x & 0xFFFF);
         }
+
         private const uint WM_LBUTTONDOWN = 0x0201;
         private const uint WM_LBUTTONUP = 0x0202;
         private const uint WM_RBUTTONDOWN = 0x0204;
@@ -67,14 +70,15 @@ namespace Automatization
         {
             InitializeComponent();
             LogService.LogInfo("Initializing main window.");
-            _settings = AppSettings.Load();
+            _settings = App.Settings ?? AppSettings.Load();
             _powerupUtils = new PowerupUtils(_settings);
             DataContext = _powerupUtils;
 
             ClickTypeComboBox.ItemsSource = Enum.GetValues(typeof(ClickType));
-            ClickTypeComboBox.SelectedIndex = 0;
+            ClickTypeComboBox.SelectedItem = _settings.TeamClickType;
+            ClickTypeComboBox.SelectionChanged += ClickTypeComboBox_SelectionChanged;
 
-            CheckGameInstallation();
+            _gameInstallationCheckTask = Task.Run(CheckGameInstallationAsync);
             InitializeGameCheckTimer();
 
             SourceInitialized += OnSourceInitialized;
@@ -128,6 +132,11 @@ namespace Automatization
 
             _hotkeyActions["SmartRepairToggle"] = ToggleSmartRepair;
             _hotkeyActions["SmartRepairDebug"] = DebugSmartRepair;
+
+            _macroService.Initialize(
+                () => _gameProcess,
+                () => WindowUtils.IsGameReadyForInput(_gameProcess)
+            );
         }
 
         private void ToggleSmartRepair()
@@ -171,7 +180,10 @@ namespace Automatization
                             {
                                 foreach (PowerupType type in _activePowerups)
                                 {
-                                    ViewModels.PowerupViewModel? vm = _powerupUtils.Powerups.FirstOrDefault(x => x.PowerupType == type);
+                                    ViewModels.PowerupViewModel? vm =
+                                        _powerupUtils.Powerups.FirstOrDefault(x =>
+                                            x.PowerupType == type
+                                        );
                                     if (vm != null)
                                     {
                                         vm.IsActive = true;
@@ -191,9 +203,14 @@ namespace Automatization
         {
             lock (_chatStateLock)
             {
-                if (_arePowerupsPausedForChat && (DateTime.Now - _chatPausedTime).TotalSeconds > 120)
+                if (
+                    _arePowerupsPausedForChat
+                    && (DateTime.Now - _chatPausedTime).TotalSeconds > 120
+                )
                 {
-                    LogService.LogInfo("Defensive reset: Chat pause timed out due to inactivity. Resuming powerups.");
+                    LogService.LogInfo(
+                        "Defensive reset: Chat pause timed out due to inactivity. Resuming powerups."
+                    );
                     ResetChatPausedState();
                 }
             }
@@ -209,7 +226,9 @@ namespace Automatization
                     {
                         if ((DateTime.Now - _chatPausedTime).TotalSeconds > 120)
                         {
-                            LogService.LogInfo("Defensive reset: Chat pause timed out during key activity check. Resuming powerups.");
+                            LogService.LogInfo(
+                                "Defensive reset: Chat pause timed out during key activity check. Resuming powerups."
+                            );
                             ResetChatPausedState();
                         }
                         else
@@ -220,12 +239,13 @@ namespace Automatization
 
                     if (e == Key.Enter && !_arePowerupsPausedForChat)
                     {
-
                         if (_powerupUtils != null)
                         {
                             if (_activePowerups.Count == 0)
                             {
-                                foreach (ViewModels.PowerupViewModel powerup in _powerupUtils.Powerups)
+                                foreach (
+                                    ViewModels.PowerupViewModel powerup in _powerupUtils.Powerups
+                                )
                                 {
                                     if (powerup.IsActive)
                                     {
@@ -248,14 +268,21 @@ namespace Automatization
                     }
                 }
 
-                if (!_arePowerupsPausedForChat && !GlobalHotKeyManager.IsPaused && _powerupUtils != null)
+                if (
+                    !_arePowerupsPausedForChat
+                    && !GlobalHotKeyManager.IsPaused
+                    && _powerupUtils != null
+                )
                 {
-                    KeyValuePair<PowerupType, Key> powerupMapping = _settings.PowerupKeys.FirstOrDefault(kvp => kvp.Value == e);
+                    KeyValuePair<PowerupType, Key> powerupMapping =
+                        _settings.PowerupKeys.FirstOrDefault(kvp => kvp.Value == e);
 
                     if (powerupMapping.Key != default)
                     {
                         _powerupUtils.UsePowerup(powerupMapping.Key);
-                        LogService.LogInfo($"Detected powerup key {e}, triggering {powerupMapping.Key}");
+                        LogService.LogInfo(
+                            $"Detected powerup key {e}, triggering {powerupMapping.Key}"
+                        );
                         return true;
                     }
                 }
@@ -300,7 +327,14 @@ namespace Automatization
                 return;
             }
 
-            KeyValuePair<PowerupType, Key> powerupMapping = _settings.PowerupKeys.FirstOrDefault(kvp => kvp.Value == hotKey.Key);
+            if (_macroService.HandleHotKey(hotKey))
+            {
+                return;
+            }
+
+            KeyValuePair<PowerupType, Key> powerupMapping = _settings.PowerupKeys.FirstOrDefault(
+                kvp => kvp.Value == hotKey.Key
+            );
 
             if (powerupMapping.Key != default)
             {
@@ -310,7 +344,9 @@ namespace Automatization
                 return;
             }
 
-            LogService.LogWarning($"Hotkey {hotKey} pressed but no action or powerup mapping found.");
+            LogService.LogWarning(
+                $"Hotkey {hotKey} pressed but no action or powerup mapping found."
+            );
         }
 
         public void RegisterHotkeysFromSettings()
@@ -322,6 +358,7 @@ namespace Automatization
             _ = GlobalHotKeyManager.Register(_settings.GoldBoxTimerHotKey);
             _ = GlobalHotKeyManager.Register(_settings.SmartRepairToggleHotKey);
             _ = GlobalHotKeyManager.Register(_settings.SmartRepairDebugHotKey);
+            _macroService.RegisterMacroHotkeys();
         }
 
         private void StartGoldBoxTimer()
@@ -360,20 +397,8 @@ namespace Automatization
             _clickerService = new ClickerService(_settings);
         }
 
-        private NativeMethods.POINT GetScreenCoordinates(Point clientPt)
-        {
-            NativeMethods.POINT pt = new() { X = (int)clientPt.X, Y = (int)clientPt.Y };
-            if (_gameProcess != null && _gameProcess.MainWindowHandle != IntPtr.Zero)
-            {
-                _ = NativeMethods.ClientToScreen(_gameProcess.MainWindowHandle, ref pt);
-            }
-            return pt;
-        }
-
         private void ClickTeamButton(IntPtr windowHandle, int x, int y, ClickType clickType)
         {
-            _ = Dispatcher.BeginInvoke(() => LogService.LogInfo($"Clicking team button at ({x}, {y}) with {clickType} click."));
-
             IntPtr lParam = MakeLParam(x, y);
 
             switch (clickType)
@@ -399,6 +424,19 @@ namespace Automatization
             }
         }
 
+        private void ClickTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ClickTypeComboBox.SelectedItem is ClickType clickType)
+            {
+                _settings.TeamClickType = clickType;
+                _settings.Save();
+                if (App.Settings != null)
+                {
+                    App.Settings.TeamClickType = clickType;
+                }
+            }
+        }
+
         private void RedTeamButton_Click(object sender, RoutedEventArgs? e)
         {
             if (_redClickerId.HasValue)
@@ -421,7 +459,12 @@ namespace Automatization
                 _redClickerId = _clickerService?.Register(
                     (handle, ct) =>
                     {
-                        ClickTeamButton(handle, (int)_settings.RedTeamCoordinates.X, (int)_settings.RedTeamCoordinates.Y, ct);
+                        ClickTeamButton(
+                            handle,
+                            (int)_settings.RedTeamCoordinates.X,
+                            (int)_settings.RedTeamCoordinates.Y,
+                            ct
+                        );
                     },
                     clickType,
                     _settings.GameProcessName
@@ -460,7 +503,12 @@ namespace Automatization
                 _blueClickerId = _clickerService?.Register(
                     (handle, ct) =>
                     {
-                        ClickTeamButton(handle, (int)_settings.BlueTeamCoordinates.X, (int)_settings.BlueTeamCoordinates.Y, ct);
+                        ClickTeamButton(
+                            handle,
+                            (int)_settings.BlueTeamCoordinates.X,
+                            (int)_settings.BlueTeamCoordinates.Y,
+                            ct
+                        );
                     },
                     clickType,
                     _settings.GameProcessName
@@ -488,7 +536,9 @@ namespace Automatization
 
         private async Task GameCheckAsync()
         {
-            Process? game = await Task.Run(() => Process.GetProcessesByName(_settings.GameProcessName).FirstOrDefault());
+            Process? game = await Task.Run(() =>
+                WindowUtils.GetFirstProcessByName(_settings.GameProcessName)
+            );
 
             if (game != null)
             {
@@ -536,7 +586,9 @@ namespace Automatization
                         }
 
                         DisableAutomation();
-                        LogService.LogInfo($"Game process lost after {_consecutiveMissingProcessTicks} checks.");
+                        LogService.LogInfo(
+                            $"Game process lost after {_consecutiveMissingProcessTicks} checks."
+                        );
                         _consecutiveMissingProcessTicks = 0;
                     }
                 }
@@ -572,37 +624,58 @@ namespace Automatization
         #endregion
 
         #region Game Launch / Installation
-        private void CheckGameInstallation()
+        private void CheckGameInstallationAsync()
         {
-            if (!string.IsNullOrEmpty(_settings.GameExecutablePath) && File.Exists(Path.Combine(_settings.GameExecutablePath, _settings.GameProcessName + ".exe")))
+            try
             {
-                _gameExecutablePath = Path.Combine(_settings.GameExecutablePath, _settings.GameProcessName + ".exe");
-            }
-            else
-            {
-                string? found = FindExecutableFromUninstallRegistry() ?? SearchCommonInstallDirectories();
-
-                if (found != null)
+                string processName = _settings.GameProcessName;
+                if (
+                    !string.IsNullOrEmpty(_settings.GameExecutablePath)
+                    && File.Exists(Path.Combine(_settings.GameExecutablePath, processName + ".exe"))
+                )
                 {
-                    _gameExecutablePath = found;
-                    _settings.GameExecutablePath = Path.GetDirectoryName(found) ?? string.Empty;
-                    _settings.Save();
+                    _gameExecutablePath = Path.Combine(
+                        _settings.GameExecutablePath,
+                        processName + ".exe"
+                    );
                 }
+                else
+                {
+                    string? found =
+                        FindExecutableFromUninstallRegistry(processName)
+                        ?? SearchCommonInstallDirectories(processName);
+
+                    if (found != null)
+                    {
+                        _gameExecutablePath = found;
+                        _settings.GameExecutablePath = Path.GetDirectoryName(found) ?? string.Empty;
+                        _settings.Save();
+                        if (App.Settings != null)
+                        {
+                            App.Settings.GameExecutablePath = _settings.GameExecutablePath;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogService.LogError("Error checking game installation in background.", ex);
             }
         }
 
-        private static string? FindExecutableFromUninstallRegistry()
+        private static string? FindExecutableFromUninstallRegistry(string gameProcessName)
         {
-            string gameProcessName = AppSettings.Load().GameProcessName;
             string[] registryPaths =
             [
                 @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
-            @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"
+                @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall",
             ];
 
             foreach (string path in registryPaths)
             {
-                foreach (RegistryKey baseKey in new[] { Microsoft.Win32.Registry.LocalMachine, Microsoft.Win32.Registry.CurrentUser })
+                foreach (
+                    RegistryKey baseKey in new[] { Registry.LocalMachine, Registry.CurrentUser }
+                )
                 {
                     using RegistryKey? key = baseKey.OpenSubKey(path);
                     if (key == null)
@@ -619,12 +692,23 @@ namespace Automatization
                         }
 
                         string? displayName = subKey.GetValue("DisplayName")?.ToString();
-                        if (displayName != null && displayName.Contains(gameProcessName + " Online", StringComparison.OrdinalIgnoreCase))
+                        if (
+                            displayName != null
+                            && displayName.Contains(
+                                gameProcessName + " Online",
+                                StringComparison.OrdinalIgnoreCase
+                            )
+                        )
                         {
-                            string? installLocation = subKey.GetValue("InstallLocation")?.ToString();
+                            string? installLocation = subKey
+                                .GetValue("InstallLocation")
+                                ?.ToString();
                             if (!string.IsNullOrEmpty(installLocation))
                             {
-                                string executablePath = Path.Combine(installLocation, gameProcessName + ".exe");
+                                string executablePath = Path.Combine(
+                                    installLocation,
+                                    gameProcessName + ".exe"
+                                );
                                 if (File.Exists(executablePath))
                                 {
                                     return executablePath;
@@ -637,15 +721,16 @@ namespace Automatization
             return null;
         }
 
-        private static string? SearchCommonInstallDirectories()
+        private static string? SearchCommonInstallDirectories(string gameProcessName)
         {
-            string gameProcessName = AppSettings.Load().GameProcessName;
-
             List<string> commonPaths =
             [
                 Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
                 Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads")
+                Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                    "Downloads"
+                ),
             ];
 
             foreach (string basePath in commonPaths)
@@ -656,7 +741,11 @@ namespace Automatization
                     return directPath;
                 }
 
-                string subDirPath = Path.Combine(basePath, gameProcessName + " Online", gameProcessName + ".exe");
+                string subDirPath = Path.Combine(
+                    basePath,
+                    gameProcessName + " Online",
+                    gameProcessName + ".exe"
+                );
                 if (File.Exists(subDirPath))
                 {
                     return subDirPath;
@@ -672,10 +761,15 @@ namespace Automatization
             return null;
         }
 
-        private void LaunchGame()
+        private async void LaunchGame()
         {
             try
             {
+                if (_gameInstallationCheckTask != null && !_gameInstallationCheckTask.IsCompleted)
+                {
+                    await _gameInstallationCheckTask;
+                }
+
                 if (!File.Exists(_gameExecutablePath))
                 {
                     Status = "Status_GameNotFound";
@@ -684,7 +778,7 @@ namespace Automatization
                     OpenFileDialog dlg = new()
                     {
                         Filter = "Executable files (*.exe)|*.exe",
-                        Title = $"Select {_settings.GameProcessName} Online executable"
+                        Title = $"Select {_settings.GameProcessName} Online executable",
                     };
 
                     if (dlg.ShowDialog() == true)
@@ -704,7 +798,9 @@ namespace Automatization
                 LogService.LogInfo("Launching game.");
 
                 _gameProcess?.Dispose();
-                _gameProcess = Process.Start(new ProcessStartInfo { FileName = _gameExecutablePath, UseShellExecute = true });
+                _gameProcess = Process.Start(
+                    new ProcessStartInfo { FileName = _gameExecutablePath, UseShellExecute = true }
+                );
 
                 if (_gameProcess != null)
                 {
@@ -726,7 +822,9 @@ namespace Automatization
             set
             {
                 _currentStatusKey = value;
-                _ = Dispatcher.Invoke(() => StatusText.Text = (string)Application.Current.Resources[_currentStatusKey]);
+                _ = Dispatcher.Invoke(() =>
+                    StatusText.Text = (string)Application.Current.Resources[_currentStatusKey]
+                );
             }
         }
 
@@ -739,8 +837,21 @@ namespace Automatization
         private void DiscountCalculatorButton_Click(object sender, RoutedEventArgs e)
         {
             LogService.LogInfo("Opening Discount Calculator.");
-            DiscountCalculatorWindow wnd = new() { Owner = this };
-            wnd.Show();
+            if (_discountCalculatorWindow == null || !_discountCalculatorWindow.IsLoaded)
+            {
+                _discountCalculatorWindow = new DiscountCalculatorWindow { Owner = this };
+                _discountCalculatorWindow.Closed += (s, args) => _discountCalculatorWindow = null;
+                _discountCalculatorWindow.Show();
+            }
+            else
+            {
+                if (_discountCalculatorWindow.WindowState == WindowState.Minimized)
+                {
+                    _discountCalculatorWindow.WindowState = WindowState.Normal;
+                }
+                _ = _discountCalculatorWindow.Activate();
+                _ = _discountCalculatorWindow.Focus();
+            }
         }
 
         private void SmartRepairButton_Click(object sender, RoutedEventArgs? e)
@@ -759,8 +870,6 @@ namespace Automatization
             }
         }
 
-
-
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
         {
             LogService.LogInfo("Settings button clicked.");
@@ -769,6 +878,7 @@ namespace Automatization
             _ = wnd.ShowDialog();
 
             _settings = AppSettings.Load();
+            ClickTypeComboBox.SelectedItem = _settings.TeamClickType;
 
             if (_clickerService != null)
             {
@@ -804,6 +914,27 @@ namespace Automatization
         }
         #endregion
 
+        private MacroManagerWindow? _macroManagerWindow;
+
+        private void MacroManagerButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_macroManagerWindow == null || !_macroManagerWindow.IsLoaded)
+            {
+                _macroManagerWindow = new MacroManagerWindow(_macroService) { Owner = this };
+                _macroManagerWindow.Closed += (s, ev) => _macroManagerWindow = null;
+                _macroManagerWindow.Show();
+            }
+            else
+            {
+                if (_macroManagerWindow.WindowState == WindowState.Minimized)
+                {
+                    _macroManagerWindow.WindowState = WindowState.Normal;
+                }
+                _ = _macroManagerWindow.Activate();
+                _ = _macroManagerWindow.Focus();
+            }
+        }
+
         protected override void OnClosed(EventArgs e)
         {
             LogService.LogInfo("Main window closing.");
@@ -811,6 +942,7 @@ namespace Automatization
             _gameCheckTimer?.Stop();
             _powerupUtils?.StopAll();
             _clickerService?.Dispose();
+            _macroService.Dispose();
             GlobalHotKeyManager.Shutdown();
             _keyboardListener?.Dispose();
 

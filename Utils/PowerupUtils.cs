@@ -1,14 +1,15 @@
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Windows.Input;
+using System.Windows.Threading;
 using Automatization.Services;
 using Automatization.Settings;
 using Automatization.Types;
 using Automatization.ViewModels;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Windows.Input;
 
 namespace Automatization.Utils
 {
-    public class PowerupUtils
+    public class PowerupUtils : IDisposable
     {
         public AppSettings Settings { get; set; }
         public Process? GameProcess { get; set; }
@@ -16,10 +17,20 @@ namespace Automatization.Utils
         private ObservableCollection<PowerupViewModel> _powerups = [];
         public ReadOnlyObservableCollection<PowerupViewModel> Powerups { get; }
 
+        private readonly DispatcherTimer _saveDebounceTimer;
+
         public PowerupUtils(AppSettings settings)
         {
             Settings = settings;
             Powerups = new ReadOnlyObservableCollection<PowerupViewModel>(_powerups);
+
+            _saveDebounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+            _saveDebounceTimer.Tick += (s, e) =>
+            {
+                _saveDebounceTimer.Stop();
+                Settings.Save();
+                LogService.LogInfo("Debounced powerup settings saved to disk.");
+            };
         }
 
         public void Initialize()
@@ -43,7 +54,13 @@ namespace Automatization.Utils
                     LogService.LogInfo($"Default delay set for {powerup}: 1000ms.");
                 }
 
-                PowerupViewModel viewModel = new(powerup, Settings.PowerupDelays[powerup], Settings, UsePowerup, SaveDelay);
+                PowerupViewModel viewModel = new(
+                    powerup,
+                    Settings.PowerupDelays[powerup],
+                    Settings,
+                    UsePowerup,
+                    SaveDelay
+                );
                 _powerups.Add(viewModel);
             }
 
@@ -58,6 +75,7 @@ namespace Automatization.Utils
 
         public void UpdateSettings(AppSettings newSettings)
         {
+            FlushPendingSaves();
             LogService.LogInfo("Updating PowerupUtils settings.");
 
             Settings = newSettings;
@@ -76,9 +94,18 @@ namespace Automatization.Utils
         private void SaveDelay(PowerupType powerup, double delay)
         {
             Settings.PowerupDelays[powerup] = delay;
-            Settings.Save();
+            _saveDebounceTimer.Stop();
+            _saveDebounceTimer.Start();
+        }
 
-            LogService.LogInfo($"Powerup {powerup} delay saved to {delay}ms.");
+        public void FlushPendingSaves()
+        {
+            if (_saveDebounceTimer.IsEnabled)
+            {
+                _saveDebounceTimer.Stop();
+                Settings.Save();
+                LogService.LogInfo("Flushed pending powerup settings to disk.");
+            }
         }
 
         public bool ToggleAll()
@@ -131,7 +158,9 @@ namespace Automatization.Utils
 
             if (!WindowUtils.IsGameReadyForInput(GameProcess))
             {
-                LogService.LogInfo($"Skipping powerup {powerup}: Game not ready for input (e.g., chat is open).");
+                LogService.LogInfo(
+                    $"Skipping powerup {powerup}: Game not ready for input (e.g., chat is open)."
+                );
                 return;
             }
 
@@ -139,7 +168,9 @@ namespace Automatization.Utils
             {
                 if (!Settings.PowerupKeys.TryGetValue(powerup, out Key key))
                 {
-                    LogService.LogWarning($"Attempted to use powerup {powerup}, but no key is assigned.");
+                    LogService.LogWarning(
+                        $"Attempted to use powerup {powerup}, but no key is assigned."
+                    );
                     return;
                 }
 
@@ -161,7 +192,10 @@ namespace Automatization.Utils
 
         private void SendKey(Key key)
         {
-            if (GameProcess?.MainWindowHandle == null || GameProcess.MainWindowHandle == IntPtr.Zero)
+            if (
+                GameProcess?.MainWindowHandle == null
+                || GameProcess.MainWindowHandle == IntPtr.Zero
+            )
             {
                 return;
             }
@@ -172,8 +206,30 @@ namespace Automatization.Utils
             IntPtr lParamDown = (IntPtr)((scanCode << 16) | 1);
             IntPtr lParamUp = (IntPtr)((scanCode << 16) | 0xC0000001);
 
-            _ = NativeMethods.PostMessage(GameProcess.MainWindowHandle, NativeMethods.WM_KEYDOWN, virtualKey, lParamDown);
-            _ = NativeMethods.PostMessage(GameProcess.MainWindowHandle, NativeMethods.WM_KEYUP, virtualKey, lParamUp);
+            _ = NativeMethods.PostMessage(
+                GameProcess.MainWindowHandle,
+                NativeMethods.WM_KEYDOWN,
+                virtualKey,
+                lParamDown
+            );
+            _ = NativeMethods.PostMessage(
+                GameProcess.MainWindowHandle,
+                NativeMethods.WM_KEYUP,
+                virtualKey,
+                lParamUp
+            );
+        }
+
+        public void Dispose()
+        {
+            FlushPendingSaves();
+            _saveDebounceTimer.Stop();
+            foreach (PowerupViewModel vm in _powerups)
+            {
+                vm.Dispose();
+            }
+            _powerups.Clear();
+            GC.SuppressFinalize(this);
         }
     }
 }

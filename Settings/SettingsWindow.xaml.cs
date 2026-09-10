@@ -1,3 +1,8 @@
+using System.Diagnostics;
+using System.Globalization;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 using Automatization.Hotkeys;
 using Automatization.Services;
 using Automatization.Settings;
@@ -6,11 +11,6 @@ using Automatization.UI;
 using Automatization.UI.Coordinate;
 using Automatization.Utils;
 using Automatization.ViewModels;
-using System.Diagnostics;
-using System.Globalization;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
 using Wpf.Ui.Controls;
 using Application = System.Windows.Application;
 using MessageBox = Wpf.Ui.Controls.MessageBox;
@@ -25,8 +25,8 @@ namespace Automatization
     {
         private AppSettings _settings;
         private UpdaterService _updaterService;
-        private bool _isGameProcessNameUnlocked = false;
         private bool _isInitialized = false;
+
         public SettingsWindow()
         {
             InitializeComponent();
@@ -57,14 +57,20 @@ namespace Automatization
         {
             ClickSpeedTextBox.Text = _settings.ClickSpeed.ToString(CultureInfo.InvariantCulture);
             GameProcessNameTextBox.Text = _settings.GameProcessName;
-            GameProcessNameTextBox.IsReadOnly = !_isGameProcessNameUnlocked;
-            UnlockGameProcessNameButton.Visibility = _isGameProcessNameUnlocked ? Visibility.Collapsed : Visibility.Visible;
             GamePathTextBox.Text = _settings.GameExecutablePath;
 
-            RedTeamXTextBox.Text = _settings.RedTeamCoordinates.X.ToString(CultureInfo.InvariantCulture);
-            RedTeamYTextBox.Text = _settings.RedTeamCoordinates.Y.ToString(CultureInfo.InvariantCulture);
-            BlueTeamXTextBox.Text = _settings.BlueTeamCoordinates.X.ToString(CultureInfo.InvariantCulture);
-            BlueTeamYTextBox.Text = _settings.BlueTeamCoordinates.Y.ToString(CultureInfo.InvariantCulture);
+            RedTeamXTextBox.Text = _settings.RedTeamCoordinates.X.ToString(
+                CultureInfo.InvariantCulture
+            );
+            RedTeamYTextBox.Text = _settings.RedTeamCoordinates.Y.ToString(
+                CultureInfo.InvariantCulture
+            );
+            BlueTeamXTextBox.Text = _settings.BlueTeamCoordinates.X.ToString(
+                CultureInfo.InvariantCulture
+            );
+            BlueTeamYTextBox.Text = _settings.BlueTeamCoordinates.Y.ToString(
+                CultureInfo.InvariantCulture
+            );
 
             GlobalHotKeyBox.HotKey = _settings.GlobalHotKey;
             RedTeamHotKeyBox.HotKey = _settings.RedTeamHotKey;
@@ -74,11 +80,26 @@ namespace Automatization
             SmartRepairToggleHotKeyBox.HotKey = _settings.SmartRepairToggleHotKey;
             SmartRepairDebugHotKeyBox.HotKey = _settings.SmartRepairDebugHotKey;
 
-            RepairKitKeyBox.HotKey = new HotKey(_settings.PowerupKeys.GetValueOrDefault(PowerupType.RepairKit, Key.D1), ModifierKeys.None);
-            DoubleArmorKeyBox.HotKey = new HotKey(_settings.PowerupKeys.GetValueOrDefault(PowerupType.DoubleArmor, Key.D2), ModifierKeys.None);
-            DoubleDamageKeyBox.HotKey = new HotKey(_settings.PowerupKeys.GetValueOrDefault(PowerupType.DoubleDamage, Key.D3), ModifierKeys.None);
-            SpeedBoostKeyBox.HotKey = new HotKey(_settings.PowerupKeys.GetValueOrDefault(PowerupType.SpeedBoost, Key.D4), ModifierKeys.None);
-            MineKeyBox.HotKey = new HotKey(_settings.PowerupKeys.GetValueOrDefault(PowerupType.Mine, Key.D5), ModifierKeys.None);
+            RepairKitKeyBox.HotKey = new HotKey(
+                _settings.PowerupKeys.GetValueOrDefault(PowerupType.RepairKit, Key.D1),
+                ModifierKeys.None
+            );
+            DoubleArmorKeyBox.HotKey = new HotKey(
+                _settings.PowerupKeys.GetValueOrDefault(PowerupType.DoubleArmor, Key.D2),
+                ModifierKeys.None
+            );
+            DoubleDamageKeyBox.HotKey = new HotKey(
+                _settings.PowerupKeys.GetValueOrDefault(PowerupType.DoubleDamage, Key.D3),
+                ModifierKeys.None
+            );
+            SpeedBoostKeyBox.HotKey = new HotKey(
+                _settings.PowerupKeys.GetValueOrDefault(PowerupType.SpeedBoost, Key.D4),
+                ModifierKeys.None
+            );
+            MineKeyBox.HotKey = new HotKey(
+                _settings.PowerupKeys.GetValueOrDefault(PowerupType.Mine, Key.D5),
+                ModifierKeys.None
+            );
 
             TransparentTimerWindowCheckBox.IsChecked = _settings.IsTimerWindowTransparent;
             EnableDiscordRpcCheckBox.IsChecked = _settings.EnableDiscordRpc;
@@ -113,13 +134,18 @@ namespace Automatization
 
             foreach (CustomTheme customTheme in ThemeService.LoadedThemes)
             {
-                _ = ThemeComboBox.Items.Add(new ComboBoxItem { Content = customTheme.Name, Tag = customTheme });
+                _ = ThemeComboBox.Items.Add(
+                    new ComboBoxItem { Content = customTheme.Name, Tag = customTheme }
+                );
             }
 
             if (!string.IsNullOrEmpty(_settings.CustomThemeName))
             {
-                ComboBoxItem? customThemeMatch = ThemeComboBox.Items.OfType<ComboBoxItem>()
-                    .FirstOrDefault(x => x.Content != null && x.Content.ToString() == _settings.CustomThemeName);
+                ComboBoxItem? customThemeMatch = ThemeComboBox
+                    .Items.OfType<ComboBoxItem>()
+                    .FirstOrDefault(x =>
+                        x.Content != null && x.Content.ToString() == _settings.CustomThemeName
+                    );
 
                 if (customThemeMatch != null)
                 {
@@ -128,12 +154,14 @@ namespace Automatization
                 }
                 else
                 {
-                    ThemeComboBox.SelectedItem = _settings.Theme == ThemeType.Light ? lightItem : darkItem;
+                    ThemeComboBox.SelectedItem =
+                        _settings.Theme == ThemeType.Light ? lightItem : darkItem;
                 }
             }
             else
             {
-                ThemeComboBox.SelectedItem = _settings.Theme == ThemeType.Light ? lightItem : darkItem;
+                ThemeComboBox.SelectedItem =
+                    _settings.Theme == ThemeType.Light ? lightItem : darkItem;
             }
 
             ThemeComboBox.SelectionChanged += ThemeComboBox_SelectionChanged;
@@ -193,154 +221,195 @@ namespace Automatization
 
         private async void DeleteThemeButton_Click(object sender, RoutedEventArgs e)
         {
-            if (ThemeComboBox.SelectedItem is ComboBoxItem item && item.Tag is CustomTheme themeToDelete)
+            try
             {
-                MessageBox uiMessageBox = new()
+                if (
+                    ThemeComboBox.SelectedItem is ComboBoxItem item
+                    && item.Tag is CustomTheme themeToDelete
+                )
                 {
-                    Title = "Delete Theme",
-                    Content = $"Are you sure you want to delete '{themeToDelete.Name}'?",
-                    PrimaryButtonText = "Yes, Delete",
-                    CloseButtonText = "Cancel"
-                };
+                    MessageBox uiMessageBox = new()
+                    {
+                        Title = "Delete Theme",
+                        Content = $"Are you sure you want to delete '{themeToDelete.Name}'?",
+                        PrimaryButtonText = "Yes, Delete",
+                        CloseButtonText = "Cancel",
+                    };
 
-                MessageBoxResult result = await uiMessageBox.ShowDialogAsync();
+                    MessageBoxResult result = await uiMessageBox.ShowDialogAsync();
 
-                if (result == MessageBoxResult.Primary)
-                {
-                    ThemeService.DeleteTheme(themeToDelete);
-                    _settings.CustomThemeName = null;
-                    ThemeService.ClearThemeOverrides();
-                    PopulateThemeComboBox();
+                    if (result == MessageBoxResult.Primary)
+                    {
+                        ThemeService.DeleteTheme(themeToDelete);
+                        _settings.CustomThemeName = null;
+                        ThemeService.ClearThemeOverrides();
+                        PopulateThemeComboBox();
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                LogService.LogError("Failed to delete theme", ex);
             }
         }
 
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            FocusManager.SetFocusedElement(this, SaveButton);
-
-            if (HasDuplicateHotkeys(out string duplicateMessage))
+            try
             {
-                MessageBox uiMessageBox = new() { Title = "Duplicate Hotkeys", Content = duplicateMessage, CloseButtonText = "OK" };
-                _ = await uiMessageBox.ShowDialogAsync();
-                return;
-            }
+                FocusManager.SetFocusedElement(this, SaveButton);
 
-            if (!double.TryParse(ClickSpeedTextBox.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out double clickSpeed) || clickSpeed < 1)
-            {
-                return;
-            }
-
-            _settings.ClickSpeed = clickSpeed;
-
-            if (SmartRepairFpsComboBox.SelectedItem is ComboBoxItem selectedFpsItem && int.TryParse(selectedFpsItem.Tag.ToString(), out int fps))
-            {
-                _settings.SmartRepairFps = fps;
-            }
-
-            if (LanguageComboBox.SelectedValue is string langCode)
-            {
-                _settings.Language = langCode;
-                LanguageService.SetLanguage(langCode);
-            }
-
-            _settings.GameProcessName = !string.IsNullOrWhiteSpace(GameProcessNameTextBox.Text) ? GameProcessNameTextBox.Text.Trim() : "ProTanki";
-            _settings.GameExecutablePath = GamePathTextBox.Text;
-
-            if (double.TryParse(RedTeamXTextBox.Text, out double rX) && double.TryParse(RedTeamYTextBox.Text, out double rY))
-            {
-                _settings.RedTeamCoordinates = new Point(rX, rY);
-            }
-
-            if (double.TryParse(BlueTeamXTextBox.Text, out double bX) && double.TryParse(BlueTeamYTextBox.Text, out double bY))
-            {
-                _settings.BlueTeamCoordinates = new Point(bX, bY);
-            }
-
-            _settings.GlobalHotKey = GlobalHotKeyBox.HotKey;
-            _settings.RedTeamHotKey = RedTeamHotKeyBox.HotKey;
-            _settings.BlueTeamHotKey = BlueTeamHotKeyBox.HotKey;
-            _settings.GoldBoxTimerHotKey = GoldBoxTimerHotKeyBox.HotKey;
-
-            _settings.SmartRepairToggleHotKey = SmartRepairToggleHotKeyBox.HotKey;
-            _settings.SmartRepairDebugHotKey = SmartRepairDebugHotKeyBox.HotKey;
-
-            _settings.PowerupKeys[PowerupType.RepairKit] = RepairKitKeyBox.HotKey.Key;
-            _settings.PowerupKeys[PowerupType.DoubleArmor] = DoubleArmorKeyBox.HotKey.Key;
-            _settings.PowerupKeys[PowerupType.DoubleDamage] = DoubleDamageKeyBox.HotKey.Key;
-            _settings.PowerupKeys[PowerupType.SpeedBoost] = SpeedBoostKeyBox.HotKey.Key;
-            _settings.PowerupKeys[PowerupType.Mine] = MineKeyBox.HotKey.Key;
-
-            _settings.IsTimerWindowTransparent = TransparentTimerWindowCheckBox.IsChecked ?? false;
-            _settings.EnableDiscordRpc = EnableDiscordRpcCheckBox.IsChecked ?? false;
-            _settings.DiscordRpcAppId = DiscordRpcAppIdTextBox.Text;
-            _settings.DiscordRpcDetails = DiscordRpcDetailsTextBox.Text;
-            _settings.DiscordRpcState = DiscordRpcStateTextBox.Text;
-
-            CustomTheme? themeToApply = null;
-            if (ThemeComboBox.SelectedItem is ComboBoxItem item)
-            {
-                if (item.Tag is ThemeType t)
+                if (HasDuplicateHotkeys(out string duplicateMessage))
                 {
-                    _settings.Theme = t;
-                    _settings.CustomThemeName = null;
+                    MessageBox uiMessageBox = new()
+                    {
+                        Title = "Duplicate Hotkeys",
+                        Content = duplicateMessage,
+                        CloseButtonText = "OK",
+                    };
+                    _ = await uiMessageBox.ShowDialogAsync();
+                    return;
                 }
-                else if (item.Tag is CustomTheme c)
+
+                if (
+                    !double.TryParse(
+                        ClickSpeedTextBox.Text,
+                        NumberStyles.Any,
+                        CultureInfo.InvariantCulture,
+                        out double clickSpeed
+                    )
+                    || clickSpeed < 1
+                )
                 {
-                    _settings.CustomThemeName = c.Name;
-                    _settings.Theme = ThemeType.Dark;
-                    themeToApply = c;
+                    return;
                 }
+
+                _settings.ClickSpeed = clickSpeed;
+
+                if (
+                    SmartRepairFpsComboBox.SelectedItem is ComboBoxItem selectedFpsItem
+                    && int.TryParse(selectedFpsItem.Tag.ToString(), out int fps)
+                )
+                {
+                    _settings.SmartRepairFps = fps;
+                }
+
+                if (LanguageComboBox.SelectedValue is string langCode)
+                {
+                    _settings.Language = langCode;
+                    LanguageService.SetLanguage(langCode);
+                }
+
+                _settings.GameProcessName = !string.IsNullOrWhiteSpace(GameProcessNameTextBox.Text)
+                    ? GameProcessNameTextBox.Text.Trim()
+                    : "ProTanki";
+                _settings.GameExecutablePath = GamePathTextBox.Text;
+
+                if (
+                    double.TryParse(RedTeamXTextBox.Text, out double rX)
+                    && double.TryParse(RedTeamYTextBox.Text, out double rY)
+                )
+                {
+                    _settings.RedTeamCoordinates = new Point(rX, rY);
+                }
+
+                if (
+                    double.TryParse(BlueTeamXTextBox.Text, out double bX)
+                    && double.TryParse(BlueTeamYTextBox.Text, out double bY)
+                )
+                {
+                    _settings.BlueTeamCoordinates = new Point(bX, bY);
+                }
+
+                _settings.GlobalHotKey = GlobalHotKeyBox.HotKey;
+                _settings.RedTeamHotKey = RedTeamHotKeyBox.HotKey;
+                _settings.BlueTeamHotKey = BlueTeamHotKeyBox.HotKey;
+                _settings.GoldBoxTimerHotKey = GoldBoxTimerHotKeyBox.HotKey;
+
+                _settings.SmartRepairToggleHotKey = SmartRepairToggleHotKeyBox.HotKey;
+                _settings.SmartRepairDebugHotKey = SmartRepairDebugHotKeyBox.HotKey;
+
+                _settings.PowerupKeys[PowerupType.RepairKit] = RepairKitKeyBox.HotKey.Key;
+                _settings.PowerupKeys[PowerupType.DoubleArmor] = DoubleArmorKeyBox.HotKey.Key;
+                _settings.PowerupKeys[PowerupType.DoubleDamage] = DoubleDamageKeyBox.HotKey.Key;
+                _settings.PowerupKeys[PowerupType.SpeedBoost] = SpeedBoostKeyBox.HotKey.Key;
+                _settings.PowerupKeys[PowerupType.Mine] = MineKeyBox.HotKey.Key;
+
+                _settings.IsTimerWindowTransparent =
+                    TransparentTimerWindowCheckBox.IsChecked ?? false;
+                _settings.EnableDiscordRpc = EnableDiscordRpcCheckBox.IsChecked ?? false;
+                _settings.DiscordRpcAppId = DiscordRpcAppIdTextBox.Text;
+                _settings.DiscordRpcDetails = DiscordRpcDetailsTextBox.Text;
+                _settings.DiscordRpcState = DiscordRpcStateTextBox.Text;
+
+                CustomTheme? themeToApply = null;
+                if (ThemeComboBox.SelectedItem is ComboBoxItem item)
+                {
+                    if (item.Tag is ThemeType t)
+                    {
+                        _settings.Theme = t;
+                        _settings.CustomThemeName = null;
+                    }
+                    else if (item.Tag is CustomTheme c)
+                    {
+                        _settings.CustomThemeName = c.Name;
+                        _settings.Theme = ThemeType.Dark;
+                        themeToApply = c;
+                    }
+                }
+
+                _settings.Save();
+
+                if (App.Settings != null)
+                {
+                    App.Settings.ClickSpeed = _settings.ClickSpeed;
+                    App.Settings.TeamClickType = _settings.TeamClickType;
+                    App.Settings.GameProcessName = _settings.GameProcessName;
+                    App.Settings.GameExecutablePath = _settings.GameExecutablePath;
+                    App.Settings.RedTeamCoordinates = _settings.RedTeamCoordinates;
+                    App.Settings.BlueTeamCoordinates = _settings.BlueTeamCoordinates;
+                    App.Settings.GlobalHotKey = _settings.GlobalHotKey;
+                    App.Settings.RedTeamHotKey = _settings.RedTeamHotKey;
+                    App.Settings.BlueTeamHotKey = _settings.BlueTeamHotKey;
+                    App.Settings.GoldBoxTimerHotKey = _settings.GoldBoxTimerHotKey;
+                    App.Settings.SmartRepairToggleHotKey = _settings.SmartRepairToggleHotKey;
+                    App.Settings.SmartRepairDebugHotKey = _settings.SmartRepairDebugHotKey;
+                    App.Settings.PowerupKeys = _settings.PowerupKeys;
+                    App.Settings.IsTimerWindowTransparent = _settings.IsTimerWindowTransparent;
+                    App.Settings.EnableDiscordRpc = _settings.EnableDiscordRpc;
+                    App.Settings.DiscordRpcAppId = _settings.DiscordRpcAppId;
+                    App.Settings.DiscordRpcDetails = _settings.DiscordRpcDetails;
+                    App.Settings.DiscordRpcState = _settings.DiscordRpcState;
+                    App.Settings.Theme = _settings.Theme;
+                    App.Settings.CustomThemeName = _settings.CustomThemeName;
+                    App.Settings.SmartRepairFps = _settings.SmartRepairFps;
+                }
+
+                if (_settings.EnableDiscordRpc)
+                {
+                    DiscordRpcService.Initialize();
+                }
+                else
+                {
+                    DiscordRpcService.Shutdown();
+                }
+
+                if (themeToApply != null)
+                {
+                    ThemeService.ApplyTheme(themeToApply);
+                }
+                else if (_settings.CustomThemeName == null)
+                {
+                    ThemeService.ClearThemeOverrides();
+                    App.ApplyTheme(_settings.Theme);
+                }
+
+                Close();
             }
-
-            _settings.Save();
-
-            if (App.Settings != null)
+            catch (Exception ex)
             {
-                App.Settings.ClickSpeed = _settings.ClickSpeed;
-                App.Settings.GameProcessName = _settings.GameProcessName;
-                App.Settings.GameExecutablePath = _settings.GameExecutablePath;
-                App.Settings.RedTeamCoordinates = _settings.RedTeamCoordinates;
-                App.Settings.BlueTeamCoordinates = _settings.BlueTeamCoordinates;
-                App.Settings.GlobalHotKey = _settings.GlobalHotKey;
-                App.Settings.RedTeamHotKey = _settings.RedTeamHotKey;
-                App.Settings.BlueTeamHotKey = _settings.BlueTeamHotKey;
-                App.Settings.GoldBoxTimerHotKey = _settings.GoldBoxTimerHotKey;
-                App.Settings.SmartRepairToggleHotKey = _settings.SmartRepairToggleHotKey;
-                App.Settings.SmartRepairDebugHotKey = _settings.SmartRepairDebugHotKey;
-                App.Settings.PowerupKeys = _settings.PowerupKeys;
-                App.Settings.IsTimerWindowTransparent = _settings.IsTimerWindowTransparent;
-                App.Settings.EnableDiscordRpc = _settings.EnableDiscordRpc;
-                App.Settings.DiscordRpcAppId = _settings.DiscordRpcAppId;
-                App.Settings.DiscordRpcDetails = _settings.DiscordRpcDetails;
-                App.Settings.DiscordRpcState = _settings.DiscordRpcState;
-                App.Settings.Theme = _settings.Theme;
-                App.Settings.CustomThemeName = _settings.CustomThemeName;
-                App.Settings.SmartRepairFps = _settings.SmartRepairFps;
+                LogService.LogError("Failed to save settings", ex);
             }
-
-            if (_settings.EnableDiscordRpc)
-            {
-                DiscordRpcService.Initialize();
-            }
-            else
-            {
-                DiscordRpcService.Shutdown();
-            }
-
-            RegisterSettingsHotkeys();
-
-            if (themeToApply != null)
-            {
-                ThemeService.ApplyTheme(themeToApply);
-            }
-            else if (_settings.CustomThemeName == null)
-            {
-                ThemeService.ClearThemeOverrides();
-                App.ApplyTheme(_settings.Theme);
-            }
-
-            Close();
         }
 
         private bool HasDuplicateHotkeys(out string message)
@@ -359,10 +428,13 @@ namespace Automatization
                 ("Speed Boost", SpeedBoostKeyBox.HotKey),
                 ("Mine", MineKeyBox.HotKey),
                 ("Smart Repair Toggle", SmartRepairToggleHotKeyBox.HotKey),
-                ("Smart Repair Debug", SmartRepairDebugHotKeyBox.HotKey)
+                ("Smart Repair Debug", SmartRepairDebugHotKeyBox.HotKey),
             ];
 
-            List<(string Name, HotKey Key)> validKeys = [.. hotkeys.Where(x => x.Key != null && !x.Key.IsEmpty)];
+            List<(string Name, HotKey Key)> validKeys =
+            [
+                .. hotkeys.Where(x => x.Key != null && !x.Key.IsEmpty),
+            ];
 
             var duplicates = validKeys
                 .GroupBy(x => x.Key)
@@ -370,33 +442,19 @@ namespace Automatization
                 .Select(g => new
                 {
                     KeyName = g.Key.ToString(),
-                    Conflicts = string.Join(", ", g.Select(i => i.Name))
+                    Conflicts = string.Join(", ", g.Select(i => i.Name)),
                 })
                 .ToList();
 
             if (duplicates.Count != 0)
             {
-                message = "The following hotkeys are assigned to multiple actions:\n\n" +
-                          string.Join("\n", duplicates.Select(d => $"{d.KeyName}: {d.Conflicts}"));
+                message =
+                    "The following hotkeys are assigned to multiple actions:\n\n"
+                    + string.Join("\n", duplicates.Select(d => $"{d.KeyName}: {d.Conflicts}"));
                 return true;
             }
 
             return false;
-        }
-
-        private void RegisterSettingsHotkeys()
-        {
-            GlobalHotKeyManager.UnregisterAll();
-
-            _ = GlobalHotKeyManager.Register(_settings.GlobalHotKey);
-            _ = GlobalHotKeyManager.Register(_settings.RedTeamHotKey);
-            _ = GlobalHotKeyManager.Register(_settings.BlueTeamHotKey);
-            _ = GlobalHotKeyManager.Register(_settings.GoldBoxTimerHotKey);
-
-            foreach (KeyValuePair<PowerupType, Key> entry in _settings.PowerupKeys)
-            {
-                _ = GlobalHotKeyManager.Register(new HotKey(entry.Value, ModifierKeys.None));
-            }
         }
 
         private void BrowseGamePathButton_Click(object sender, RoutedEventArgs e)
@@ -404,7 +462,7 @@ namespace Automatization
             OpenFileDialog openFileDialog = new()
             {
                 Filter = "Executable files (*.exe)|*.exe",
-                Title = "Select Game Executable"
+                Title = "Select Game Executable",
             };
 
             if (openFileDialog.ShowDialog() == true)
@@ -413,24 +471,9 @@ namespace Automatization
             }
         }
 
-        private void UnlockGameProcessNameButton_Click(object sender, RoutedEventArgs e)
-        {
-            AdminPasswordDialog adminPasswordDialog = new() { Owner = this };
-            if (adminPasswordDialog.ShowDialog() == true)
-            {
-                _isGameProcessNameUnlocked = true;
-                GameProcessNameTextBox.IsReadOnly = false;
-                _ = GameProcessNameTextBox.Focus();
-                UnlockGameProcessNameButton.Visibility = Visibility.Collapsed;
-            }
-        }
-
         private void PickRedTeamButton_Click(object sender, RoutedEventArgs e)
         {
-            CoordinatePickerWindow picker = new()
-            {
-                Owner = this
-            };
+            CoordinatePickerWindow picker = new() { Owner = this };
 
             bool? result = picker.ShowDialog();
 
@@ -448,7 +491,12 @@ namespace Automatization
                 }
                 else
                 {
-                    _ = System.Windows.MessageBox.Show("Game process not found. Coordinates saved as absolute screen coordinates. Ensure the game is running for accurate relative positioning.", "Warning", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                    _ = System.Windows.MessageBox.Show(
+                        "Game process not found. Coordinates saved as absolute screen coordinates. Ensure the game is running for accurate relative positioning.",
+                        "Warning",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Warning
+                    );
                 }
 
                 RedTeamXTextBox.Text = finalPoint.X.ToString(CultureInfo.InvariantCulture);
@@ -458,10 +506,7 @@ namespace Automatization
 
         private void PickBlueTeamButton_Click(object sender, RoutedEventArgs e)
         {
-            CoordinatePickerWindow picker = new()
-            {
-                Owner = this
-            };
+            CoordinatePickerWindow picker = new() { Owner = this };
 
             bool? result = picker.ShowDialog();
 
@@ -479,7 +524,12 @@ namespace Automatization
                 }
                 else
                 {
-                    _ = System.Windows.MessageBox.Show("Game process not found. Coordinates saved as absolute screen coordinates. Ensure the game is running for accurate relative positioning.", "Warning", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                    _ = System.Windows.MessageBox.Show(
+                        "Game process not found. Coordinates saved as absolute screen coordinates. Ensure the game is running for accurate relative positioning.",
+                        "Warning",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Warning
+                    );
                 }
 
                 BlueTeamXTextBox.Text = finalPoint.X.ToString(CultureInfo.InvariantCulture);
@@ -489,7 +539,9 @@ namespace Automatization
 
         private Point? ConvertScreenToClient(Point screenPoint)
         {
-            Process? gameProcess = Process.GetProcessesByName(_settings.GameProcessName).FirstOrDefault();
+            using Process? gameProcess = WindowUtils.GetFirstProcessByName(
+                _settings.GameProcessName
+            );
             if (gameProcess == null || gameProcess.MainWindowHandle == IntPtr.Zero)
             {
                 return null;
@@ -506,12 +558,6 @@ namespace Automatization
             _ = logViewer.ShowDialog();
         }
 
-        private void ViewReportsButton_Click(object sender, RoutedEventArgs e)
-        {
-            ReportViewerWindow reportViewerWindow = new() { Owner = this };
-            _ = reportViewerWindow.ShowDialog();
-        }
-
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
             Close();
@@ -519,10 +565,12 @@ namespace Automatization
 
         private async void CheckForUpdatesButton_Click(object sender, RoutedEventArgs e)
         {
-            StatusTextBlock.Text = (string)Application.Current.Resources["Settings_CheckingUpdates"];
+            StatusTextBlock.Text = (string)
+                Application.Current.Resources["Settings_CheckingUpdates"];
             try
             {
-                (Version? latestVersion, string? releaseNotes) = await _updaterService.GetLatestVersionAsync();
+                (Version? latestVersion, string? releaseNotes) =
+                    await _updaterService.GetLatestVersionAsync();
                 LatestVersionTextBlock.Text = string.Format(
                     (string)Application.Current.Resources["Settings_LatestVersion"],
                     latestVersion?.ToString(3)
@@ -530,17 +578,20 @@ namespace Automatization
 
                 if (latestVersion != null && latestVersion > UpdaterService.GetCurrentVersion())
                 {
-                    StatusTextBlock.Text = (string)Application.Current.Resources["Settings_UpdateAvailable"];
+                    StatusTextBlock.Text = (string)
+                        Application.Current.Resources["Settings_UpdateAvailable"];
                     UpdateNowButton.Visibility = Visibility.Visible;
                 }
                 else
                 {
-                    StatusTextBlock.Text = (string)Application.Current.Resources["Settings_UpToDate"];
+                    StatusTextBlock.Text = (string)
+                        Application.Current.Resources["Settings_UpToDate"];
                 }
             }
             catch (Exception ex)
             {
-                StatusTextBlock.Text = (string)Application.Current.Resources["Settings_ErrorCheckingUpdates"];
+                StatusTextBlock.Text = (string)
+                    Application.Current.Resources["Settings_ErrorCheckingUpdates"];
                 LogService.LogError($"Error checking for updates: {ex}");
             }
         }
@@ -549,27 +600,32 @@ namespace Automatization
         {
             UpdateNowButton.IsEnabled = false;
             CheckForUpdatesButton.IsEnabled = false;
-            StatusTextBlock.Text = (string)Application.Current.Resources["Settings_DownloadingUpdate"];
+            StatusTextBlock.Text = (string)
+                Application.Current.Resources["Settings_DownloadingUpdate"];
             DownloadProgressBar.Visibility = Visibility.Visible;
 
             try
             {
-                string? installerPath = await _updaterService.DownloadUpdateAsync((bytesReceived, totalBytes) =>
-                {
-                    _ = Dispatcher.BeginInvoke(() =>
+                string? installerPath = await _updaterService.DownloadUpdateAsync(
+                    (bytesReceived, totalBytes) =>
                     {
-                        DownloadProgressBar.Value = (double)bytesReceived / totalBytes * 100;
-                    });
-                });
+                        _ = Dispatcher.BeginInvoke(() =>
+                        {
+                            DownloadProgressBar.Value = (double)bytesReceived / totalBytes * 100;
+                        });
+                    }
+                );
 
                 if (!string.IsNullOrEmpty(installerPath))
                 {
-                    StatusTextBlock.Text = (string)Application.Current.Resources["Settings_UpdateDownloaded"];
+                    StatusTextBlock.Text = (string)
+                        Application.Current.Resources["Settings_UpdateDownloaded"];
                     UpdaterService.InstallUpdate(installerPath);
                 }
                 else
                 {
-                    StatusTextBlock.Text = (string)Application.Current.Resources["Settings_DownloadFailed"];
+                    StatusTextBlock.Text = (string)
+                        Application.Current.Resources["Settings_DownloadFailed"];
                     UpdateNowButton.IsEnabled = true;
                     CheckForUpdatesButton.IsEnabled = true;
                 }
@@ -585,26 +641,23 @@ namespace Automatization
                 DownloadProgressBar.Visibility = Visibility.Collapsed;
             }
         }
+
         private void Hyperlink_RequestNavigate(object sender, Navigation.RequestNavigateEventArgs e)
         {
-            _ = Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
-            e.Handled = true;
-        }
-
-        private void BtnCreateNewLanguage_Click(object sender, RoutedEventArgs e)
-        {
-            LanguageEditorWindow editor = new() { Owner = this };
-            _ = editor.ShowDialog();
-        }
-
-        private void BtnEditLanguage_Click(object sender, RoutedEventArgs e)
-        {
-            LanguagePickerWindow picker = new(true) { Owner = this };
-            if (picker.ShowDialog() == true && !string.IsNullOrEmpty(picker.SelectedLanguageCode))
+            if (
+                e.Uri != null
+                && (e.Uri.Scheme == Uri.UriSchemeHttp || e.Uri.Scheme == Uri.UriSchemeHttps)
+            )
             {
-                LanguageEditorWindow editor = new(picker.SelectedLanguageCode) { Owner = this };
-                _ = editor.ShowDialog();
+                _ = Process.Start(
+                    new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true }
+                );
             }
+            else
+            {
+                LogService.LogWarning($"Blocked opening untrusted URI scheme: {e.Uri}");
+            }
+            e.Handled = true;
         }
     }
 }

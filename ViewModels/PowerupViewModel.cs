@@ -1,10 +1,10 @@
+using System.ComponentModel;
+using System.Windows.Input;
+using System.Windows.Threading;
 using Automatization.Services;
 using Automatization.Settings;
 using Automatization.Types;
 using Automatization.Utils;
-using System.ComponentModel;
-using System.Windows.Input;
-using System.Windows.Threading;
 using Application = System.Windows.Application;
 
 namespace Automatization.ViewModels
@@ -108,7 +108,8 @@ namespace Automatization.ViewModels
             double initialDelay,
             AppSettings settings,
             Action<PowerupType> usePowerupAction,
-            Action<PowerupType, double> saveDelayAction)
+            Action<PowerupType, double> saveDelayAction
+        )
         {
             _powerupType = powerupType;
             _delay = initialDelay;
@@ -119,10 +120,7 @@ namespace Automatization.ViewModels
 
             TogglePowerupCommand = new RelayCommand(TogglePowerup);
 
-            _timer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(_delay)
-            };
+            _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(_delay) };
             _timer.Tick += (s, e) =>
             {
                 if (IsActive)
@@ -148,7 +146,8 @@ namespace Automatization.ViewModels
         private void UpdateLocalization()
         {
             string actionKey = IsActive ? "General_Stop" : "General_Start";
-            string actionText = (string)Application.Current.Resources[actionKey] ?? (IsActive ? "Stop" : "Start");
+            string actionText =
+                (string)Application.Current.Resources[actionKey] ?? (IsActive ? "Stop" : "Start");
 
             string powerupKey = PowerupType switch
             {
@@ -157,10 +156,11 @@ namespace Automatization.ViewModels
                 PowerupType.DoubleDamage => "Settings_Powerup_Damage",
                 PowerupType.SpeedBoost => "Settings_Powerup_Speed",
                 PowerupType.Mine => "Settings_Powerup_Mine",
-                _ => ""
+                _ => "",
             };
 
-            string powerupText = (string)Application.Current.Resources[powerupKey] ?? PowerupType.ToString();
+            string powerupText =
+                (string)Application.Current.Resources[powerupKey] ?? PowerupType.ToString();
 
             ButtonContent = $"{actionText} {powerupText}";
         }

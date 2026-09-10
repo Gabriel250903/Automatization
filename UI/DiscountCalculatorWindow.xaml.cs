@@ -1,16 +1,19 @@
-using Automatization.Services;
-using Automatization.Types;
-using Automatization.Utils;
 using System.Collections;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Input;
 using System.Windows.Media.Imaging;
+using Automatization.Services;
+using Automatization.Types;
+using Automatization.Utils;
 using Wpf.Ui.Controls;
 using Application = System.Windows.Application;
+using Image = System.Windows.Controls.Image;
 using ListBox = System.Windows.Controls.ListBox;
 
 namespace Automatization.UI
@@ -112,18 +115,30 @@ namespace Automatization.UI
         {
             InitializeComponent();
             DataContext = this;
-            _marketService = new MarketService();
+            _marketService = MarketService.Instance;
             InitializeLists();
         }
 
         private void InitializeLists()
         {
-            TurretsView = CollectionViewSource.GetDefaultView(_marketService.GetItemsByCategory(ItemCategory.Turret));
-            HullsView = CollectionViewSource.GetDefaultView(_marketService.GetItemsByCategory(ItemCategory.Hull));
-            PaintsView = CollectionViewSource.GetDefaultView(_marketService.GetItemsByCategory(ItemCategory.Paint));
-            SuppliesView = CollectionViewSource.GetDefaultView(_marketService.GetItemsByCategory(ItemCategory.Supplies));
-            ProductKitsView = CollectionViewSource.GetDefaultView(_marketService.GetItemsByCategory(ItemCategory.ProductKit));
-            SuppliesKitsView = CollectionViewSource.GetDefaultView(_marketService.GetItemsByCategory(ItemCategory.SuppliesKit));
+            TurretsView = CollectionViewSource.GetDefaultView(
+                _marketService.GetItemsByCategory(ItemCategory.Turret)
+            );
+            HullsView = CollectionViewSource.GetDefaultView(
+                _marketService.GetItemsByCategory(ItemCategory.Hull)
+            );
+            PaintsView = CollectionViewSource.GetDefaultView(
+                _marketService.GetItemsByCategory(ItemCategory.Paint)
+            );
+            SuppliesView = CollectionViewSource.GetDefaultView(
+                _marketService.GetItemsByCategory(ItemCategory.Supplies)
+            );
+            ProductKitsView = CollectionViewSource.GetDefaultView(
+                _marketService.GetItemsByCategory(ItemCategory.ProductKit)
+            );
+            SuppliesKitsView = CollectionViewSource.GetDefaultView(
+                _marketService.GetItemsByCategory(ItemCategory.SuppliesKit)
+            );
 
             ConfigureView(TurretsView);
             ConfigureView(HullsView);
@@ -142,7 +157,11 @@ namespace Automatization.UI
 
         private bool FilterMarketItem(object obj)
         {
-            return string.IsNullOrWhiteSpace(SearchText) || (obj is MarketItem item && item.LocalizedName.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+            return string.IsNullOrWhiteSpace(SearchText)
+                || (
+                    obj is MarketItem item
+                    && item.LocalizedName.Contains(SearchText, StringComparison.OrdinalIgnoreCase)
+                );
         }
 
         private void RefreshViews()
@@ -211,8 +230,16 @@ namespace Automatization.UI
                 view.SortDescriptions.Clear();
                 switch (SelectedSortIndex)
                 {
-                    case 0: view.SortDescriptions.Add(new SortDescription("LocalizedName", ListSortDirection.Ascending)); break;
-                    case 1: view.SortDescriptions.Add(new SortDescription("LocalizedName", ListSortDirection.Descending)); break;
+                    case 0:
+                        view.SortDescriptions.Add(
+                            new SortDescription("LocalizedName", ListSortDirection.Ascending)
+                        );
+                        break;
+                    case 1:
+                        view.SortDescriptions.Add(
+                            new SortDescription("LocalizedName", ListSortDirection.Descending)
+                        );
+                        break;
                 }
             }
         }
@@ -270,39 +297,65 @@ namespace Automatization.UI
 
         private bool AreAllSelectionsEmpty()
         {
-            return TurretsListBox.SelectedIndex == -1 &&
-                   HullsListBox.SelectedIndex == -1 &&
-                   PaintsListBox.SelectedIndex == -1 &&
-                   SuppliesListBox.SelectedIndex == -1 &&
-                   ProductKitsListBox.SelectedIndex == -1 &&
-                   SuppliesKitsListBox.SelectedIndex == -1;
+            return TurretsListBox.SelectedIndex == -1
+                && HullsListBox.SelectedIndex == -1
+                && PaintsListBox.SelectedIndex == -1
+                && SuppliesListBox.SelectedIndex == -1
+                && ProductKitsListBox.SelectedIndex == -1
+                && SuppliesKitsListBox.SelectedIndex == -1;
+        }
+
+        private async Task LoadImageAsync(Image targetImage, string? url)
+        {
+            if (string.IsNullOrEmpty(url))
+            {
+                targetImage.Source = null;
+                return;
+            }
+
+            try
+            {
+                string? localPath = await ImageCacheService.GetCachedImagePathAsync(url);
+                if (string.IsNullOrEmpty(localPath) || !File.Exists(localPath))
+                {
+                    targetImage.Source = null;
+                    return;
+                }
+
+                BitmapImage bmp = new();
+                bmp.BeginInit();
+                bmp.CacheOption = BitmapCacheOption.OnLoad;
+                bmp.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+                bmp.UriSource = new Uri(localPath, UriKind.Absolute);
+                bmp.EndInit();
+                if (bmp.CanFreeze)
+                {
+                    bmp.Freeze();
+                }
+
+                targetImage.Source = bmp;
+            }
+            catch (Exception ex)
+            {
+                LogService.LogWarning(
+                    $"Failed to load image asynchronously for {url}: {ex.Message}"
+                );
+                targetImage.Source = null;
+            }
         }
 
         private void UpdateDetailsUI(MarketItem item)
         {
             SelectedItemText.Text = item.LocalizedName;
-
-            if (!string.IsNullOrEmpty(item.ImageUrl))
-            {
-                try
-                {
-                    SelectedImage.Source = new BitmapImage(new Uri(item.ImageUrl));
-                }
-                catch
-                {
-                    SelectedImage.Source = null;
-                }
-            }
-            else
-            {
-                SelectedImage.Source = null;
-            }
+            _ = LoadImageAsync(SelectedImage, item.ImageUrl);
 
             List<StatItem> stats = [];
             StringBuilder descriptionBuilder = new();
 
             string fullDescription = item.LocalizedDescription ?? string.Empty;
-            string cleanFullDescription = new string([.. fullDescription.Where(c => !char.IsControl(c))]).Replace("&#x0a;", "");
+            string cleanFullDescription = new string([
+                .. fullDescription.Where(c => !char.IsControl(c)),
+            ]).Replace("&#x0a;", "");
 
             string? ranksLabel = Application.Current.TryFindResource("Label_Ranks") as string;
             string? discountLabel = Application.Current.TryFindResource("Label_Discount") as string;
@@ -318,13 +371,16 @@ namespace Automatization.UI
                 { "Contains:", containsLabel ?? "Contains" },
                 { "Hull:", hullLabel ?? "Hull" },
                 { "Turret:", turretLabel ?? "Turret" },
-                { "Paint:", paintLabel ?? "Paint" }
+                { "Paint:", paintLabel ?? "Paint" },
             };
 
             List<(int Index, string Key)> foundKeywords = [];
             foreach (KeyValuePair<string, string> entry in keywordMap)
             {
-                int index = cleanFullDescription.IndexOf(entry.Key, StringComparison.OrdinalIgnoreCase);
+                int index = cleanFullDescription.IndexOf(
+                    entry.Key,
+                    StringComparison.OrdinalIgnoreCase
+                );
                 if (index != -1)
                 {
                     foundKeywords.Add((index, entry.Key));
@@ -352,28 +408,39 @@ namespace Automatization.UI
                 {
                     (int Index, string Key) currentKeyword = foundKeywords[i];
                     int startIndex = currentKeyword.Index + currentKeyword.Key.Length;
-                    int endIndex = (i + 1 < foundKeywords.Count) ? foundKeywords[i + 1].Index : cleanFullDescription.Length;
+                    int endIndex =
+                        (i + 1 < foundKeywords.Count)
+                            ? foundKeywords[i + 1].Index
+                            : cleanFullDescription.Length;
 
                     string key = currentKeyword.Key.TrimEnd(':');
                     string value = cleanFullDescription[startIndex..endIndex].Trim();
 
-                    if (key.Trim() == "Ranks" || (!string.IsNullOrEmpty(ranksLabel) && key.Trim() == ranksLabel))
+                    if (
+                        key.Trim() == "Ranks"
+                        || (!string.IsNullOrEmpty(ranksLabel) && key.Trim() == ranksLabel)
+                    )
                     {
                         string[] separators = [" - ", " – ", " — "];
-                        string[] rankParts = value.Split(separators, StringSplitOptions.RemoveEmptyEntries);
+                        string[] rankParts = value.Split(
+                            separators,
+                            StringSplitOptions.RemoveEmptyEntries
+                        );
 
                         if (rankParts.Length >= 2)
                         {
                             string rank1 = rankParts[0].Trim();
                             string rank2 = rankParts[1].Trim();
 
-                            stats.Add(new StatItem
-                            {
-                                Key = key,
-                                IsRank = true,
-                                RankStartIcon = _marketService.GetRankIcon(rank1),
-                                RankEndIcon = _marketService.GetRankIcon(rank2)
-                            });
+                            stats.Add(
+                                new StatItem
+                                {
+                                    Key = key,
+                                    IsRank = true,
+                                    RankStartIcon = _marketService.GetRankIcon(rank1),
+                                    RankEndIcon = _marketService.GetRankIcon(rank2),
+                                }
+                            );
                         }
                         else
                         {
@@ -483,19 +550,13 @@ namespace Automatization.UI
             if (_compareItemA != null)
             {
                 CompareNameA.Text = _compareItemA.LocalizedName;
-                if (!string.IsNullOrEmpty(_compareItemA.ImageUrl))
-                {
-                    CompareImageA.Source = new BitmapImage(new Uri(_compareItemA.ImageUrl));
-                }
+                _ = LoadImageAsync(CompareImageA, _compareItemA.ImageUrl);
             }
 
             if (_selectedItem != null)
             {
                 CompareNameB.Text = _selectedItem.LocalizedName;
-                if (!string.IsNullOrEmpty(_selectedItem.ImageUrl))
-                {
-                    CompareImageB.Source = new BitmapImage(new Uri(_selectedItem.ImageUrl));
-                }
+                _ = LoadImageAsync(CompareImageB, _selectedItem.ImageUrl);
             }
             else
             {
@@ -527,22 +588,28 @@ namespace Automatization.UI
 
             List<ComparisonPriceInfo> compareResults = [];
             int maxLevels = Math.Max(_compareItemA.Prices.Length, _selectedItem.Prices.Length);
-            int cumulativeA = 0, cumulativeB = 0;
+            long cumulativeA = 0,
+                cumulativeB = 0;
 
             for (int i = 0; i < maxLevels; i++)
             {
-                string modificationText = GetModificationText(i, _compareItemA.Prices.Length == 1 && _selectedItem.Prices.Length == 1);
+                string modificationText = GetModificationText(
+                    i,
+                    _compareItemA.Prices.Length == 1 && _selectedItem.Prices.Length == 1
+                );
 
-                int priceA = CalculatePrice(_compareItemA, i, discountPercent, ref cumulativeA);
-                int priceB = CalculatePrice(_selectedItem, i, discountPercent, ref cumulativeB);
+                long priceA = CalculatePrice(_compareItemA, i, discountPercent, ref cumulativeA);
+                long priceB = CalculatePrice(_selectedItem, i, discountPercent, ref cumulativeB);
 
-                compareResults.Add(new ComparisonPriceInfo
-                {
-                    Modification = modificationText,
-                    PriceA = priceA,
-                    PriceB = priceB,
-                    Difference = priceB - priceA
-                });
+                compareResults.Add(
+                    new ComparisonPriceInfo
+                    {
+                        Modification = modificationText,
+                        PriceA = priceA,
+                        PriceB = priceB,
+                        Difference = priceB - priceA,
+                    }
+                );
             }
 
             ComparisonListA.ItemsSource = compareResults;
@@ -558,50 +625,71 @@ namespace Automatization.UI
             }
 
             List<ModificationPriceInfo> results = [];
-            int totalCost = 0, totalSaved = 0;
-            int cumulativeBase = 0, cumulativeSaved = 0, cumulativeFinal = 0;
+            long totalCost = 0,
+                totalSaved = 0;
+            long cumulativeBase = 0,
+                cumulativeSaved = 0,
+                cumulativeFinal = 0;
 
             for (int i = 0; i < _selectedItem.Prices.Length; i++)
             {
-                int basePrice = _selectedItem.Prices[i];
-                int discountAmount = (int)(basePrice * (discountPercent / 100.0));
-                int finalPrice = basePrice - discountAmount;
-
-                if (_selectedItem.Category == ItemCategory.Supplies)
+                checked
                 {
-                    basePrice *= Quantity;
-                    discountAmount *= Quantity;
-                    finalPrice *= Quantity;
-                }
-
-                totalCost += finalPrice;
-                totalSaved += discountAmount;
-
-                string modificationText = GetModificationText(i, _selectedItem.Prices.Length == 1);
-
-                if (IsCumulativeMode)
-                {
-                    cumulativeBase += basePrice;
-                    cumulativeSaved += discountAmount;
-                    cumulativeFinal += finalPrice;
-
-                    results.Add(new ModificationPriceInfo
+                    try
                     {
-                        Modification = modificationText,
-                        BasePrice = cumulativeBase,
-                        DiscountAmount = cumulativeSaved,
-                        FinalPrice = cumulativeFinal
-                    });
-                }
-                else
-                {
-                    results.Add(new ModificationPriceInfo
+                        long basePrice = _selectedItem.Prices[i];
+                        long discountAmount = (long)(basePrice * (discountPercent / 100.0));
+                        long finalPrice = basePrice - discountAmount;
+
+                        if (_selectedItem.Category == ItemCategory.Supplies)
+                        {
+                            long qty = Math.Max(1, (long)Quantity);
+                            basePrice = checked(basePrice * qty);
+                            discountAmount = checked(discountAmount * qty);
+                            finalPrice = checked(finalPrice * qty);
+                        }
+
+                        totalCost = checked(totalCost + finalPrice);
+                        totalSaved = checked(totalSaved + discountAmount);
+
+                        string modificationText = GetModificationText(
+                            i,
+                            _selectedItem.Prices.Length == 1
+                        );
+
+                        if (IsCumulativeMode)
+                        {
+                            cumulativeBase = checked(cumulativeBase + basePrice);
+                            cumulativeSaved = checked(cumulativeSaved + discountAmount);
+                            cumulativeFinal = checked(cumulativeFinal + finalPrice);
+
+                            results.Add(
+                                new ModificationPriceInfo
+                                {
+                                    Modification = modificationText,
+                                    BasePrice = cumulativeBase,
+                                    DiscountAmount = cumulativeSaved,
+                                    FinalPrice = cumulativeFinal,
+                                }
+                            );
+                        }
+                        else
+                        {
+                            results.Add(
+                                new ModificationPriceInfo
+                                {
+                                    Modification = modificationText,
+                                    BasePrice = basePrice,
+                                    DiscountAmount = discountAmount,
+                                    FinalPrice = finalPrice,
+                                }
+                            );
+                        }
+                    }
+                    catch (OverflowException)
                     {
-                        Modification = modificationText,
-                        BasePrice = basePrice,
-                        DiscountAmount = discountAmount,
-                        FinalPrice = finalPrice
-                    });
+                        LogService.LogWarning("Price calculation overflowed 64-bit bounds.");
+                    }
                 }
             }
 
@@ -637,24 +725,40 @@ namespace Automatization.UI
             return $"M{index}";
         }
 
-        private int CalculatePrice(MarketItem item, int index, int discountPercent, ref int cumulative)
+        private long CalculatePrice(
+            MarketItem item,
+            int index,
+            int discountPercent,
+            ref long cumulative
+        )
         {
-            int price = 0;
+            long price = 0;
             if (index < item.Prices.Length)
             {
-                int basePrice = item.Prices[index];
-                int discount = (int)(basePrice * (discountPercent / 100.0));
-                price = basePrice - discount;
-
-                if (item.Category == ItemCategory.Supplies)
+                checked
                 {
-                    price *= Quantity;
-                }
+                    try
+                    {
+                        long basePrice = item.Prices[index];
+                        long discount = (long)(basePrice * (discountPercent / 100.0));
+                        price = basePrice - discount;
 
-                if (IsCumulativeMode)
-                {
-                    cumulative += price;
-                    price = cumulative;
+                        if (item.Category == ItemCategory.Supplies)
+                        {
+                            long qty = Math.Max(1, (long)Quantity);
+                            price = checked(price * qty);
+                        }
+
+                        if (IsCumulativeMode)
+                        {
+                            cumulative = checked(cumulative + price);
+                            price = cumulative;
+                        }
+                    }
+                    catch (OverflowException)
+                    {
+                        price = long.MaxValue;
+                    }
                 }
             }
             return price;
@@ -665,7 +769,7 @@ namespace Automatization.UI
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        private void QuantityTextBox_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
+        private void QuantityTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             e.Handled = !e.Text.All(char.IsDigit);
         }

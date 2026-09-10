@@ -1,15 +1,16 @@
+using System.Diagnostics;
+using System.Windows.Input;
 using Automatization.Settings;
 using Automatization.Types;
 using Automatization.Utils;
-using System.Diagnostics;
-using System.Windows.Input;
 
 namespace Automatization.Services
 {
     public class SmartRepairKitService : IDisposable
     {
         public HealthBarDetector Detector { get; }
-        private readonly ScreenCaptureService _captureService;
+        private readonly Lazy<ScreenCaptureService> _lazyCaptureService;
+        private ScreenCaptureService CaptureService => _lazyCaptureService.Value;
 
         private CancellationTokenSource? _cts;
         private bool _isRunning;
@@ -29,7 +30,7 @@ namespace Automatization.Services
         public SmartRepairKitService()
         {
             Detector = new HealthBarDetector();
-            _captureService = new ScreenCaptureService();
+            _lazyCaptureService = new Lazy<ScreenCaptureService>(() => new ScreenCaptureService());
 
             try
             {
@@ -42,7 +43,9 @@ namespace Automatization.Services
             }
             catch (Exception ex)
             {
-                LogService.LogError($"Failed to load settings in SmartRepairKitService constructor: {ex.Message}.");
+                LogService.LogError(
+                    $"Failed to load settings in SmartRepairKitService constructor: {ex.Message}."
+                );
             }
         }
 
@@ -60,7 +63,7 @@ namespace Automatization.Services
 
             _isRunning = true;
             _cts = new CancellationTokenSource();
-            _ = Task.Run(() => Loop(_cts.Token));
+            Task.Run(() => Loop(_cts.Token)).SafeFireAndForget("SmartRepairKitService.Loop");
             LogService.LogInfo("Smart Repair Kit monitoring started.");
         }
 
@@ -89,7 +92,7 @@ namespace Automatization.Services
                 {
                     long startTime = DateTime.Now.Ticks;
 
-                    using (Bitmap frame = _captureService.Capture())
+                    using (Bitmap frame = CaptureService.Capture())
                     {
                         HealthBarStruct state = Detector.Detect(frame);
 
@@ -124,19 +127,7 @@ namespace Automatization.Services
                 if (_gameProcess == null || HasProcessExited(_gameProcess))
                 {
                     _gameProcess?.Dispose();
-                    Process[] processes = Process.GetProcessesByName(GameProcessName);
-                    if (processes.Length > 0)
-                    {
-                        _gameProcess = processes[0];
-                        for (int i = 1; i < processes.Length; i++)
-                        {
-                            processes[i].Dispose();
-                        }
-                    }
-                    else
-                    {
-                        _gameProcess = null;
-                    }
+                    _gameProcess = WindowUtils.GetFirstProcessByName(GameProcessName);
                 }
             }
         }
@@ -160,7 +151,9 @@ namespace Automatization.Services
                 return;
             }
 
-            LogService.LogInfo($"Low health detected! Activating Repair Kit (Key: {ActivationKey})");
+            LogService.LogInfo(
+                $"Low health detected! Activating Repair Kit (Key: {ActivationKey})"
+            );
 
             int vKey = KeyInterop.VirtualKeyFromKey(ActivationKey);
             RefreshGameProcess();
@@ -174,7 +167,9 @@ namespace Automatization.Services
         {
             if (process == null || process.MainWindowHandle == IntPtr.Zero)
             {
-                LogService.LogWarning("Game process not found or has no main window handle. Cannot send key press.");
+                LogService.LogWarning(
+                    "Game process not found or has no main window handle. Cannot send key press."
+                );
                 return;
             }
 
@@ -183,10 +178,22 @@ namespace Automatization.Services
             IntPtr lParamDown = (IntPtr)((scanCode << 16) | 1);
             IntPtr lParamUp = (IntPtr)((scanCode << 16) | 0xC0000001);
 
-            _ = NativeMethods.PostMessage(process.MainWindowHandle, NativeMethods.WM_KEYDOWN, virtualKey, lParamDown);
-            _ = NativeMethods.PostMessage(process.MainWindowHandle, NativeMethods.WM_KEYUP, virtualKey, lParamUp);
+            _ = NativeMethods.PostMessage(
+                process.MainWindowHandle,
+                NativeMethods.WM_KEYDOWN,
+                virtualKey,
+                lParamDown
+            );
+            _ = NativeMethods.PostMessage(
+                process.MainWindowHandle,
+                NativeMethods.WM_KEYUP,
+                virtualKey,
+                lParamUp
+            );
 
-            LogService.LogInfo($"Sent key press {virtualKey} (ScanCode: {scanCode}) to process {process.Id}");
+            LogService.LogInfo(
+                $"Sent key press {virtualKey} (ScanCode: {scanCode}) to process {process.Id}"
+            );
         }
 
         public void ForceTrigger()
@@ -201,7 +208,10 @@ namespace Automatization.Services
         {
             Stop();
             _cts?.Dispose();
-            _captureService?.Dispose();
+            if (_lazyCaptureService.IsValueCreated)
+            {
+                _lazyCaptureService.Value.Dispose();
+            }
             lock (_processLock)
             {
                 _gameProcess?.Dispose();

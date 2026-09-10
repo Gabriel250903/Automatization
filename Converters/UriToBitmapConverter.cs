@@ -1,7 +1,7 @@
-using Automatization.Services;
 using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
+using Automatization.Services;
 
 namespace Automatization.Converters
 {
@@ -13,7 +13,10 @@ namespace Automatization.Converters
             {
                 try
                 {
-                    string? localPath = ImageCacheService.GetCachedImagePathNonBlocking(url, out string fullLocalPath);
+                    string? localPath = ImageCacheService.GetCachedImagePathNonBlocking(
+                        url,
+                        out string fullLocalPath
+                    );
 
                     BitmapImage bitmap = new();
                     bitmap.BeginInit();
@@ -31,6 +34,10 @@ namespace Automatization.Converters
                     {
                         bitmap.UriSource = new Uri(url);
                         bitmap.EndInit();
+                        if (bitmap.CanFreeze)
+                        {
+                            bitmap.Freeze();
+                        }
                     }
 
                     return bitmap;
@@ -44,7 +51,12 @@ namespace Automatization.Converters
             return null;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object ConvertBack(
+            object value,
+            Type targetType,
+            object parameter,
+            CultureInfo culture
+        )
         {
             throw new NotImplementedException();
         }

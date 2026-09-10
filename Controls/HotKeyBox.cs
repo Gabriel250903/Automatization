@@ -1,6 +1,6 @@
-using Automatization.Hotkeys;
 using System.Windows;
 using System.Windows.Input;
+using Automatization.Hotkeys;
 using Cursors = System.Windows.Input.Cursors;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using TextBox = System.Windows.Controls.TextBox;
@@ -9,9 +9,18 @@ namespace Automatization.Controls
 {
     public class HotKeyBox : TextBox
     {
-        private static DependencyProperty HotKeyProperty =
-            DependencyProperty.Register(nameof(HotKey), typeof(HotKey), typeof(HotKeyBox),
-                new FrameworkPropertyMetadata(new HotKey(), FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, OnHotKeyChanged));
+        public static readonly DependencyProperty HotKeyProperty = DependencyProperty.Register(
+            nameof(HotKey),
+            typeof(HotKey),
+            typeof(HotKeyBox),
+            new FrameworkPropertyMetadata(
+                new HotKey(),
+                FrameworkPropertyMetadataOptions.BindsTwoWayByDefault,
+                OnHotKeyChanged
+            )
+        );
+
+        public event Action<HotKey>? HotKeyChanged;
 
         public HotKey HotKey
         {
@@ -19,12 +28,16 @@ namespace Automatization.Controls
             set => SetValue(HotKeyProperty, value);
         }
 
-        private static void OnHotKeyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        private static void OnHotKeyChanged(
+            DependencyObject d,
+            DependencyPropertyChangedEventArgs e
+        )
         {
             if (d is HotKeyBox box)
             {
                 HotKey newHotKey = e.NewValue as HotKey ?? new HotKey();
                 box.Text = newHotKey.ToString();
+                box.HotKeyChanged?.Invoke(newHotKey);
             }
         }
 
@@ -48,10 +61,17 @@ namespace Automatization.Controls
                 key = e.SystemKey;
             }
 
-            if (key is Key.LeftCtrl or Key.RightCtrl or
-                Key.LeftShift or Key.RightShift or
-                Key.LeftAlt or Key.RightAlt or
-                Key.LWin or Key.RWin)
+            if (
+                key
+                is Key.LeftCtrl
+                    or Key.RightCtrl
+                    or Key.LeftShift
+                    or Key.RightShift
+                    or Key.LeftAlt
+                    or Key.RightAlt
+                    or Key.LWin
+                    or Key.RWin
+            )
             {
                 return;
             }
@@ -70,17 +90,46 @@ namespace Automatization.Controls
             _ = Keyboard.Focus(this);
         }
 
+        protected override void OnPreviewMouseDown(MouseButtonEventArgs e)
+        {
+            if (IsFocused)
+            {
+                if (
+                    e.ChangedButton
+                    is MouseButton.Middle
+                        or MouseButton.XButton1
+                        or MouseButton.XButton2
+                )
+                {
+                    e.Handled = true;
+                    HotKey = new HotKey(e.ChangedButton, Keyboard.Modifiers);
+                    _ = Keyboard.Focus(this);
+                }
+            }
+            base.OnPreviewMouseDown(e);
+        }
+
         private static bool IsValidKey(Key key)
         {
-            return key is (>= Key.F1 and <= Key.F24) or
-                   (>= Key.D0 and <= Key.D9) or
-                   (>= Key.A and <= Key.Z) or
-                   (>= Key.NumPad0 and <= Key.NumPad9) or
-                   Key.Tab or Key.Enter or Key.Space or
-                   Key.OemTilde or Key.OemMinus or Key.OemPlus or
-                   Key.OemOpenBrackets or Key.OemCloseBrackets or
-                   Key.OemPipe or Key.OemSemicolon or Key.OemQuotes or
-                   Key.OemComma or Key.OemPeriod or Key.OemQuestion;
+            return key
+                is (>= Key.F1 and <= Key.F24)
+                    or (>= Key.D0 and <= Key.D9)
+                    or (>= Key.A and <= Key.Z)
+                    or (>= Key.NumPad0 and <= Key.NumPad9)
+                    or Key.Tab
+                    or Key.Enter
+                    or Key.Space
+                    or Key.OemTilde
+                    or Key.OemMinus
+                    or Key.OemPlus
+                    or Key.OemOpenBrackets
+                    or Key.OemCloseBrackets
+                    or Key.OemPipe
+                    or Key.OemSemicolon
+                    or Key.OemQuotes
+                    or Key.OemComma
+                    or Key.OemPeriod
+                    or Key.OemQuestion;
         }
 
         protected override void OnGotKeyboardFocus(KeyboardFocusChangedEventArgs e)

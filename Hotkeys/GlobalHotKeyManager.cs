@@ -1,27 +1,19 @@
+using System.Diagnostics;
+using System.Windows.Input;
 using Automatization.Services;
 using Automatization.Settings;
 using Automatization.Utils;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Windows.Interop;
+using Application = System.Windows.Application;
 
 namespace Automatization.Hotkeys
 {
     public static class GlobalHotKeyManager
     {
-        private const int WmHotkey = 0x0312;
-
-        [DllImport("user32.dll", SetLastError = true)]
-        private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
-
-        [DllImport("user32.dll", SetLastError = true)]
-        private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
-
         private static AppSettings? _settings;
         private static bool _isInitialized = false;
-        private static int _nextId;
-        private static Dictionary<int, HotKey> IdToHotKeyMap = [];
-        private static Dictionary<HotKey, int> HotKeyToIdMap = [];
+        private static GlobalInputHook? _inputHook;
+        private static readonly object _hotKeyLock = new();
+        private static readonly HashSet<HotKey> _registeredHotKeys = [];
         public static bool IsPaused { get; set; } = false;
         public static event Action<HotKey, Process?>? HotKeyPressed;
 
@@ -33,18 +25,22 @@ namespace Automatization.Hotkeys
                 return;
             }
 
-            ComponentDispatcher.ThreadFilterMessage += OnThreadFilterMessage;
-            _settings = AppSettings.Load();
+            _settings = App.Settings ?? AppSettings.Load();
+            _inputHook = new GlobalInputHook();
+            _inputHook.KeyDown += OnKeyDown;
+            _inputHook.MouseDown += OnMouseDown;
             _isInitialized = true;
 
-            LogService.LogInfo("Initialized GlobalHotKeyManager.");
+            LogService.LogInfo("Initialized GlobalHotKeyManager with low-level hooks.");
         }
 
         public static bool Register(HotKey hotKey)
         {
             if (!_isInitialized)
             {
-                LogService.LogWarning($"Skipping registration for hotkey {hotKey}. Manager not initialized.");
+                LogService.LogWarning(
+                    $"Skipping registration for hotkey {hotKey}. Manager not initialized."
+                );
                 return false;
             }
 
@@ -53,30 +49,40 @@ namespace Automatization.Hotkeys
                 return false;
             }
 
-            if (HotKeyToIdMap.ContainsKey(hotKey))
+            lock (_hotKeyLock)
             {
-                LogService.LogWarning($"Skipping registration for hotkey {hotKey}. Hotkey is already mapped.");
+                if (_registeredHotKeys.Contains(hotKey))
+                {
+                    LogService.LogWarning(
+                        $"Skipping registration for hotkey {hotKey}. Hotkey is already mapped."
+                    );
+                    return false;
+                }
+
+                _ = _registeredHotKeys.Add(hotKey);
+            }
+
+            LogService.LogInfo($"Registered hotkey: {hotKey}");
+            return true;
+        }
+
+        public static bool Unregister(HotKey hotKey)
+        {
+            if (!_isInitialized || hotKey.IsEmpty)
+            {
                 return false;
             }
 
-            int vk = hotKey.VirtualKey;
-            uint fsModifiers = (uint)hotKey.Modifiers;
-
-            int id = _nextId++;
-            bool success = RegisterHotKey(IntPtr.Zero, id, fsModifiers, (uint)vk);
-
-            if (success)
+            lock (_hotKeyLock)
             {
-                IdToHotKeyMap[id] = hotKey;
-                HotKeyToIdMap[hotKey] = id;
-                LogService.LogInfo($"Registered hotkey: {hotKey} (VK: {vk}) with ID {id}");
-            }
-            else
-            {
-                LogService.LogWarning($"Failed to register hotkey: {hotKey}. Error Code: {Marshal.GetLastWin32Error()}");
+                if (_registeredHotKeys.Remove(hotKey))
+                {
+                    LogService.LogInfo($"Successfully unregistered hotkey: {hotKey}");
+                    return true;
+                }
             }
 
-            return success;
+            return false;
         }
 
         public static void UnregisterAll()
@@ -86,67 +92,78 @@ namespace Automatization.Hotkeys
                 return;
             }
 
-            LogService.LogInfo($"Unregistering all hotkeys. Currently {IdToHotKeyMap.Count} hotkeys registered.");
-
-            foreach (KeyValuePair<int, HotKey> entry in IdToHotKeyMap.ToList())
+            lock (_hotKeyLock)
             {
-                bool success = UnregisterHotKey(IntPtr.Zero, entry.Key);
-                if (success)
-                {
-                    LogService.LogInfo($"Successfully unregistered hotkey from OS: {entry.Value} with ID {entry.Key}");
-                }
-                else
-                {
-                    LogService.LogWarning($"Failed to unregister hotkey from OS: {entry.Value} with ID {entry.Key}. Error Code: {Marshal.GetLastWin32Error()}");
-                }
+                LogService.LogInfo(
+                    $"Unregistering all hotkeys. Currently {_registeredHotKeys.Count} hotkeys registered."
+                );
+                _registeredHotKeys.Clear();
             }
-
-            IdToHotKeyMap.Clear();
-            HotKeyToIdMap.Clear();
-            _nextId = 0;
-
-            LogService.LogInfo($"All hotkeys unregistered from manager. Remaining: {IdToHotKeyMap.Count}");
         }
 
-        private static void OnThreadFilterMessage(ref MSG msg, ref bool handled)
+        private static bool ProcessHotKey(HotKey currentEvent)
         {
-            if (handled || IsPaused || msg.message != WmHotkey)
+            if (IsPaused)
             {
-                return;
+                return false;
             }
 
-            Process[] processes = Process.GetProcessesByName(_settings?.GameProcessName ?? "ProTanki");
-            if (processes.Length == 0)
+            HotKey? matchedHotKey;
+            lock (_hotKeyLock)
             {
-                handled = false;
-                return;
+                matchedHotKey = _registeredHotKeys.FirstOrDefault(hk => hk.Equals(currentEvent));
             }
 
-            Process game = processes[0];
-            for (int i = 1; i < processes.Length; i++)
+            if (matchedHotKey == null)
             {
-                processes[i].Dispose();
+                return false;
             }
 
-            if (WindowUtils.IsGameWindowInForeground(game) == false)
-            {
-                game.Dispose();
-                handled = false;
-                return;
-            }
+            Task.Run(() =>
+                {
+                    Process[] processes = Process.GetProcessesByName(
+                        _settings?.GameProcessName ?? "ProTanki"
+                    );
+                    Process? game = null;
 
-            int id = msg.wParam.ToInt32();
-            if (IdToHotKeyMap.TryGetValue(id, out HotKey? hotKey))
-            {
-                HotKeyPressed?.Invoke(hotKey, game);
-                handled = true;
+                    if (processes.Length > 0)
+                    {
+                        game = processes[0];
+                        for (int i = 1; i < processes.Length; i++)
+                        {
+                            processes[i].Dispose();
+                        }
 
-                LogService.LogInfo($"Hotkey pressed: {hotKey}");
-            }
-            else
-            {
-                game.Dispose();
-            }
+                        if (!WindowUtils.IsGameWindowInForeground(game))
+                        {
+                            game.Dispose();
+                            game = null;
+                        }
+                    }
+
+                    _ = (
+                        Application.Current?.Dispatcher.InvokeAsync(() =>
+                        {
+                            HotKeyPressed?.Invoke(matchedHotKey, game);
+                            LogService.LogInfo($"Hotkey pressed: {matchedHotKey}");
+                        })
+                    );
+                })
+                .SafeFireAndForget("GlobalHotKeyManager.OnHotKey");
+
+            return true;
+        }
+
+        private static bool OnKeyDown(Key key, ModifierKeys modifiers)
+        {
+            HotKey hk = new(key, modifiers);
+            return ProcessHotKey(hk);
+        }
+
+        private static bool OnMouseDown(MouseButton button, ModifierKeys modifiers)
+        {
+            HotKey hk = new(button, modifiers);
+            return ProcessHotKey(hk);
         }
 
         public static void Shutdown()
@@ -158,9 +175,15 @@ namespace Automatization.Hotkeys
 
             UnregisterAll();
 
-            ComponentDispatcher.ThreadFilterMessage -= OnThreadFilterMessage;
-            _isInitialized = false;
+            if (_inputHook != null)
+            {
+                _inputHook.KeyDown -= OnKeyDown;
+                _inputHook.MouseDown -= OnMouseDown;
+                _inputHook.Dispose();
+                _inputHook = null;
+            }
 
+            _isInitialized = false;
             LogService.LogInfo("Shutting down GlobalHotKeyManager.");
         }
     }

@@ -1,5 +1,3 @@
-using Automatization.Services;
-using Automatization.Types;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -7,21 +5,25 @@ using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Automatization.Services;
+using Automatization.Types;
 using HorizontalAlignment = System.Windows.HorizontalAlignment;
 using Image = System.Windows.Controls.Image;
 
 namespace Automatization.Converters
 {
-    public class MarkdownToFlowDocumentConverter : IValueConverter
+    public partial class MarkdownToFlowDocumentConverter : IValueConverter
     {
-        private static readonly Regex ImageRegex = new(@"!\[.*?\]\((?<url1>.*?)\)|<img[^>]*src=[""'](?<url2>.*?)[""'][^>]*>", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        [GeneratedRegex(
+            @"!\[[^\]]*\]\((?<url1>[^)\s]+)\)|<img[^>]*?src=[""'](?<url2>[^""']+)[""'][^>]*?>",
+            RegexOptions.IgnoreCase,
+            matchTimeoutMilliseconds: 250
+        )]
+        private static partial Regex GetImageRegex();
 
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            FlowDocument doc = new()
-            {
-                PagePadding = new Thickness(0)
-            };
+            FlowDocument doc = new() { PagePadding = new Thickness(0) };
 
             string markdown;
             int issueId;
@@ -41,10 +43,20 @@ namespace Automatization.Converters
                 return doc;
             }
 
-            MatchCollection matches = ImageRegex.Matches(markdown);
+            MatchCollection matches;
+            Paragraph paragraph = new();
+            try
+            {
+                matches = GetImageRegex().Matches(markdown);
+            }
+            catch (RegexMatchTimeoutException)
+            {
+                paragraph.Inlines.Add(new Run(markdown));
+                doc.Blocks.Add(paragraph);
+                return doc;
+            }
 
             int lastIndex = 0;
-            Paragraph paragraph = new();
 
             foreach (Match match in matches)
             {
@@ -57,11 +69,14 @@ namespace Automatization.Converters
                     }
                 }
 
-                string imageUrl = match.Groups["url1"].Success ? match.Groups["url1"].Value : match.Groups["url2"].Value;
+                string imageUrl = match.Groups["url1"].Success
+                    ? match.Groups["url1"].Value
+                    : match.Groups["url2"].Value;
 
-                string? localPath = issueId > 0
-                    ? ImageCacheService.GetIssueImagePathNonBlocking(imageUrl, issueId, out _)
-                    : ImageCacheService.GetCachedImagePathNonBlocking(imageUrl, out _);
+                string? localPath =
+                    issueId > 0
+                        ? ImageCacheService.GetIssueImagePathNonBlocking(imageUrl, issueId, out _)
+                        : ImageCacheService.GetCachedImagePathNonBlocking(imageUrl, out _);
 
                 try
                 {
@@ -82,7 +97,7 @@ namespace Automatization.Converters
                         MaxWidth = 500,
                         Stretch = Stretch.Uniform,
                         Margin = new Thickness(0, 10, 0, 10),
-                        HorizontalAlignment = HorizontalAlignment.Left
+                        HorizontalAlignment = HorizontalAlignment.Left,
                     };
 
                     if (paragraph.Inlines.Count > 0)
@@ -118,7 +133,12 @@ namespace Automatization.Converters
             return doc;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object ConvertBack(
+            object value,
+            Type targetType,
+            object parameter,
+            CultureInfo culture
+        )
         {
             throw new NotImplementedException();
         }

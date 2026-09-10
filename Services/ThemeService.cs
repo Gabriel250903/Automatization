@@ -1,10 +1,10 @@
-﻿using Automatization.ViewModels;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using Automatization.ViewModels;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 using Application = System.Windows.Application;
@@ -24,7 +24,10 @@ namespace Automatization.Services
         {
             get
             {
-                string directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TankAutomation");
+                string directory = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "TankAutomation"
+                );
                 if (!Directory.Exists(directory))
                 {
                     _ = Directory.CreateDirectory(directory);
@@ -45,9 +48,15 @@ namespace Automatization.Services
                     string json = File.ReadAllText(ThemeFilePath);
                     LoadedThemes = JsonSerializer.Deserialize<List<CustomTheme>>(json) ?? [];
                 }
-                catch { LoadedThemes = []; }
+                catch
+                {
+                    LoadedThemes = [];
+                }
             }
-            else { LoadedThemes = []; }
+            else
+            {
+                LoadedThemes = [];
+            }
         }
 
         public static void SaveTheme(CustomTheme theme)
@@ -59,7 +68,14 @@ namespace Automatization.Services
             }
 
             LoadedThemes.Add(theme);
-            try { File.WriteAllText(ThemeFilePath, JsonSerializer.Serialize(LoadedThemes, _jsonOptions)); } catch { }
+            try
+            {
+                File.WriteAllText(
+                    ThemeFilePath,
+                    JsonSerializer.Serialize(LoadedThemes, _jsonOptions)
+                );
+            }
+            catch { }
         }
 
         public static void DeleteTheme(CustomTheme theme)
@@ -68,12 +84,30 @@ namespace Automatization.Services
             if (existing != null)
             {
                 _ = LoadedThemes.Remove(existing);
-                try { File.WriteAllText(ThemeFilePath, JsonSerializer.Serialize(LoadedThemes, _jsonOptions)); } catch { }
+                try
+                {
+                    File.WriteAllText(
+                        ThemeFilePath,
+                        JsonSerializer.Serialize(LoadedThemes, _jsonOptions)
+                    );
+                }
+                catch { }
             }
         }
 
         public static void ClearThemeOverrides()
         {
+            if (Application.Current == null)
+            {
+                return;
+            }
+
+            if (!Application.Current.Dispatcher.CheckAccess())
+            {
+                _ = Application.Current.Dispatcher.InvokeAsync(ClearThemeOverrides);
+                return;
+            }
+
             ResourceDictionary resources = Application.Current.Resources;
 
             resources.Remove("TextFillColorPrimaryBrush");
@@ -96,23 +130,45 @@ namespace Automatization.Services
 
         public static void RefreshActiveWindow(Window window)
         {
-            _ = window.Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
-            {
-                if (Application.Current.Resources.Contains("ApplicationBackgroundBrush") &&
-                    Application.Current.Resources["ApplicationBackgroundBrush"] is Brush bgBrush)
+            _ = window.Dispatcher.BeginInvoke(
+                DispatcherPriority.Loaded,
+                new Action(() =>
                 {
-                    if (window is FluentWindow fw)
+                    if (
+                        Application.Current.Resources.Contains("ApplicationBackgroundBrush")
+                        && Application.Current.Resources["ApplicationBackgroundBrush"]
+                            is Brush bgBrush
+                    )
                     {
-                        fw.WindowBackdropType = WindowBackdropType.None;
-                        fw.Background = bgBrush;
+                        if (window is FluentWindow fw)
+                        {
+                            fw.WindowBackdropType = WindowBackdropType.None;
+                            fw.Background = bgBrush;
+                        }
                     }
-                }
-            }));
+                })
+            );
         }
 
         public static void ApplyTheme(CustomTheme theme, ResourceDictionary? targetResources = null)
         {
-            ResourceDictionary resources = targetResources ?? Application.Current.Resources;
+            if (
+                targetResources == null
+                && Application.Current != null
+                && !Application.Current.Dispatcher.CheckAccess()
+            )
+            {
+                _ = Application.Current.Dispatcher.InvokeAsync(() =>
+                    ApplyTheme(theme, targetResources)
+                );
+                return;
+            }
+
+            ResourceDictionary? resources = targetResources ?? Application.Current?.Resources;
+            if (resources == null)
+            {
+                return;
+            }
 
             if (targetResources == null)
             {
@@ -131,7 +187,10 @@ namespace Automatization.Services
 
                     return brush;
                 }
-                catch { return Brushes.Red; }
+                catch
+                {
+                    return Brushes.Red;
+                }
             }
 
             resources["TextFillColorPrimaryBrush"] = GetSolid(theme.TextColor);
@@ -144,7 +203,10 @@ namespace Automatization.Services
             switch (theme.BackgroundMode)
             {
                 case BackgroundType.Image:
-                    if (!string.IsNullOrEmpty(theme.BackgroundImagePath) && File.Exists(theme.BackgroundImagePath))
+                    if (
+                        !string.IsNullOrEmpty(theme.BackgroundImagePath)
+                        && File.Exists(theme.BackgroundImagePath)
+                    )
                     {
                         BitmapImage img = new(new Uri(theme.BackgroundImagePath, UriKind.Absolute));
                         if (img.CanFreeze)
@@ -163,11 +225,16 @@ namespace Automatization.Services
                 case BackgroundType.Gradient:
                     try
                     {
-                        Color start = (Color)ColorConverter.ConvertFromString(theme.WindowBackgroundColor);
-                        Color end = (Color)ColorConverter.ConvertFromString(theme.WindowGradientEndColor);
+                        Color start = (Color)
+                            ColorConverter.ConvertFromString(theme.WindowBackgroundColor);
+                        Color end = (Color)
+                            ColorConverter.ConvertFromString(theme.WindowGradientEndColor);
                         bgBrush = new LinearGradientBrush(start, end, 45.0);
                     }
-                    catch { bgBrush = GetSolid(theme.WindowBackgroundColor); }
+                    catch
+                    {
+                        bgBrush = GetSolid(theme.WindowBackgroundColor);
+                    }
                     break;
                 default:
                     bgBrush = GetSolid(theme.WindowBackgroundColor);
@@ -182,19 +249,22 @@ namespace Automatization.Services
             resources["ApplicationBackgroundBrush"] = bgBrush;
             resources["WindowBackground"] = bgBrush;
 
-            if (targetResources == null)
+            if (targetResources == null && Application.Current != null)
             {
-                _ = Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(() =>
-                {
-                    foreach (Window window in Application.Current.Windows)
+                _ = Application.Current.Dispatcher.BeginInvoke(
+                    DispatcherPriority.ApplicationIdle,
+                    new Action(() =>
                     {
-                        if (window is FluentWindow fw)
+                        foreach (Window window in Application.Current.Windows)
                         {
-                            fw.WindowBackdropType = WindowBackdropType.None;
-                            fw.Background = bgBrush;
+                            if (window is FluentWindow fw)
+                            {
+                                fw.WindowBackdropType = WindowBackdropType.None;
+                                fw.Background = bgBrush;
+                            }
                         }
-                    }
-                }));
+                    })
+                );
             }
         }
     }

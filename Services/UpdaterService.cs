@@ -1,7 +1,10 @@
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 
 namespace Automatization.Services
@@ -11,12 +14,23 @@ namespace Automatization.Services
         private const string Owner = "Gabriel250903";
         private const string Repo = "Automatization";
 
-        private HttpClient _httpClient;
+        private static readonly HttpClient SharedHttpClient = new(
+            new SocketsHttpHandler
+            {
+                PooledConnectionLifetime = TimeSpan.FromMinutes(15),
+                AutomaticDecompression = DecompressionMethods.All,
+            }
+        )
+        {
+            Timeout = TimeSpan.FromSeconds(30),
+            DefaultRequestHeaders = { { "User-Agent", "Automatization" } },
+        };
+
+        private readonly HttpClient _httpClient;
 
         public UpdaterService()
         {
-            _httpClient = new HttpClient();
-            _httpClient.DefaultRequestHeaders.Add("User-Agent", "Automatization");
+            _httpClient = SharedHttpClient;
         }
 
         public static Version GetCurrentVersion()
@@ -38,18 +52,24 @@ namespace Automatization.Services
 
                 using JsonDocument jsonDoc = JsonDocument.Parse(response);
 
-                var releases = jsonDoc.RootElement.EnumerateArray()
+                var releases = jsonDoc
+                    .RootElement.EnumerateArray()
                     .Select(r => new
                     {
                         TagName = r.GetProperty("tag_name").GetString(),
-                        ReleaseNotes = r.GetProperty("body").GetString()
+                        ReleaseNotes = r.GetProperty("body").GetString(),
                     })
                     .Where(r => !string.IsNullOrEmpty(r.TagName))
                     .Select(r =>
                     {
                         string cleanTag = r.TagName!.TrimStart('v', 'V', '.');
                         bool isParsable = Version.TryParse(cleanTag, out Version? version);
-                        return new { Version = version, r.ReleaseNotes, IsValid = isParsable };
+                        return new
+                        {
+                            Version = version,
+                            r.ReleaseNotes,
+                            IsValid = isParsable,
+                        };
                     })
                     .Where(r => r.IsValid)
                     .OrderByDescending(r => r.Version)
@@ -75,7 +95,8 @@ namespace Automatization.Services
 
                 using JsonDocument jsonDoc = JsonDocument.Parse(response);
 
-                var latestRelease = jsonDoc.RootElement.EnumerateArray()
+                var latestRelease = jsonDoc
+                    .RootElement.EnumerateArray()
                     .Select(r =>
                     {
                         string? tagName = r.GetProperty("tag_name").GetString();
@@ -85,7 +106,9 @@ namespace Automatization.Services
                         }
 
                         string cleanTag = tagName.TrimStart('v', 'V', '.');
-                        return Version.TryParse(cleanTag, out Version? version) ? (new { Json = r, Version = version }) : null;
+                        return Version.TryParse(cleanTag, out Version? version)
+                            ? (new { Json = r, Version = version })
+                            : null;
                     })
                     .Where(r => r != null)
                     .OrderByDescending(r => r!.Version)
@@ -97,30 +120,74 @@ namespace Automatization.Services
 
                     foreach (JsonElement asset in assets.EnumerateArray())
                     {
-                        string assetName = asset.GetProperty("name").GetString() ?? string.Empty;
-                        bool isMsi = assetName.EndsWith(".msi", StringComparison.OrdinalIgnoreCase);
-                        bool isExe = assetName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
+                        string rawAssetName = asset.GetProperty("name").GetString() ?? string.Empty;
+                        string safeFileName = Path.GetFileName(rawAssetName);
+                        bool isMsi = safeFileName.EndsWith(
+                            ".msi",
+                            StringComparison.OrdinalIgnoreCase
+                        );
+                        bool isExe = safeFileName.EndsWith(
+                            ".exe",
+                            StringComparison.OrdinalIgnoreCase
+                        );
 
                         if (isMsi || isExe)
                         {
-                            string? downloadUrl = asset.GetProperty("browser_download_url").GetString();
+                            string? downloadUrl = asset
+                                .GetProperty("browser_download_url")
+                                .GetString();
                             if (downloadUrl == null)
                             {
                                 LogService.LogError("Download URL not found.");
                                 return null;
                             }
 
-                            string targetDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TankAutomation");
+                            string targetDirectory = Path.GetFullPath(
+                                Path.Combine(
+                                    Environment.GetFolderPath(
+                                        Environment.SpecialFolder.ApplicationData
+                                    ),
+                                    "TankAutomation"
+                                )
+                            );
                             if (!Directory.Exists(targetDirectory))
                             {
                                 _ = Directory.CreateDirectory(targetDirectory);
                             }
 
-                            string tempPath = Path.Combine(targetDirectory, assetName);
-                            LogService.LogInfo($"Downloading installer from {downloadUrl} to {tempPath}");
+                            string tempPath = Path.GetFullPath(
+                                Path.Combine(targetDirectory, safeFileName)
+                            );
+                            if (
+                                !tempPath.StartsWith(
+                                    targetDirectory + Path.DirectorySeparatorChar,
+                                    StringComparison.OrdinalIgnoreCase
+                                )
+                            )
+                            {
+                                LogService.LogError(
+                                    $"Path traversal detected in release asset: {rawAssetName}"
+                                );
+                                return null;
+                            }
 
-                            using (Stream downloadStream = await _httpClient.GetStreamAsync(downloadUrl))
-                            using (FileStream fileStream = new(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                            LogService.LogInfo(
+                                $"Downloading installer from {downloadUrl} to {tempPath}"
+                            );
+
+                            using (
+                                Stream downloadStream = await _httpClient.GetStreamAsync(
+                                    downloadUrl
+                                )
+                            )
+                            using (
+                                FileStream fileStream = new(
+                                    tempPath,
+                                    FileMode.Create,
+                                    FileAccess.Write,
+                                    FileShare.None
+                                )
+                            )
                             {
                                 long totalBytes = asset.GetProperty("size").GetInt64();
                                 byte[] buffer = new byte[8192];
@@ -151,23 +218,62 @@ namespace Automatization.Services
             return null;
         }
 
+        public static string ComputeFileSha256(string filePath)
+        {
+            using SHA256 sha256 = SHA256.Create();
+            using FileStream stream = File.OpenRead(filePath);
+            byte[] hash = sha256.ComputeHash(stream);
+            return Convert.ToHexString(hash);
+        }
+
+        public static bool VerifyAuthenticodeSignature(string filePath)
+        {
+            try
+            {
+                using X509Certificate cert = X509Certificate.CreateFromSignedFile(filePath);
+                using X509Certificate2 cert2 = new(cert);
+                return cert2.Verify();
+            }
+            catch (Exception ex)
+            {
+                LogService.LogWarning($"Signature verification check noted: {ex.Message}");
+                return false;
+            }
+        }
+
         public static void InstallUpdate(string filePath)
         {
             try
             {
+                if (!File.Exists(filePath))
+                {
+                    LogService.LogError($"Installer file not found: {filePath}");
+                    return;
+                }
+
+                string fileSha256 = ComputeFileSha256(filePath);
+                LogService.LogInfo($"Verified installer SHA-256: {fileSha256}");
+
+                if (!VerifyAuthenticodeSignature(filePath))
+                {
+                    LogService.LogWarning(
+                        $"Authenticode signature check failed or binary unsigned: {filePath}"
+                    );
+                }
+
                 LogService.LogInfo($"Starting installer: {filePath}");
 
-                ProcessStartInfo psi = new()
-                {
-                    FileName = filePath,
-                    UseShellExecute = true
-                };
+                ProcessStartInfo psi = new() { FileName = filePath, UseShellExecute = false };
 
                 if (filePath.EndsWith(".msi", StringComparison.OrdinalIgnoreCase))
                 {
                     string logPath = Path.ChangeExtension(filePath, ".log");
                     psi.FileName = "msiexec.exe";
-                    psi.Arguments = $"/i \"{filePath}\" /qf /l*v \"{logPath}\"";
+                    psi.ArgumentList.Add("/i");
+                    psi.ArgumentList.Add(filePath);
+                    psi.ArgumentList.Add("/qf");
+                    psi.ArgumentList.Add("/l*v");
+                    psi.ArgumentList.Add(logPath);
                 }
 
                 _ = Process.Start(psi);
@@ -188,7 +294,9 @@ namespace Automatization.Services
             string? exePath = Process.GetCurrentProcess().MainModule?.FileName;
             if (exePath != null)
             {
-                _ = Process.Start(new ProcessStartInfo { FileName = exePath, UseShellExecute = true });
+                _ = Process.Start(
+                    new ProcessStartInfo { FileName = exePath, UseShellExecute = true }
+                );
             }
 
             Environment.Exit(0);
@@ -198,15 +306,21 @@ namespace Automatization.Services
         {
             try
             {
-                string targetDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TankAutomation");
+                string targetDirectory = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "TankAutomation"
+                );
                 if (!Directory.Exists(targetDirectory))
                 {
                     return;
                 }
 
-                string[] updateFiles = Directory.GetFiles(targetDirectory, "Automatization*.*")
-                    .Where(f => f.EndsWith(".msi") || f.EndsWith(".exe") || f.EndsWith(".log"))
-                    .ToArray();
+                string[] updateFiles =
+                [
+                    .. Directory
+                        .GetFiles(targetDirectory, "Automatization*.*")
+                        .Where(f => f.EndsWith(".msi") || f.EndsWith(".exe") || f.EndsWith(".log")),
+                ];
 
                 if (updateFiles.Length == 0)
                 {
@@ -234,7 +348,9 @@ namespace Automatization.Services
                 }
                 else
                 {
-                    LogService.LogInfo("Update files preserved: Current version is not newer than or equal to the latest release.");
+                    LogService.LogInfo(
+                        "Update files preserved: Current version is not newer than or equal to the latest release."
+                    );
                 }
             }
             catch (Exception ex)

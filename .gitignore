@@ -4,6 +4,7 @@
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
 # User-specific files
+secrets.json
 *.rsuser
 *.suo
 *.user
@@ -411,3 +412,6 @@ node_modules/
 
 # Local Secrets Configuration
 secrets.json
+dotnet-tools.json
+Automatization.Tests
+*.ps1

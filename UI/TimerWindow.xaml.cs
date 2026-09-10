@@ -1,11 +1,12 @@
-using Automatization.Settings;
-using Automatization.Utils;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
+using Automatization.Services;
+using Automatization.Settings;
+using Automatization.Utils;
 using Brushes = System.Windows.Media.Brushes;
 
 namespace Automatization.UI
@@ -13,13 +14,13 @@ namespace Automatization.UI
     public partial class TimerWindow : Window
     {
         private DispatcherTimer _timer;
-        private DispatcherTimer _gameCheckTimer;
         private DispatcherTimer _hideTimer;
+        private CancellationTokenSource? _bgLoopCts;
         private int _seconds;
         private const int MaxSeconds = 40;
-        private Process? _gameProcess;
         private string _gameProcessName;
         private bool _isPaused = false;
+        private bool _isGameRunning = false;
 
         private const int GWL_EXSTYLE = -20;
         private const int WS_EX_NOACTIVATE = 0x08000000;
@@ -49,12 +50,10 @@ namespace Automatization.UI
             _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1000) };
             _timer.Tick += Timer_Tick;
 
-            _gameCheckTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
-            _gameCheckTimer.Tick += GameCheckTimer_Tick;
-            _gameCheckTimer.Start();
-
             _hideTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
             _hideTimer.Tick += HideTimer_Tick;
+
+            StartBackgroundGameCheck();
 
             WindowStartupLocation = WindowStartupLocation.Manual;
             Left = 100;
@@ -71,7 +70,11 @@ namespace Automatization.UI
             base.OnSourceInitialized(e);
             WindowInteropHelper helper = new(this);
             IntPtr currentStyle = GetWindowLongPtr(helper.Handle, GWL_EXSTYLE);
-            _ = SetWindowLongPtr(helper.Handle, GWL_EXSTYLE, new IntPtr(currentStyle.ToInt64() | WS_EX_NOACTIVATE));
+            _ = SetWindowLongPtr(
+                helper.Handle,
+                GWL_EXSTYLE,
+                new IntPtr(currentStyle.ToInt64() | WS_EX_NOACTIVATE)
+            );
         }
 
         public void Start()
@@ -107,35 +110,80 @@ namespace Automatization.UI
             }
         }
 
-        private void GameCheckTimer_Tick(object? sender, EventArgs e)
+        private void StartBackgroundGameCheck()
         {
-            Process? currentGame = Process.GetProcessesByName(_gameProcessName).FirstOrDefault();
+            _bgLoopCts = new CancellationTokenSource();
+            CancellationToken token = _bgLoopCts.Token;
 
-            if (currentGame == null)
-            {
-                HandleGameProcessLost();
-                return;
-            }
-            HandleGameProcessFound(currentGame);
+            Task.Run(
+                    async () =>
+                    {
+                        using PeriodicTimer periodicTimer = new(TimeSpan.FromMilliseconds(500));
+                        while (!token.IsCancellationRequested)
+                        {
+                            try
+                            {
+                                if (
+                                    !await periodicTimer
+                                        .WaitForNextTickAsync(token)
+                                        .ConfigureAwait(false)
+                                )
+                                {
+                                    break;
+                                }
+
+                                Process? currentGame = WindowUtils.GetFirstProcessByName(
+                                    _gameProcessName
+                                );
+                                bool isRunning = currentGame != null;
+                                bool isForeground = false;
+
+                                if (currentGame != null)
+                                {
+                                    isForeground = WindowUtils.IsGameWindowInForeground(
+                                        currentGame
+                                    );
+                                    currentGame.Dispose();
+                                }
+
+                                if (!token.IsCancellationRequested)
+                                {
+                                    _ = Dispatcher.InvokeAsync(
+                                        () =>
+                                        {
+                                            OnGameStatusUpdated(isRunning, isForeground);
+                                        },
+                                        DispatcherPriority.Background
+                                    );
+                                }
+                            }
+                            catch (OperationCanceledException)
+                            {
+                                break;
+                            }
+                            catch (Exception ex)
+                            {
+                                LogService.LogWarning(
+                                    $"Background game check error in TimerWindow: {ex.Message}"
+                                );
+                            }
+                        }
+                    },
+                    token
+                )
+                .SafeFireAndForget("TimerWindow.BackgroundGameCheck");
         }
 
-        private void HandleGameProcessFound(Process game)
+        private void OnGameStatusUpdated(bool isRunning, bool isForeground)
         {
-            if (_gameProcess == null)
+            _isGameRunning = isRunning;
+            if (!isRunning)
             {
-                _gameProcess = game;
-            }
-            else if (_gameProcess.Id != game.Id)
-            {
-                _gameProcess.Dispose();
-                _gameProcess = game;
-            }
-            else
-            {
-                game.Dispose();
+                HideTimerWindow();
+                return;
             }
 
-            if (WindowUtils.IsGameWindowInForeground(_gameProcess))
+            if (isForeground)
             {
                 ShowTimerWindow();
             }
@@ -143,13 +191,6 @@ namespace Automatization.UI
             {
                 DebounceHideTimerWindow();
             }
-        }
-
-        private void HandleGameProcessLost()
-        {
-            _gameProcess?.Dispose();
-            _gameProcess = null;
-            HideTimerWindow();
         }
 
         private void ShowTimerWindow()
@@ -191,11 +232,10 @@ namespace Automatization.UI
 
         protected override void OnClosed(EventArgs e)
         {
-            _gameCheckTimer.Stop();
+            _bgLoopCts?.Cancel();
+            _bgLoopCts?.Dispose();
             _timer.Stop();
             _hideTimer.Stop();
-            _gameProcess?.Dispose();
-            _gameProcess = null;
             base.OnClosed(e);
         }
 

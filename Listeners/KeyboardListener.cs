@@ -1,7 +1,7 @@
-using Automatization.Services;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
+using Automatization.Services;
 
 namespace Automatization.Listeners
 {
@@ -29,16 +29,26 @@ namespace Automatization.Listeners
         }
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
+        private static extern IntPtr SetWindowsHookEx(
+            int idHook,
+            LowLevelKeyboardProc lpfn,
+            IntPtr hMod,
+            uint dwThreadId
+        );
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool UnhookWindowsHookEx(IntPtr hhk);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+        private static extern IntPtr CallNextHookEx(
+            IntPtr hhk,
+            int nCode,
+            IntPtr wParam,
+            IntPtr lParam
+        );
 
-        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern IntPtr GetModuleHandle(string? lpModuleName);
 
         public KeyboardListener()
@@ -57,7 +67,9 @@ namespace Automatization.Listeners
             using Process curProcess = Process.GetCurrentProcess();
             using ProcessModule? curModule = curProcess.MainModule;
 
-            return curModule != null ? SetWindowsHookEx(WH_KEYBOARD_LL, proc, GetModuleHandle(curModule.ModuleName), 0) : nint.Zero;
+            return curModule != null
+                ? SetWindowsHookEx(WH_KEYBOARD_LL, proc, GetModuleHandle(curModule.ModuleName), 0)
+                : nint.Zero;
         }
 
         private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
@@ -65,7 +77,7 @@ namespace Automatization.Listeners
             if (nCode >= 0 && lParam != IntPtr.Zero)
             {
                 int msg = (int)wParam;
-                if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN || msg == WM_KEYUP || msg == WM_SYSKEYUP)
+                if (msg is WM_KEYDOWN or WM_SYSKEYDOWN or WM_KEYUP or WM_SYSKEYUP)
                 {
                     KBDLLHOOKSTRUCT kbStruct = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
 
@@ -76,11 +88,11 @@ namespace Automatization.Listeners
 
                     Key key = KeyInterop.KeyFromVirtualKey((int)kbStruct.vkCode);
 
-                    if (msg == WM_KEYUP || msg == WM_SYSKEYUP)
+                    if (msg is WM_KEYUP or WM_SYSKEYUP)
                     {
-                        _pressedKeys.Remove(key);
+                        _ = _pressedKeys.Remove(key);
                     }
-                    else if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN)
+                    else if (msg is WM_KEYDOWN or WM_SYSKEYDOWN)
                     {
                         if (_pressedKeys.Add(key))
                         {
@@ -89,7 +101,9 @@ namespace Automatization.Listeners
                                 Delegate[]? handlers = KeyDown?.GetInvocationList();
                                 if (handlers != null)
                                 {
-                                    foreach (Func<Key, bool> handler in handlers.Cast<Func<Key, bool>>())
+                                    foreach (
+                                        Func<Key, bool> handler in handlers.Cast<Func<Key, bool>>()
+                                    )
                                     {
                                         try
                                         {
@@ -97,14 +111,20 @@ namespace Automatization.Listeners
                                         }
                                         catch (Exception innerEx)
                                         {
-                                            LogService.LogError("Error in synchronous KeyDown callback handler.", innerEx);
+                                            LogService.LogError(
+                                                "Error in synchronous KeyDown callback handler.",
+                                                innerEx
+                                            );
                                         }
                                     }
                                 }
                             }
                             catch (Exception ex)
                             {
-                                LogService.LogError("Error dispatching KeyDown callbacks in KeyboardListener.", ex);
+                                LogService.LogError(
+                                    "Error dispatching KeyDown callbacks in KeyboardListener.",
+                                    ex
+                                );
                             }
                         }
                     }

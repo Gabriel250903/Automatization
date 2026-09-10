@@ -1,7 +1,7 @@
-﻿using Automatization.Services;
+﻿using System.Windows;
+using Automatization.Services;
 using Automatization.Types;
 using Automatization.ViewModels;
-using System.Windows;
 using Wpf.Ui.Controls;
 using Button = System.Windows.Controls.Button;
 using Color = System.Drawing.Color;
@@ -23,7 +23,9 @@ namespace Automatization.UI
         {
             CustomTheme theme = new()
             {
-                Name = string.IsNullOrWhiteSpace(ThemeNameBox.Text) ? "Custom Theme" : ThemeNameBox.Text,
+                Name = string.IsNullOrWhiteSpace(ThemeNameBox.Text)
+                    ? "Custom Theme"
+                    : ThemeNameBox.Text,
                 WindowBackgroundColor = WindowBgHex.Text,
                 WindowGradientEndColor = GradientEndHex.Text,
                 TextColor = TextColorHex.Text,
@@ -31,9 +33,10 @@ namespace Automatization.UI
                 ButtonHoverColor = BtnHoverHex.Text,
                 AccentColor = AccentHex.Text,
                 BackgroundImagePath = ImagePathBox.Text,
-                BackgroundMode = RadioImage.IsChecked == true
-                    ? BackgroundType.Image
-                    : RadioGradient.IsChecked == true ? BackgroundType.Gradient : BackgroundType.Solid
+                BackgroundMode =
+                    RadioImage.IsChecked == true ? BackgroundType.Image
+                    : RadioGradient.IsChecked == true ? BackgroundType.Gradient
+                    : BackgroundType.Solid,
             };
 
             return theme;
@@ -52,20 +55,35 @@ namespace Automatization.UI
 
             if (isDarkTheme)
             {
-                bgPrimary = Color.FromArgb(255, rnd.Next(10, 40), rnd.Next(10, 40), rnd.Next(10, 45));
+                bgPrimary = Color.FromArgb(
+                    255,
+                    rnd.Next(10, 40),
+                    rnd.Next(10, 40),
+                    rnd.Next(10, 45)
+                );
                 text = Color.FromArgb(255, 220, 220, 220);
                 btnBg = Color.FromArgb(40, 255, 255, 255);
                 btnHover = Color.FromArgb(60, 255, 255, 255);
             }
             else
             {
-                bgPrimary = Color.FromArgb(255, rnd.Next(230, 256), rnd.Next(230, 256), rnd.Next(235, 256));
+                bgPrimary = Color.FromArgb(
+                    255,
+                    rnd.Next(230, 256),
+                    rnd.Next(230, 256),
+                    rnd.Next(235, 256)
+                );
                 text = Color.FromArgb(255, 20, 20, 20);
                 btnBg = Color.FromArgb(30, 0, 0, 0);
                 btnHover = Color.FromArgb(50, 0, 0, 0);
             }
 
-            Color accent = Color.FromArgb(255, rnd.Next(50, 255), rnd.Next(50, 255), rnd.Next(50, 255));
+            Color accent = Color.FromArgb(
+                255,
+                rnd.Next(50, 255),
+                rnd.Next(50, 255),
+                rnd.Next(50, 255)
+            );
 
             bool useGradient = rnd.Next(100) < 30;
             Color bgSecondary = bgPrimary;
@@ -122,7 +140,7 @@ namespace Automatization.UI
                 {
                     Title = "Error",
                     Content = "Invalid Color Code. Check your hex values.",
-                    CloseButtonText = "OK"
+                    CloseButtonText = "OK",
                 };
                 _ = uiMessageBox.ShowDialogAsync();
             }
@@ -136,7 +154,7 @@ namespace Automatization.UI
                 {
                     Title = "Missing Name",
                     Content = "Please enter a theme name.",
-                    CloseButtonText = "OK"
+                    CloseButtonText = "OK",
                 };
 
                 _ = uiMessageBox.ShowDialogAsync();
@@ -155,7 +173,7 @@ namespace Automatization.UI
                 {
                     Title = "Save Error",
                     Content = ex.Message,
-                    CloseButtonText = "OK"
+                    CloseButtonText = "OK",
                 };
                 _ = uiMessageBox.ShowDialogAsync();
             }
@@ -169,13 +187,17 @@ namespace Automatization.UI
 
                 try
                 {
-                    Media.Color wpfColor = (Media.Color)Media.ColorConverter.ConvertFromString(targetBox.Text);
+                    Media.Color wpfColor = (Media.Color)
+                        Media.ColorConverter.ConvertFromString(targetBox.Text);
 
-                    colorDialog.Color = Color.FromArgb(wpfColor.A, wpfColor.R, wpfColor.G, wpfColor.B);
+                    colorDialog.Color = Color.FromArgb(
+                        wpfColor.A,
+                        wpfColor.R,
+                        wpfColor.G,
+                        wpfColor.B
+                    );
                 }
-                catch
-                {
-                }
+                catch { }
 
                 if (colorDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                 {
@@ -191,7 +213,7 @@ namespace Automatization.UI
         {
             OpenFileDialog dlg = new()
             {
-                Filter = "Images (*.jpg;*.png;*.bmp)|*.jpg;*.png;*.bmp|All files (*.*)|*.*"
+                Filter = "Images (*.jpg;*.png;*.bmp)|*.jpg;*.png;*.bmp|All files (*.*)|*.*",
             };
 
             if (dlg.ShowDialog() == true)

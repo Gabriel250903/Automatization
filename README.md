@@ -1,102 +1,128 @@
-# Automatization - ProTanki Automation Tool
+# Automatization
 
-Welcome to **Automatization**, a automation suite designed for *ProTanki*. This tool provides features ranging from powerup automation to Smart Health monitoring and Gold Box detection.
+An automation tool and utility suite for ProTanki built with WPF (.NET 8).
 
 ---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-*   Windows 10 or 11 (64-bit recommended).
-*   .NET 8.0 Desktop Runtime.
-*   ProTanki client installed.
+* Windows 10 or 11 (64-bit)
+* .NET 8.0 Desktop Runtime
+* ProTanki client installed
 
-### Launching
-1.  Open `Automatization.exe`.
-2.  If the game path is not automatically detected, click **Launch** or go to **Settings** to browse for your game executable (`ProTanki.exe`).
-3.  Once the game is running, the tool status will change to "Game is running!" and features will become available.
-
----
-
-## 🛠 Features & Usage
-
-### 1. Powerup Automation (1-5 Keys)
-Automatically triggers powerups at regular intervals.
-*   **Usage:**
-    *   Use the **Main Window** to toggle individual powerups (`Repair Kit`, `Double Armor`, `Double Damage`, `Speed Boost`, `Mine`).
-    *   **Sliders:** Adjust the delay (in milliseconds) between activations for each powerup.
-    *   **Global Toggle Hotkey (Default: F5):** Turns ALL powerups ON or OFF instantly.
-*   **Chat Safety:**
-    *   The tool automatically detects when you press **Enter** to open the in-game chat.
-    *   Powerups are **paused** while you type to prevent accidental activation.
-    *   When you close the chat (Enter/Escape), there is a **500ms buffer** before powerups resume to ensure no keys are typed into the chat.
-
-### 2. Smart Repair Kit
-Intelligent health monitoring that uses a Repair Kit only when your health drops below a certain percentage.
-*   **Access:** Click the **Smart Repair** button on the main screen.
-*   **Setup (Calibration - Needed only if the color detection doesn't work as expected):**
-    1.  **Pick Full Color:** Click "Pick Full Color", verify you have full health in-game, and hover your mouse over the **full** part of your health bar. Wait for the countdown.
-    2.  **Pick Empty Color:** Click "Pick Empty Color", take damage, and hover over the **empty** background of the health bar.
-    3.  **Apply Colors:** Click "Apply Colors" to save these settings.
-*   **Configuration:**
-    *   **Threshold:** Set the health percentage (e.g., 40%) at which the repair kit triggers.
-    *   **Cooldown:** Set the minimum time (ms) between triggers. Recommended & Default: 5000ms to avoid issues & spamming.
-    *   **Key:** Select the keybind for Repair Kit (Default: 1).
-
-### 3. Team Auto-Clicker
-Automatically joins battles by clicking the Red or Blue team button repeatedly.
-*   **Usage:**
-    1.  Select **Click Type** (Left, Right, Middle, Double).
-    2.  Click **Auto Red Team** or **Auto Blue Team**.
-    3.  The tool will click the configured screen coordinates repeatedly until stopped.
-*   **Configuration:** Go to **Settings** > **Pick Coordinates** to set the exact screen location of the "Join" buttons for your resolution.
+### Usage
+1. Run `Automatization.exe`.
+2. If the game isn't detected automatically, click **Launch Game** or open **Settings** to point to `ProTanki.exe`.
+3. When the game is running, the main window will show "Game is running!" and your hotkeys will become active.
 
 ---
 
-## ⚙️ Configuration (Settings Window)
+## 🛠 Features
 
-Access by clicking the **Settings** (gear) icon.
-
-### General
-*   **Game Process Name:** Name of the game window/process (Default: `ProTanki`). *Admin unlockable.*
-*   **Game Executable Path:** Manually browse for the game `.exe` if auto-detection fails.
-*   **Click Speed:** Global speed for the Team Auto-Clicker (ms between clicks).
-*   **Smart Repair Kit FPS:** Screen capture framerate (Default: 60 fps).
-
-### Coordinates
-*   **Red/Blue Team (X, Y):** Use the **Pick** buttons to interactively select screen locations for the auto-clicker.
-
-### Keybinds (Hotkeys)
-Customize the keys used for automation.
-*   **Global Toggle:** Master switch for powerups (Default: F5).
-*   **Red/Blue Team:** Hotkeys to toggle clickers (Default: F6 / F7).
-*   **Gold Box Timer:** Hotkey to spawn a manual timer (Default: F8).
-*   **Powerup Keys:** Remap which key sends "Repair Kit", "Double Damage", etc. (Default: 1-5).
-*   **Smart Repair Keys:** Hotkeys for toggling monitoring and debugging (Default: F9/F10)
-
-**Note:** All inputs support standard keyboard keys (QWERTY keyboard layout)
-
-### Theming
-*   **Presets:** Choose between Light and Dark themes.
-*   **Theme Creator:** Create your own custom look!
-    *   Solid, Gradient, or Image backgrounds.
-    *   Custom colors for Text, Buttons, Accents, and Windows.
-    *   Saved themes appear in the dropdown list.
-
-### Updates
-*   **Check for Updates:** The tool connects to the GitHub repository to check for new releases.
-*   **Auto-Update:** Downloads and installs updates automatically if available.
+### 1. Macro Manager
+Build and run custom macros using either the visual block builder or the script editor.
+* **AutoScript Language:** Custom scripting syntax for key presses, holds, mouse clicks, delays, loops (`repeat`, `while`), and pixel checks (`if pixel(...) == #hex`).
+* **Visual Builder:** Assemble actions without coding (Key Press, Delay, Mouse Click, Check Pixel, Loops).
+* **Screen Picker:** Click to grab screen coordinates `(X, Y)` and pixel colors with a magnifying loupe.
+* **Execution Modes:**
+  * **Forever (Toggle):** Press the hotkey once to start looping, press again to stop.
+  * **Timed:** Runs for a set amount of seconds, then stops.
+  * **Once:** Runs the macro sequence one time.
+* **Targeting:**
+  * **ProTanki (Background):** Sends inputs directly to the game window without needing to Alt-Tab into it.
+  * **Global (Foreground):** Sends real keyboard/mouse inputs to whatever window currently has focus.
+* **Humanize:** Adds a slight random timing variation (±10%) to delays so actions don't happen at robotically identical intervals.
+* **Import / Export:** Share macros with others using `.azmacro` files.
+* **Docs:** Check the [AutoScript Language Guide](Macros/README.md) or click **Docs** in the Macro Manager.
 
 ---
 
-## 📝 Logs (Log Viewer)
-Access by clicking **Logs** in the Settings window.
-*   Displays a feed of application events.
-*   Useful for verifying if features are working or debugging issues.
+### 2. Supplies Clicker (Keys 1-5)
+Automatically spams battle supplies at custom intervals.
+* **Supported Supplies:** Repair Kit (1), Double Armor (2), Double Damage (3), Speed Boost (4), and Mine (5).
+* **Delays:** Set individual delay intervals for each supply in milliseconds.
+* **Master Hotkey (`F5`):** Toggle all active supply clickers on or off with one key.
+* **Chat Detection:** Automatically pauses when you press **Enter** to open chat so you don't type numbers into chat, then resumes a short buffer after closing.
 
 ---
 
-## ⚠️ Troubleshooting & Notes
+### 3. Smart Repair Kit
+Watches your health bar and automatically presses Repair Kit (1) when your health falls below a set threshold.
+* **Calibration:**
+  1. Click **Pick Full Color**, hover over your filled green health bar in-game, and let the timer lock it.
+  2. Click **Pick Empty Color**, take damage in battle, and hover over the empty health bar background.
+  3. Click **Apply Colors** to save.
+* **Settings:**
+  * **Health Threshold:** Percent (e.g. 40%) that triggers repair.
+  * **Cooldown:** Delay between repairs (default: 5000ms) to avoid spamming.
+  * **Toggle Hotkey:** `F9` toggles monitoring, `F10` opens the debug preview window.
 
-*   **Admin Privileges:** Some features (like simulating input or capturing screens) require a password. To get the password, please DM Noizy on discord - noizy3345.
-*   **Screen Scaling:** If coordinates (Auto-Clicker) or detection (Smart Repair) seem off, ensure your Windows Display Scale is set to 100% and re-calibrate your coordinates.
+---
+
+### 4. Team Auto-Clicker
+Clicks the Red or Blue team join buttons in the battle lobby so you can join full battles as soon as a spot opens.
+* **Click Types:** Left, Right, Middle, or Double click.
+* **Coordinates:** Use **Pick Coordinates** in Settings to set the join button location for your resolution.
+* **Click Speed:** Change the interval between clicks in Settings.
+
+---
+
+### 5. Discount Calculator
+Calculate crystal costs for garage upgrades and sales.
+* Includes all hulls, turrets, protection modules, and paints with modification tiers (M0–M3).
+* Configure discount percentages to see how many crystals you'll need during sales events.
+* Side-by-side comparison mode to compare prices and upgrade paths between items.
+* Calculates step costs, speed-up discounts, and total crystals needed.
+
+---
+
+### 6. Gold Box Timer
+A floating countdown timer overlay for tracking gold box drops.
+* Press `F8` in-game to spawn an on-screen countdown timer.
+* Right-click the timer to pause or close it.
+* Supports transparent background mode and multiple stacked timers.
+
+---
+
+## ⚙️ Settings & Customization
+
+Access settings by clicking the gear icon on the main window.
+
+### Hotkeys (Keyboard & Mouse)
+* Supports all standard keys (`A-Z`, `0-9`, `F1-F24`, modifiers `Ctrl`, `Shift`, `Alt`) plus mouse buttons (**Middle Click**, **Mouse 4**, and **Mouse 5**).
+* To unbind a key, select the hotkey box and press `Delete`.
+* Check **Pause Hotkeys** on the main window to disable all shortcuts temporarily.
+
+### Default Keybinds
+| Action | Default Hotkey |
+| :--- | :--- |
+| **Supplies Toggle** | `F5` |
+| **Auto Red Team** | `F6` |
+| **Auto Blue Team** | `F7` |
+| **Gold Box Timer** | `F8` |
+| **Smart Repair Toggle** | `F9` |
+| **Smart Repair Debug** | `F10` |
+| **Supplies (1-5)** | `1`, `2`, `3`, `4`, `5` |
+
+### Discord Rich Presence
+* Shows your current game status on your Discord profile.
+* You can customize the Client ID, details text, and state template in Settings.
+
+### Localization
+* Available in English (`en-US`), German (`de-DE`), Polish (`pl-PL`), Portuguese (`pt-BR`, `pt-PT`), Russian (`ru-RU`), Ukrainian (`uk-UA`), and Chinese (`zh-CN`). Switch anytime in Settings.
+
+### Themes & Theme Creator
+* Built-in Dark and Light themes.
+* Includes a **Theme Creator** to customize your own accent colors, window backgrounds, and gradients.
+
+### Updates & Logs
+* **Auto-Updater:** Checks GitHub for new releases with one-click updates.
+* **Log Viewer:** View live event logs for troubleshooting.
+
+---
+
+## ⚠️ Notes
+
+* **DPI Scaling:** If coordinates or pixel detection look offset, make sure your Windows display scale is at 100% or re-pick coordinates at your current scaling.
+* **Input Blocking:** The app filters out its own simulated inputs to avoid triggering hotkey loops.

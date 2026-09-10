@@ -1,7 +1,7 @@
-using Automatization.Services;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
+using Automatization.Services;
 using Wpf.Ui.Controls;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using MessageBox = Wpf.Ui.Controls.MessageBox;
@@ -22,10 +22,17 @@ namespace Automatization.UI
             set => SetValue(ImagePathProperty, value);
         }
 
-        public static readonly DependencyProperty ImagePathProperty =
-            DependencyProperty.Register("ImagePath", typeof(string), typeof(ImageViewerWindow), new PropertyMetadata(null, OnImagePathChanged));
+        public static readonly DependencyProperty ImagePathProperty = DependencyProperty.Register(
+            "ImagePath",
+            typeof(string),
+            typeof(ImageViewerWindow),
+            new PropertyMetadata(null, OnImagePathChanged)
+        );
 
-        private static void OnImagePathChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        private static void OnImagePathChanged(
+            DependencyObject d,
+            DependencyPropertyChangedEventArgs e
+        )
         {
             if (d is ImageViewerWindow window && e.NewValue is string path)
             {
@@ -45,7 +52,10 @@ namespace Automatization.UI
 
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (Keyboard.Modifiers == ModifierKeys.Control && (e.Key == Key.D0 || e.Key == Key.NumPad0))
+            if (
+                Keyboard.Modifiers == ModifierKeys.Control
+                && (e.Key == Key.D0 || e.Key == Key.NumPad0)
+            )
             {
                 FitImageToWindow();
                 e.Handled = true;
@@ -81,7 +91,7 @@ namespace Automatization.UI
                     Title = "Image Load Error",
                     Content = $"Failed to load image: {ex.Message}",
                     CloseButtonText = "OK",
-                    Owner = this
+                    Owner = this,
                 };
                 _ = uiMessageBox.ShowDialogAsync();
 
@@ -146,7 +156,10 @@ namespace Automatization.UI
             _ = DisplayedImage.CaptureMouse();
 
             _start = e.GetPosition(ImageScrollViewer);
-            _origin = new Point(ImageScrollViewer.HorizontalOffset, ImageScrollViewer.VerticalOffset);
+            _origin = new Point(
+                ImageScrollViewer.HorizontalOffset,
+                ImageScrollViewer.VerticalOffset
+            );
         }
 
         private void Image_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)

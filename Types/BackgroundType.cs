@@ -4,6 +4,6 @@
     {
         Solid,
         Gradient,
-        Image
+        Image,
     }
 }

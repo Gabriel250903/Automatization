@@ -1,8 +1,8 @@
-using Automatization.Services;
 using System.Globalization;
 using System.IO;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
+using Automatization.Services;
 
 namespace Automatization.Converters
 {
@@ -34,7 +34,12 @@ namespace Automatization.Converters
             return null;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object ConvertBack(
+            object value,
+            Type targetType,
+            object parameter,
+            CultureInfo culture
+        )
         {
             throw new NotImplementedException();
         }

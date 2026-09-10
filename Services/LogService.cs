@@ -1,5 +1,6 @@
-using Serilog;
 using System.IO;
+using Automatization.Utils;
+using Serilog;
 
 namespace Automatization.Services
 {
@@ -21,7 +22,10 @@ namespace Automatization.Services
             string logDirectory = GetLogDirectory();
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
-                .WriteTo.File(Path.Combine(logDirectory, $"log-{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.txt"), shared: true)
+                .WriteTo.File(
+                    Path.Combine(logDirectory, $"log-{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.txt"),
+                    shared: true
+                )
                 .CreateLogger();
         }
 
@@ -49,55 +53,66 @@ namespace Automatization.Services
         {
             string logDirectory = GetLogDirectory();
             DirectoryInfo dirInfo = new(logDirectory);
-            FileInfo? latestLogFile = dirInfo.GetFiles("*.txt")
-                                              .OrderByDescending(f => f.LastWriteTime)
-                                              .FirstOrDefault();
+            FileInfo? latestLogFile = dirInfo
+                .GetFiles("*.txt")
+                .OrderByDescending(f => f.LastWriteTime)
+                .FirstOrDefault();
             return latestLogFile?.FullName ?? string.Empty;
         }
 
         public static void CleanupOldLogsAsync()
         {
-            _ = Task.Run(() =>
-            {
-                try
+            Task.Run(() =>
                 {
-                    string logDirectory = Path.Combine(
-                        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                        "TankAutomation",
-                        "Logs"
-                    );
-
-                    if (!Directory.Exists(logDirectory))
+                    try
                     {
-                        return;
-                    }
+                        string logDirectory = Path.Combine(
+                            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                            "TankAutomation",
+                            "Logs"
+                        );
 
-                    DirectoryInfo dirInfo = new(logDirectory);
-
-                    FileInfo[] oldFiles = [.. dirInfo.GetFiles("*.txt").Where(f => f.LastWriteTime < DateTime.Now.AddDays(-1))];
-
-                    if (oldFiles.Length > 0)
-                    {
-                        foreach (FileInfo file in oldFiles)
+                        if (!Directory.Exists(logDirectory))
                         {
-                            try
-                            {
-                                file.Delete();
-                            }
-                            catch
-                            {
-                                LogService.LogError($"Could not delete log file: {file.FullName}.");
-                            }
+                            return;
                         }
 
-                        LogService.LogInfo($"Cleanup: Deleted {oldFiles.Length} {(oldFiles.Length == 1 ? "log" : "logs")}.");
+                        DirectoryInfo dirInfo = new(logDirectory);
+
+                        FileInfo[] oldFiles =
+                        [
+                            .. dirInfo
+                                .GetFiles("*.txt")
+                                .Where(f => f.LastWriteTime < DateTime.Now.AddDays(-1)),
+                        ];
+
+                        if (oldFiles.Length > 0)
+                        {
+                            foreach (FileInfo file in oldFiles)
+                            {
+                                try
+                                {
+                                    file.Delete();
+                                }
+                                catch
+                                {
+                                    LogService.LogError(
+                                        $"Could not delete log file: {file.FullName}."
+                                    );
+                                }
+                            }
+
+                            LogService.LogInfo(
+                                $"Cleanup: Deleted {oldFiles.Length} {(oldFiles.Length == 1 ? "log" : "logs")}."
+                            );
+                        }
                     }
-                }
-                catch (Exception ex)
-                {
-                    LogService.LogError("Error during log cleanup.", ex);
-                }
-            });
+                    catch (Exception ex)
+                    {
+                        LogService.LogError("Error during log cleanup.", ex);
+                    }
+                })
+                .SafeFireAndForget("LogService.CleanupOldLogsAsync");
         }
     }
 }

@@ -5,6 +5,6 @@ namespace Automatization.Types
         Unknown,
         Red,
         Blue,
-        Green
+        Green,
     }
 }

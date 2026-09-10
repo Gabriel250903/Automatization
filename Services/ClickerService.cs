@@ -1,6 +1,7 @@
+using System.Diagnostics;
 using Automatization.Settings;
 using Automatization.Types;
-using System.Diagnostics;
+using Automatization.Utils;
 using Timer = System.Threading.Timer;
 
 namespace Automatization.Services
@@ -34,7 +35,10 @@ namespace Automatization.Services
         {
             lock (_processLock)
             {
-                if (_cachedProcess == null || (DateTime.Now - _lastProcessCheck).TotalSeconds >= 2.0)
+                if (
+                    _cachedProcess == null
+                    || (DateTime.Now - _lastProcessCheck).TotalSeconds >= 2.0
+                )
                 {
                     if (_cachedProcess != null)
                     {
@@ -43,16 +47,18 @@ namespace Automatization.Services
                             _cachedProcess.Refresh();
                             if (_cachedProcess.HasExited)
                             {
+                                _cachedProcess.Dispose();
                                 _cachedProcess = null;
                             }
                         }
                         catch
                         {
+                            _cachedProcess?.Dispose();
                             _cachedProcess = null;
                         }
                     }
 
-                    _cachedProcess ??= Process.GetProcessesByName(gameProcessName).FirstOrDefault();
+                    _cachedProcess ??= WindowUtils.GetFirstProcessByName(gameProcessName);
 
                     _lastProcessCheck = DateTime.Now;
                 }
@@ -61,11 +67,15 @@ namespace Automatization.Services
             }
         }
 
-        public Guid Register(Action<IntPtr, ClickType> clickAction, ClickType clickType, string gameProcessName)
+        public Guid Register(
+            Action<IntPtr, ClickType> clickAction,
+            ClickType clickType,
+            string gameProcessName
+        )
         {
             Guid id = Guid.NewGuid();
 
-            System.Threading.Timer timer = new(
+            Timer timer = new(
                 _ =>
                 {
                     Process? gameProcess = GetGameProcess(gameProcessName);
@@ -81,13 +91,14 @@ namespace Automatization.Services
                         }
                         catch (Exception ex)
                         {
-                            LogService.LogError("Process might have exited or been disposed.", ex); 
+                            LogService.LogError("Process might have exited or been disposed.", ex);
                         }
                     }
                 },
                 null,
                 0,
-                (int)ClickSpeed);
+                (int)ClickSpeed
+            );
 
             lock (_timers)
             {
@@ -100,7 +111,7 @@ namespace Automatization.Services
         {
             lock (_timers)
             {
-                if (_timers.TryGetValue(id, out System.Threading.Timer? timerInfo))
+                if (_timers.TryGetValue(id, out Timer? timerInfo))
                 {
                     timerInfo.Dispose();
                     _ = _timers.Remove(id);
@@ -114,12 +125,18 @@ namespace Automatization.Services
         {
             lock (_timers)
             {
-                foreach (System.Threading.Timer timer in _timers.Values)
+                foreach (Timer timer in _timers.Values)
                 {
                     timer.Dispose();
                 }
 
                 _timers.Clear();
+            }
+
+            lock (_processLock)
+            {
+                _cachedProcess?.Dispose();
+                _cachedProcess = null;
             }
 
             LogService.LogInfo("Clicker service disposed.");
@@ -129,7 +146,7 @@ namespace Automatization.Services
         {
             lock (_timers)
             {
-                foreach (System.Threading.Timer timer in _timers.Values)
+                foreach (Timer timer in _timers.Values)
                 {
                     _ = timer.Change(0, (int)ClickSpeed);
                 }

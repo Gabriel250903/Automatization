@@ -1,10 +1,10 @@
-using Automatization.Services;
-using Automatization.Settings;
-using Automatization.Types;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Automatization.Services;
+using Automatization.Settings;
+using Automatization.Types;
 using Wpf.Ui.Controls;
 using Application = System.Windows.Application;
 using Media = System.Windows.Media;
@@ -27,6 +27,15 @@ namespace Automatization.UI
             LoadSettings();
             PopulateKeys();
             UpdateConfig();
+
+            Closed += SmartRepairKitWindow_Closed;
+        }
+
+        private void SmartRepairKitWindow_Closed(object? sender, EventArgs e)
+        {
+            _service.OnStateUpdated -= Service_OnStateUpdated;
+            _service.Stop();
+            _service.Dispose();
         }
 
         public void ToggleMonitoring()
@@ -50,13 +59,16 @@ namespace Automatization.UI
             _service.TargetFps = settings.SmartRepairFps;
             _service.GameProcessName = settings.GameProcessName;
 
-            BtnToggle.Content = settings.SmartRepairToggleHotKey != null
-                ? $"{(string)Application.Current.Resources["SmartRepair_Start"]} ({settings.SmartRepairToggleHotKey})"
-                : (string)Application.Current.Resources["SmartRepair_Start"];
+            BtnToggle.Content =
+                settings.SmartRepairToggleHotKey != null
+                    ? $"{(string)Application.Current.Resources["SmartRepair_Start"]} ({settings.SmartRepairToggleHotKey})"
+                    : (string)Application.Current.Resources["SmartRepair_Start"];
 
-            if (settings.UseCustomHealthColors &&
-                !string.IsNullOrEmpty(settings.CustomHealthBrightColor) &&
-                !string.IsNullOrEmpty(settings.CustomHealthDarkColor))
+            if (
+                settings.UseCustomHealthColors
+                && !string.IsNullOrEmpty(settings.CustomHealthBrightColor)
+                && !string.IsNullOrEmpty(settings.CustomHealthDarkColor)
+            )
             {
                 try
                 {
@@ -75,7 +87,9 @@ namespace Automatization.UI
                 }
                 catch (Exception ex)
                 {
-                    LogService.LogError($"Failed to parse custom colors from settings: {ex.Message}.");
+                    LogService.LogError(
+                        $"Failed to parse custom colors from settings: {ex.Message}."
+                    );
                 }
             }
         }
@@ -98,7 +112,16 @@ namespace Automatization.UI
         {
             List<Key> keys =
             [
-                Key.D0, Key.D1, Key.D2, Key.D3, Key.D4, Key.D5, Key.D6, Key.D7, Key.D8, Key.D9
+                Key.D0,
+                Key.D1,
+                Key.D2,
+                Key.D3,
+                Key.D4,
+                Key.D5,
+                Key.D6,
+                Key.D7,
+                Key.D8,
+                Key.D9,
             ];
 
             CmbKey.ItemsSource = keys;
@@ -132,15 +155,12 @@ namespace Automatization.UI
 
         private void BtnDebug_Click(object? sender, RoutedEventArgs? e)
         {
-            AdminPasswordDialog passwordDialog = new() { Owner = this };
-            if (passwordDialog.ShowDialog() != true)
-            {
-                return;
-            }
-
             try
             {
-                string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "debug_capture.png");
+                string path = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+                    "debug_capture.png"
+                );
 
                 using ScreenCaptureService tempCapture = new();
                 using (Bitmap bmp = tempCapture.Capture())
@@ -159,7 +179,13 @@ namespace Automatization.UI
                             using Font font = new("Arial", 20);
                             using SolidBrush brush = new(Color.Yellow);
 
-                            g.DrawString($"{state.HealthPercentage:F1}%", font, brush, state.Bounds.X, state.Bounds.Y - 30);
+                            g.DrawString(
+                                $"{state.HealthPercentage:F1}%",
+                                font,
+                                brush,
+                                state.Bounds.X,
+                                state.Bounds.Y - 30
+                            );
                         }
                         else
                         {
@@ -172,7 +198,10 @@ namespace Automatization.UI
                     bmp.Save(path, System.Drawing.Imaging.ImageFormat.Png);
                 }
 
-                _ = MessageBox.Show($"Screenshot saved to:\n{path}\n\nLook for a RED BOX. If the box only covers the 'Full' part of your bar, the tool is learning the width. Go to 100% health once to fix it.", "Debug Capture");
+                _ = MessageBox.Show(
+                    $"Screenshot saved to:\n{path}\n\nLook for a RED BOX. If the box only covers the 'Full' part of your bar, the tool is learning the width. Go to 100% health once to fix it.",
+                    "Debug Capture"
+                );
             }
             catch (Exception ex)
             {
@@ -182,35 +211,37 @@ namespace Automatization.UI
 
         private void Service_OnStateUpdated(HealthBarStruct state)
         {
-            _ = Dispatcher.BeginInvoke(new Action(() =>
-            {
-                if (!_isMonitoring)
+            _ = Dispatcher.BeginInvoke(
+                new Action(() =>
                 {
-                    return;
-                }
-
-                if (state.IsFound)
-                {
-                    TxtStatus.Text = $"Tracking health bar...";
-                    TxtStatus.Foreground = Media.Brushes.Green;
-
-                    TxtHealth.Text = $"{state.HealthPercentage:F0}%";
-
-                    if (state.HealthPercentage < SldThreshold.Value)
+                    if (!_isMonitoring)
                     {
-                        TxtHealth.Foreground = Media.Brushes.Red;
+                        return;
+                    }
+
+                    if (state.IsFound)
+                    {
+                        TxtStatus.Text = $"Tracking health bar...";
+                        TxtStatus.Foreground = Media.Brushes.Green;
+
+                        TxtHealth.Text = $"{state.HealthPercentage:F0}%";
+
+                        if (state.HealthPercentage < SldThreshold.Value)
+                        {
+                            TxtHealth.Foreground = Media.Brushes.Red;
+                        }
+                        else
+                        {
+                            TxtHealth.ClearValue(Wpf.Ui.Controls.TextBlock.ForegroundProperty);
+                        }
                     }
                     else
                     {
-                        TxtHealth.ClearValue(Wpf.Ui.Controls.TextBlock.ForegroundProperty);
+                        TxtStatus.Text = "Searching...";
+                        TxtStatus.Foreground = Media.Brushes.Orange;
                     }
-                }
-                else
-                {
-                    TxtStatus.Text = "Searching...";
-                    TxtStatus.Foreground = Media.Brushes.Orange;
-                }
-            }));
+                })
+            );
         }
 
         private Media.Color _pickedFullColor = Media.Colors.Gray;
@@ -218,12 +249,28 @@ namespace Automatization.UI
 
         private async void BtnPickFull_Click(object sender, RoutedEventArgs e)
         {
-            await PickColorAsync(true);
+            try
+            {
+                await PickColorAsync(true);
+            }
+            catch (Exception ex)
+            {
+                LogService.LogError("Failed to pick full color", ex);
+                TxtStatus.Text = $"Error: {ex.Message}";
+            }
         }
 
         private async void BtnPickEmpty_Click(object sender, RoutedEventArgs e)
         {
-            await PickColorAsync(false);
+            try
+            {
+                await PickColorAsync(false);
+            }
+            catch (Exception ex)
+            {
+                LogService.LogError("Failed to pick empty color", ex);
+                TxtStatus.Text = $"Error: {ex.Message}";
+            }
         }
 
         private async Task PickColorAsync(bool isFull)
@@ -240,10 +287,17 @@ namespace Automatization.UI
             using (Bitmap bmp = capture.Capture())
             {
                 System.Drawing.Point point = System.Windows.Forms.Cursor.Position;
-                capturedColor = point.X >= 0 && point.X < bmp.Width && point.Y >= 0 && point.Y < bmp.Height ? bmp.GetPixel(point.X, point.Y) : Color.Black;
+                capturedColor =
+                    point.X >= 0 && point.X < bmp.Width && point.Y >= 0 && point.Y < bmp.Height
+                        ? bmp.GetPixel(point.X, point.Y)
+                        : Color.Black;
             }
 
-            System.Windows.Media.Color mediaColor = System.Windows.Media.Color.FromRgb(capturedColor.R, capturedColor.G, capturedColor.B);
+            System.Windows.Media.Color mediaColor = System.Windows.Media.Color.FromRgb(
+                capturedColor.R,
+                capturedColor.G,
+                capturedColor.B
+            );
             if (isFull)
             {
                 _pickedFullColor = mediaColor;
@@ -267,7 +321,11 @@ namespace Automatization.UI
             }
 
             Color c1 = Color.FromArgb(_pickedFullColor.R, _pickedFullColor.G, _pickedFullColor.B);
-            Color c2 = Color.FromArgb(_pickedEmptyColor.R, _pickedEmptyColor.G, _pickedEmptyColor.B);
+            Color c2 = Color.FromArgb(
+                _pickedEmptyColor.R,
+                _pickedEmptyColor.G,
+                _pickedEmptyColor.B
+            );
 
             _service.UpdateColors(c1, c2);
 
@@ -280,12 +338,18 @@ namespace Automatization.UI
             TxtStatus.Text = "Custom colors applied & saved!";
         }
 
-        private void SldThreshold_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        private void SldThreshold_ValueChanged(
+            object sender,
+            RoutedPropertyChangedEventArgs<double> e
+        )
         {
             UpdateConfig();
         }
 
-        private void SldCooldown_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        private void SldCooldown_ValueChanged(
+            object sender,
+            RoutedPropertyChangedEventArgs<double> e
+        )
         {
             UpdateConfig();
         }
@@ -297,11 +361,15 @@ namespace Automatization.UI
 
         private void BtnTestInput_Click(object sender, RoutedEventArgs e)
         {
-            _ = MessageBox.Show("In 5 seconds, the tool will press the selected key.\n\nOpen the in-game chat to verify if it types.", "Input Test");
-            _ = Task.Delay(5000).ContinueWith(_ =>
-            {
-                _service.ForceTrigger();
-            });
+            _ = MessageBox.Show(
+                "In 5 seconds, the tool will press the selected key.\n\nOpen the in-game chat to verify if it types.",
+                "Input Test"
+            );
+            _ = Task.Delay(5000)
+                .ContinueWith(_ =>
+                {
+                    _service.ForceTrigger();
+                });
         }
 
         private void UpdateConfig()

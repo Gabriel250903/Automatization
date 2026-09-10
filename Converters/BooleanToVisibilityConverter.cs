@@ -10,7 +10,10 @@ namespace Automatization.Converters
         {
             if (value is bool boolValue)
             {
-                if (parameter is string paramString && paramString.Equals("Inverse", StringComparison.OrdinalIgnoreCase))
+                if (
+                    parameter is string paramString
+                    && paramString.Equals("Inverse", StringComparison.OrdinalIgnoreCase)
+                )
                 {
                     boolValue = !boolValue;
                 }
@@ -20,7 +23,12 @@ namespace Automatization.Converters
             return Visibility.Collapsed;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object ConvertBack(
+            object value,
+            Type targetType,
+            object parameter,
+            CultureInfo culture
+        )
         {
             return value is Visibility visibility && visibility == Visibility.Visible;
         }

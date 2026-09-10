@@ -1,527 +1,536 @@
 <ui:FluentWindow
-    x:Class="Automatization.SettingsWindow"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:controls="clr-namespace:Automatization.Controls"
-    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-    Title="Settings"
-    Width="580"
-    Height="780"
-    ExtendsContentIntoTitleBar="True"
-    FontFamily="Segoe UI"
-    WindowBackdropType="Mica"
-    WindowStartupLocation="CenterOwner">
-    <Window.Resources>
-        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
-        <Style BasedOn="{StaticResource {x:Type TextBox}}" TargetType="{x:Type controls:HotKeyBox}">
-            <Setter Property="Height" Value="35" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="Padding" Value="10,0" />
-            <Setter Property="Cursor" Value="Arrow" />
-            <Setter Property="ToolTip" Value="Click to edit. Press Backspace or Delete to unbind." />
+  x:Class="Automatization.SettingsWindow"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:controls="clr-namespace:Automatization.Controls"
+  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+  Title="Settings"
+  Width="580"
+  Height="780"
+  ExtendsContentIntoTitleBar="True"
+  FontFamily="Segoe UI"
+  WindowBackdropType="Mica"
+  WindowStartupLocation="CenterOwner"
+>
+  <Window.Resources>
+    <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    <Style BasedOn="{StaticResource {x:Type TextBox}}" TargetType="{x:Type controls:HotKeyBox}">
+      <Setter Property="Height" Value="35" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Padding" Value="10,0" />
+      <Setter Property="Cursor" Value="Arrow" />
+      <Setter Property="ToolTip" Value="Click to edit. Press Backspace or Delete to unbind." />
 
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
-                </Trigger>
+      <Style.Triggers>
+        <Trigger Property="IsMouseOver" Value="True">
+          <Setter
+            Property="BorderBrush"
+            Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"
+          />
+        </Trigger>
 
-                <Trigger Property="IsFocused" Value="True">
-                    <Setter Property="FontWeight" Value="Bold" />
-                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
-                    <Setter Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
-                </Trigger>
-            </Style.Triggers>
-        </Style>
+        <Trigger Property="IsFocused" Value="True">
+          <Setter Property="FontWeight" Value="Bold" />
+          <Setter
+            Property="Foreground"
+            Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"
+          />
+          <Setter
+            Property="BorderBrush"
+            Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"
+          />
+        </Trigger>
+      </Style.Triggers>
+    </Style>
 
-        <Style BasedOn="{StaticResource {x:Type ui:TextBox}}" TargetType="{x:Type ui:TextBox}">
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
-                </Trigger>
+    <Style BasedOn="{StaticResource {x:Type ui:TextBox}}" TargetType="{x:Type ui:TextBox}">
+      <Style.Triggers>
+        <Trigger Property="IsMouseOver" Value="True">
+          <Setter
+            Property="BorderBrush"
+            Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"
+          />
+        </Trigger>
 
-                <Trigger Property="IsFocused" Value="True">
-                    <Setter Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
+        <Trigger Property="IsFocused" Value="True">
+          <Setter
+            Property="BorderBrush"
+            Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"
+          />
 
-                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
-                    <Setter Property="FontWeight" Value="Bold" />
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-    </Window.Resources>
+          <Setter
+            Property="Foreground"
+            Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"
+          />
+          <Setter Property="FontWeight" Value="Bold" />
+        </Trigger>
+      </Style.Triggers>
+    </Style>
+  </Window.Resources>
 
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
 
-        <ui:TitleBar Title="{DynamicResource Settings_Title}" Grid.Row="0" />
+    <ui:TitleBar Title="{DynamicResource Settings_Title}" Grid.Row="0" />
 
-        <ScrollViewer
-            Grid.Row="1"
-            Padding="25"
-            VerticalScrollBarVisibility="Auto">
-            <StackPanel>
+    <ScrollViewer Grid.Row="1" Padding="25" VerticalScrollBarVisibility="Auto">
+      <StackPanel>
+        <ui:TextBlock
+          Margin="0,0,0,10"
+          FontTypography="Subtitle"
+          Text="{DynamicResource Settings_General}"
+        />
 
-                <ui:TextBlock
-                    Margin="0,0,0,10"
-                    FontTypography="Subtitle"
-                    Text="{DynamicResource Settings_General}" />
+        <ui:TextBlock
+          Margin="0,0,0,5"
+          FontTypography="BodyStrong"
+          Text="{DynamicResource Settings_ProcessName}"
+          ToolTip="{DynamicResource Settings_ProcessNameTooltip}"
+        />
+        <ui:TextBox
+          x:Name="GameProcessNameTextBox"
+          Margin="0,0,0,15"
+          IsReadOnly="True"
+          PlaceholderText="ProTanki"
+        />
 
-                <ui:TextBlock
-                    Margin="0,0,0,5"
-                    FontTypography="BodyStrong"
-                    Text="{DynamicResource Settings_ProcessName}"
-                    ToolTip="{DynamicResource Settings_ProcessNameTooltip}" />
-                <Grid Margin="0,0,0,15">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <ui:TextBox
-                        x:Name="GameProcessNameTextBox"
-                        Grid.Column="0"
-                        Margin="0,0,10,0"
-                        IsReadOnly="True"
-                        PlaceholderText="ProTanki" />
-                    <ui:Button
-                        x:Name="UnlockGameProcessNameButton"
-                        Grid.Column="1"
-                        Height="36"
-                        Click="UnlockGameProcessNameButton_Click"
-                        Icon="{ui:SymbolIcon LockOpen24}"
-                        ToolTip="{DynamicResource Settings_UnlockTooltip}" />
-                </Grid>
+        <StackPanel Margin="0,0,0,15">
+          <TextBlock
+            Margin="0,0,0,5"
+            FontWeight="SemiBold"
+            Text="{DynamicResource Settings_Language}"
+          />
+          <ComboBox
+            x:Name="LanguageComboBox"
+            HorizontalAlignment="Stretch"
+            DisplayMemberPath="Name"
+            SelectedValuePath="Code"
+            SelectionChanged="LanguageComboBox_SelectionChanged"
+          />
+        </StackPanel>
 
-                <StackPanel Margin="0,0,0,15">
-                    <TextBlock
-                        Margin="0,0,0,5"
-                        FontWeight="SemiBold"
-                        Text="{DynamicResource Settings_Language}" />
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <ComboBox
-                            x:Name="LanguageComboBox"
-                            Grid.Column="0"
-                            HorizontalAlignment="Stretch"
-                            DisplayMemberPath="Name"
-                            SelectedValuePath="Code"
-                            SelectionChanged="LanguageComboBox_SelectionChanged" />
-                        <ui:Button
-                            Grid.Column="1"
-                            Height="37"
-                            Margin="10,0,0,0"
-                            Appearance="Secondary"
-                            Click="BtnCreateNewLanguage_Click"
-                            Content="Create New"
-                            Icon="{ui:SymbolIcon Add24}" />
-                        <ui:Button
-                            Grid.Column="2"
-                            Height="37"
-                            Margin="10,0,0,0"
-                            Appearance="Secondary"
-                            Click="BtnEditLanguage_Click"
-                            Content="Edit Existing"
-                            Icon="{ui:SymbolIcon Edit24}" />
-                    </Grid>
-                </StackPanel>
+        <ui:TextBlock
+          Margin="0,0,0,5"
+          FontTypography="BodyStrong"
+          Text="{DynamicResource Settings_GamePath}"
+        />
+        <Grid Margin="0,0,0,20">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+          <ui:TextBox
+            x:Name="GamePathTextBox"
+            Grid.Column="0"
+            Margin="0,0,10,0"
+            IsReadOnly="True"
+            PlaceholderText="{DynamicResource Settings_GamePathPlaceholder}"
+          />
+          <ui:Button
+            Grid.Column="1"
+            Height="36"
+            Click="BrowseGamePathButton_Click"
+            Content="{DynamicResource Settings_Browse}"
+            Icon="{ui:SymbolIcon FolderOpen24}"
+          />
+        </Grid>
 
-                <ui:TextBlock
-                    Margin="0,0,0,5"
-                    FontTypography="BodyStrong"
-                    Text="{DynamicResource Settings_GamePath}" />
-                <Grid Margin="0,0,0,20">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <ui:TextBox
-                        x:Name="GamePathTextBox"
-                        Grid.Column="0"
-                        Margin="0,0,10,0"
-                        IsReadOnly="True"
-                        PlaceholderText="{DynamicResource Settings_GamePathPlaceholder}" />
-                    <ui:Button
-                        Grid.Column="1"
-                        Height="36"
-                        Click="BrowseGamePathButton_Click"
-                        Content="{DynamicResource Settings_Browse}"
-                        Icon="{ui:SymbolIcon FolderOpen24}" />
-                </Grid>
+        <Separator Margin="0,0,0,20" Opacity="1" />
 
-                <Separator Margin="0,0,0,20" Opacity="1" />
+        <ui:TextBlock
+          Margin="0,0,0,10"
+          FontTypography="Subtitle"
+          Text="{DynamicResource Settings_Automation}"
+        />
 
-                <ui:TextBlock
-                    Margin="0,0,0,10"
-                    FontTypography="Subtitle"
-                    Text="{DynamicResource Settings_Automation}" />
+        <Grid Margin="0,0,0,15">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="120" />
+          </Grid.ColumnDefinitions>
+          <StackPanel Grid.Column="0" VerticalAlignment="Center">
+            <ui:TextBlock
+              FontTypography="BodyStrong"
+              Text="{DynamicResource Settings_ClickSpeed}"
+            />
+            <ui:TextBlock
+              FontTypography="Caption"
+              Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
+              Text="{DynamicResource Settings_ClickSpeedTooltip}"
+            />
+          </StackPanel>
+          <ui:TextBox
+            x:Name="ClickSpeedTextBox"
+            Grid.Column="1"
+            HorizontalContentAlignment="Right"
+            PlaceholderText="ms"
+          />
+        </Grid>
 
-                <Grid Margin="0,0,0,15">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="120" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                        <ui:TextBlock FontTypography="BodyStrong" Text="{DynamicResource Settings_ClickSpeed}" />
-                        <ui:TextBlock
-                            FontTypography="Caption"
-                            Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
-                            Text="{DynamicResource Settings_ClickSpeedTooltip}" />
-                    </StackPanel>
-                    <ui:TextBox
-                        x:Name="ClickSpeedTextBox"
-                        Grid.Column="1"
-                        HorizontalContentAlignment="Right"
-                        PlaceholderText="ms" />
-                </Grid>
+        <Grid Margin="0,0,0,15">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="120" />
+          </Grid.ColumnDefinitions>
+          <StackPanel Grid.Column="0" Margin="0,0,10,0" VerticalAlignment="Center">
+            <ui:TextBlock
+              FontTypography="BodyStrong"
+              Text="{DynamicResource Settings_SmartRepairFps}"
+              TextWrapping="Wrap"
+            />
+            <ui:TextBlock
+              FontTypography="Caption"
+              Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
+              Text="{DynamicResource Settings_SmartRepairFpsTooltip}"
+              TextWrapping="Wrap"
+            />
+          </StackPanel>
+          <ComboBox x:Name="SmartRepairFpsComboBox" Grid.Column="1">
+            <ComboBoxItem Content="30 FPS" Tag="30" />
+            <ComboBoxItem Content="60 FPS" Tag="60" />
+          </ComboBox>
+        </Grid>
 
-                <Grid Margin="0,0,0,15">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="120" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel
-                        Grid.Column="0"
-                        Margin="0,0,10,0"
-                        VerticalAlignment="Center">
-                        <ui:TextBlock
-                            FontTypography="BodyStrong"
-                            Text="{DynamicResource Settings_SmartRepairFps}"
-                            TextWrapping="Wrap" />
-                        <ui:TextBlock
-                            FontTypography="Caption"
-                            Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
-                            Text="{DynamicResource Settings_SmartRepairFpsTooltip}"
-                            TextWrapping="Wrap" />
-                    </StackPanel>
-                    <ComboBox x:Name="SmartRepairFpsComboBox" Grid.Column="1">
-                        <ComboBoxItem Content="30 FPS" Tag="30" />
-                        <ComboBoxItem Content="60 FPS" Tag="60" />
-                    </ComboBox>
-                </Grid>
+        <ui:TextBlock
+          Margin="0,0,0,5"
+          FontTypography="BodyStrong"
+          Text="{DynamicResource Settings_ClickerCoords}"
+        />
 
-                <ui:TextBlock
-                    Margin="0,0,0,5"
-                    FontTypography="BodyStrong"
-                    Text="{DynamicResource Settings_ClickerCoords}" />
+        <Grid Margin="0,0,0,10">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="80" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+          <TextBlock
+            Grid.Column="0"
+            VerticalAlignment="Center"
+            Text="{DynamicResource Settings_RedTeam}"
+          />
+          <ui:TextBox
+            x:Name="RedTeamXTextBox"
+            Grid.Column="1"
+            Margin="10,0,5,0"
+            VerticalAlignment="Center"
+            IsReadOnly="True"
+            PlaceholderText="X"
+          />
+          <ui:TextBox
+            x:Name="RedTeamYTextBox"
+            Grid.Column="2"
+            Margin="5,0,10,0"
+            VerticalAlignment="Center"
+            IsReadOnly="True"
+            PlaceholderText="Y"
+          />
+          <ui:Button
+            x:Name="PickRedTeamButton"
+            Grid.Column="3"
+            Height="36"
+            Click="PickRedTeamButton_Click"
+            Icon="{ui:SymbolIcon Target20}"
+            ToolTip="{DynamicResource Settings_PickCoordTooltip}"
+          />
+        </Grid>
 
-                <Grid Margin="0,0,0,10">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="80" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock
-                        Grid.Column="0"
-                        VerticalAlignment="Center"
-                        Text="{DynamicResource Settings_RedTeam}" />
-                    <ui:TextBox
-                        x:Name="RedTeamXTextBox"
-                        Grid.Column="1"
-                        Margin="10,0,5,0"
-                        VerticalAlignment="Center"
-                        IsReadOnly="True"
-                        PlaceholderText="X" />
-                    <ui:TextBox
-                        x:Name="RedTeamYTextBox"
-                        Grid.Column="2"
-                        Margin="5,0,10,0"
-                        VerticalAlignment="Center"
-                        IsReadOnly="True"
-                        PlaceholderText="Y" />
-                    <ui:Button
-                        x:Name="PickRedTeamButton"
-                        Grid.Column="3"
-                        Height="36"
-                        Click="PickRedTeamButton_Click"
-                        Icon="{ui:SymbolIcon Target20}"
-                        ToolTip="{DynamicResource Settings_PickCoordTooltip}" />
-                </Grid>
+        <Grid Margin="0,0,0,20">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="80" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+          <TextBlock
+            Grid.Column="0"
+            VerticalAlignment="Center"
+            Text="{DynamicResource Settings_BlueTeam}"
+          />
+          <ui:TextBox
+            x:Name="BlueTeamXTextBox"
+            Grid.Column="1"
+            Margin="10,0,5,0"
+            VerticalAlignment="Center"
+            IsReadOnly="True"
+            PlaceholderText="X"
+          />
+          <ui:TextBox
+            x:Name="BlueTeamYTextBox"
+            Grid.Column="2"
+            Margin="5,0,10,0"
+            VerticalAlignment="Center"
+            IsReadOnly="True"
+            PlaceholderText="Y"
+          />
+          <ui:Button
+            x:Name="PickBlueTeamButton"
+            Grid.Column="3"
+            Height="36"
+            Click="PickBlueTeamButton_Click"
+            Icon="{ui:SymbolIcon Target20}"
+            ToolTip="{DynamicResource Settings_PickCoordTooltip}"
+          />
+        </Grid>
 
-                <Grid Margin="0,0,0,20">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="80" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock
-                        Grid.Column="0"
-                        VerticalAlignment="Center"
-                        Text="{DynamicResource Settings_BlueTeam}" />
-                    <ui:TextBox
-                        x:Name="BlueTeamXTextBox"
-                        Grid.Column="1"
-                        Margin="10,0,5,0"
-                        VerticalAlignment="Center"
-                        IsReadOnly="True"
-                        PlaceholderText="X" />
-                    <ui:TextBox
-                        x:Name="BlueTeamYTextBox"
-                        Grid.Column="2"
-                        Margin="5,0,10,0"
-                        VerticalAlignment="Center"
-                        IsReadOnly="True"
-                        PlaceholderText="Y" />
-                    <ui:Button
-                        x:Name="PickBlueTeamButton"
-                        Grid.Column="3"
-                        Height="36"
-                        Click="PickBlueTeamButton_Click"
-                        Icon="{ui:SymbolIcon Target20}"
-                        ToolTip="{DynamicResource Settings_PickCoordTooltip}" />
-                </Grid>
+        <Separator Margin="0,0,0,20" Opacity="1" />
 
-                <Separator Margin="0,0,0,20" Opacity="1" />
+        <ui:TextBlock
+          Margin="0,0,0,15"
+          FontTypography="Subtitle"
+          Text="{DynamicResource Settings_Hotkeys}"
+        />
 
-                <ui:TextBlock
-                    Margin="0,0,0,15"
-                    FontTypography="Subtitle"
-                    Text="{DynamicResource Settings_Hotkeys}" />
+        <Grid Margin="0,0,0,20">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="20" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
 
-                <Grid Margin="0,0,0,20">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="20" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
+          <StackPanel Grid.Column="0">
+            <ui:TextBlock
+              Margin="0,0,0,10"
+              FontTypography="BodyStrong"
+              Text="{DynamicResource Settings_Controls}"
+            />
 
-                    <StackPanel Grid.Column="0">
-                        <ui:TextBlock
-                            Margin="0,0,0,10"
-                            FontTypography="BodyStrong"
-                            Text="{DynamicResource Settings_Controls}" />
+            <TextBlock Margin="0,0,0,5" Text="{DynamicResource Settings_Hotkey_Global}" />
+            <controls:HotKeyBox x:Name="GlobalHotKeyBox" Margin="0,0,0,15" />
 
-                        <TextBlock Margin="0,0,0,5" Text="{DynamicResource Settings_Hotkey_Global}" />
-                        <controls:HotKeyBox x:Name="GlobalHotKeyBox" Margin="0,0,0,15" />
+            <TextBlock Margin="0,0,0,5" Text="{DynamicResource Settings_Hotkey_Red}" />
+            <controls:HotKeyBox x:Name="RedTeamHotKeyBox" Margin="0,0,0,15" />
 
-                        <TextBlock Margin="0,0,0,5" Text="{DynamicResource Settings_Hotkey_Red}" />
-                        <controls:HotKeyBox x:Name="RedTeamHotKeyBox" Margin="0,0,0,15" />
+            <TextBlock Margin="0,0,0,5" Text="{DynamicResource Settings_Hotkey_Blue}" />
+            <controls:HotKeyBox x:Name="BlueTeamHotKeyBox" Margin="0,0,0,15" />
 
-                        <TextBlock Margin="0,0,0,5" Text="{DynamicResource Settings_Hotkey_Blue}" />
-                        <controls:HotKeyBox x:Name="BlueTeamHotKeyBox" Margin="0,0,0,15" />
+            <TextBlock Margin="0,0,0,5" Text="{DynamicResource Settings_Hotkey_Gold}" />
+            <controls:HotKeyBox x:Name="GoldBoxTimerHotKeyBox" Margin="0,0,0,15" />
 
-                        <TextBlock Margin="0,0,0,5" Text="{DynamicResource Settings_Hotkey_Gold}" />
-                        <controls:HotKeyBox x:Name="GoldBoxTimerHotKeyBox" Margin="0,0,0,15" />
+            <TextBlock Margin="0,0,0,5" Text="{DynamicResource Settings_Hotkey_SmartToggle}" />
+            <controls:HotKeyBox x:Name="SmartRepairToggleHotKeyBox" Margin="0,0,0,15" />
 
-                        <TextBlock Margin="0,0,0,5" Text="{DynamicResource Settings_Hotkey_SmartToggle}" />
-                        <controls:HotKeyBox x:Name="SmartRepairToggleHotKeyBox" Margin="0,0,0,15" />
+            <TextBlock Margin="0,0,0,5" Text="{DynamicResource Settings_Hotkey_SmartDebug}" />
+            <controls:HotKeyBox x:Name="SmartRepairDebugHotKeyBox" Margin="0,0,0,15" />
+          </StackPanel>
 
-                        <TextBlock Margin="0,0,0,5" Text="{DynamicResource Settings_Hotkey_SmartDebug}" />
-                        <controls:HotKeyBox x:Name="SmartRepairDebugHotKeyBox" Margin="0,0,0,15" />
-                    </StackPanel>
+          <StackPanel Grid.Column="2">
+            <ui:TextBlock
+              Margin="0,0,0,10"
+              FontTypography="BodyStrong"
+              Text="{DynamicResource Settings_Powerups}"
+            />
 
-                    <StackPanel Grid.Column="2">
-                        <ui:TextBlock
-                            Margin="0,0,0,10"
-                            FontTypography="BodyStrong"
-                            Text="{DynamicResource Settings_Powerups}" />
+            <TextBlock Margin="0,0,0,5" Text="{DynamicResource Settings_Powerup_Repair}" />
+            <controls:HotKeyBox x:Name="RepairKitKeyBox" Margin="0,0,0,15" />
 
-                        <TextBlock Margin="0,0,0,5" Text="{DynamicResource Settings_Powerup_Repair}" />
-                        <controls:HotKeyBox x:Name="RepairKitKeyBox" Margin="0,0,0,15" />
+            <TextBlock Margin="0,0,0,5" Text="{DynamicResource Settings_Powerup_Armor}" />
+            <controls:HotKeyBox x:Name="DoubleArmorKeyBox" Margin="0,0,0,15" />
 
-                        <TextBlock Margin="0,0,0,5" Text="{DynamicResource Settings_Powerup_Armor}" />
-                        <controls:HotKeyBox x:Name="DoubleArmorKeyBox" Margin="0,0,0,15" />
+            <TextBlock Margin="0,0,0,5" Text="{DynamicResource Settings_Powerup_Damage}" />
+            <controls:HotKeyBox x:Name="DoubleDamageKeyBox" Margin="0,0,0,15" />
 
-                        <TextBlock Margin="0,0,0,5" Text="{DynamicResource Settings_Powerup_Damage}" />
-                        <controls:HotKeyBox x:Name="DoubleDamageKeyBox" Margin="0,0,0,15" />
+            <TextBlock Margin="0,0,0,5" Text="{DynamicResource Settings_Powerup_Speed}" />
+            <controls:HotKeyBox x:Name="SpeedBoostKeyBox" Margin="0,0,0,15" />
 
-                        <TextBlock Margin="0,0,0,5" Text="{DynamicResource Settings_Powerup_Speed}" />
-                        <controls:HotKeyBox x:Name="SpeedBoostKeyBox" Margin="0,0,0,15" />
+            <TextBlock Margin="0,0,0,5" Text="{DynamicResource Settings_Powerup_Mine}" />
+            <controls:HotKeyBox x:Name="MineKeyBox" Margin="0,0,0,15" />
+          </StackPanel>
+        </Grid>
 
-                        <TextBlock Margin="0,0,0,5" Text="{DynamicResource Settings_Powerup_Mine}" />
-                        <controls:HotKeyBox x:Name="MineKeyBox" Margin="0,0,0,15" />
-                    </StackPanel>
-                </Grid>
+        <Separator Margin="0,0,0,20" Opacity="1" />
 
-                <Separator Margin="0,0,0,20" Opacity="1" />
+        <ui:TextBlock
+          Margin="0,0,0,10"
+          FontTypography="Subtitle"
+          Text="{DynamicResource Settings_Appearance}"
+        />
 
-                <ui:TextBlock
-                    Margin="0,0,0,10"
-                    FontTypography="Subtitle"
-                    Text="{DynamicResource Settings_Appearance}" />
+        <Grid Margin="0,0,0,15">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
 
-                <Grid Margin="0,0,0,15">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
+          <StackPanel Grid.Column="0" VerticalAlignment="Center">
+            <ui:TextBlock FontTypography="BodyStrong" Text="{DynamicResource Settings_AppTheme}" />
+            <ui:TextBlock
+              FontTypography="Caption"
+              Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
+              Text="{DynamicResource Settings_AppThemeTooltip}"
+            />
+          </StackPanel>
 
-                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                        <ui:TextBlock FontTypography="BodyStrong" Text="{DynamicResource Settings_AppTheme}" />
-                        <ui:TextBlock
-                            FontTypography="Caption"
-                            Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
-                            Text="{DynamicResource Settings_AppThemeTooltip}" />
-                    </StackPanel>
+          <StackPanel Grid.Column="1" Orientation="Horizontal">
+            <ComboBox
+              x:Name="ThemeComboBox"
+              Width="160"
+              Margin="0,0,10,0"
+              SelectionChanged="ThemeComboBox_SelectionChanged"
+            />
 
-                    <StackPanel Grid.Column="1" Orientation="Horizontal">
-                        <ComboBox
-                            x:Name="ThemeComboBox"
-                            Width="160"
-                            Margin="0,0,10,0"
-                            SelectionChanged="ThemeComboBox_SelectionChanged" />
+            <ui:Button
+              x:Name="CreateThemeButton"
+              Width="35"
+              Margin="0,0,5,0"
+              Click="CreateThemeButton_Click"
+              Content="+"
+              ToolTip="{DynamicResource Settings_CreateThemeTooltip}"
+            />
 
-                        <ui:Button
-                            x:Name="CreateThemeButton"
-                            Width="35"
-                            Margin="0,0,5,0"
-                            Click="CreateThemeButton_Click"
-                            Content="+"
-                            ToolTip="{DynamicResource Settings_CreateThemeTooltip}" />
+            <ui:Button
+              x:Name="DeleteThemeButton"
+              Appearance="Secondary"
+              Click="DeleteThemeButton_Click"
+              Icon="{ui:SymbolIcon Delete24}"
+              ToolTip="{DynamicResource Settings_DeleteThemeTooltip}"
+              Visibility="Collapsed"
+            />
+          </StackPanel>
+        </Grid>
 
-                        <ui:Button
-                            x:Name="DeleteThemeButton"
-                            Appearance="Secondary"
-                            Click="DeleteThemeButton_Click"
-                            Icon="{ui:SymbolIcon Delete24}"
-                            ToolTip="{DynamicResource Settings_DeleteThemeTooltip}"
-                            Visibility="Collapsed" />
-                    </StackPanel>
-                </Grid>
+        <StackPanel Margin="-10,0,0,20">
+          <CheckBox
+            x:Name="TransparentTimerWindowCheckBox"
+            Margin="0,0,0,10"
+            Content="{DynamicResource Settings_TransparentTimer}"
+          />
+          <CheckBox
+            x:Name="EnableDiscordRpcCheckBox"
+            Margin="0,0,0,10"
+            Content="Enable Discord Rich Presence"
+          />
 
-                <StackPanel Margin="-10,0,0,20">
-                    <CheckBox
-                        x:Name="TransparentTimerWindowCheckBox"
-                        Margin="0,0,0,10"
-                        Content="{DynamicResource Settings_TransparentTimer}" />
-                    <CheckBox
-                        x:Name="EnableDiscordRpcCheckBox"
-                        Margin="0,0,0,10"
-                        Content="Enable Discord Rich Presence" />
+          <StackPanel Visibility="{Binding IsChecked, ElementName=EnableDiscordRpcCheckBox, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <TextBlock Margin="10,0,0,5" FontWeight="SemiBold" Text="Discord RPC Client ID" />
+            <ui:TextBox
+              x:Name="DiscordRpcAppIdTextBox"
+              Margin="10,0,0,10"
+              PlaceholderText="1260233486121406464"
+            />
 
-                    <StackPanel Visibility="{Binding IsChecked, ElementName=EnableDiscordRpcCheckBox, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <TextBlock 
-                            Margin="10,0,0,5" 
-                            FontWeight="SemiBold" 
-                            Text="Discord RPC Client ID" />
-                        <ui:TextBox
-                            x:Name="DiscordRpcAppIdTextBox"
-                            Margin="10,0,0,10"
-                            PlaceholderText="1260233486121406464" />
-                    
-                        <TextBlock 
-                            Margin="10,0,0,5" 
-                            FontWeight="SemiBold" 
-                            Text="Discord RPC Details template (Use {GameStatus})" />
-                        <ui:TextBox
-                            x:Name="DiscordRpcDetailsTextBox"
-                            Margin="10,0,0,10"
-                            PlaceholderText="Automation Active" />
+            <TextBlock
+              Margin="10,0,0,5"
+              FontWeight="SemiBold"
+              Text="Discord RPC Details template (Use {GameStatus})"
+            />
+            <ui:TextBox
+              x:Name="DiscordRpcDetailsTextBox"
+              Margin="10,0,0,10"
+              PlaceholderText="Automation Active"
+            />
 
-                        <TextBlock 
-                            Margin="10,0,0,5" 
-                            FontWeight="SemiBold" 
-                            Text="Discord RPC State template (Use {GameStatus})" />
-                        <ui:TextBox
-                            x:Name="DiscordRpcStateTextBox"
-                            Margin="10,0,0,10"
-                            PlaceholderText="Game: {GameStatus}" />
-                    </StackPanel>
-                </StackPanel>
+            <TextBlock
+              Margin="10,0,0,5"
+              FontWeight="SemiBold"
+              Text="Discord RPC State template (Use {GameStatus})"
+            />
+            <ui:TextBox
+              x:Name="DiscordRpcStateTextBox"
+              Margin="10,0,0,10"
+              PlaceholderText="Game: {GameStatus}"
+            />
+          </StackPanel>
+        </StackPanel>
 
-                <Separator Margin="0,0,0,20" Opacity="1" />
+        <Separator Margin="0,0,0,20" Opacity="1" />
 
-                <ui:TextBlock
-                    Margin="0,0,0,10"
-                    FontTypography="Subtitle"
-                    Text="{DynamicResource Settings_About}" />
+        <ui:TextBlock
+          Margin="0,0,0,10"
+          FontTypography="Subtitle"
+          Text="{DynamicResource Settings_About}"
+        />
 
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Column="0">
-                        <TextBlock
-                            x:Name="VersionTextBlock"
-                            Margin="0,0,0,5"
-                            Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
-                        <TextBlock
-                            x:Name="LatestVersionTextBlock"
-                            Margin="0,0,0,5"
-                            Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" />
-                        <TextBlock
-                            x:Name="StatusTextBlock"
-                            Margin="0,0,0,5"
-                            Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
-                            TextWrapping="Wrap" />
+          <StackPanel Grid.Column="0">
+            <TextBlock
+              x:Name="VersionTextBlock"
+              Margin="0,0,0,5"
+              Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
+            />
+            <TextBlock
+              x:Name="LatestVersionTextBlock"
+              Margin="0,0,0,5"
+              Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
+            />
+            <TextBlock
+              x:Name="StatusTextBlock"
+              Margin="0,0,0,5"
+              Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"
+              TextWrapping="Wrap"
+            />
 
-                        <ProgressBar
-                            x:Name="DownloadProgressBar"
-                            Height="4"
-                            Margin="0,10,20,0"
-                            Visibility="Collapsed" />
-                    </StackPanel>
+            <ProgressBar
+              x:Name="DownloadProgressBar"
+              Height="4"
+              Margin="0,10,20,0"
+              Visibility="Collapsed"
+            />
+          </StackPanel>
 
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <ui:Button
-                            x:Name="CheckForUpdatesButton"
-                            MinWidth="216"
-                            Margin="0,0,0,10"
-                            Click="CheckForUpdatesButton_Click"
-                            Content="{DynamicResource Settings_CheckUpdates}"
-                            Icon="{ui:SymbolIcon ArrowSync24}" />
+          <StackPanel Grid.Column="1" VerticalAlignment="Center">
+            <ui:Button
+              x:Name="CheckForUpdatesButton"
+              MinWidth="216"
+              Margin="0,0,0,10"
+              Click="CheckForUpdatesButton_Click"
+              Content="{DynamicResource Settings_CheckUpdates}"
+              Icon="{ui:SymbolIcon ArrowSync24}"
+            />
 
-                        <ui:Button
-                            x:Name="UpdateNowButton"
-                            MinWidth="216"
-                            Margin="0,10,0,0"
-                            Appearance="Primary"
-                            Click="UpdateNowButton_Click"
-                            Content="{DynamicResource Settings_UpdateRestart}"
-                            Icon="{ui:SymbolIcon ArrowDownload24}"
-                            Visibility="Collapsed" />
-                    </StackPanel>
-                </Grid>
+            <ui:Button
+              x:Name="UpdateNowButton"
+              MinWidth="216"
+              Margin="0,10,0,0"
+              Appearance="Primary"
+              Click="UpdateNowButton_Click"
+              Content="{DynamicResource Settings_UpdateRestart}"
+              Icon="{ui:SymbolIcon ArrowDownload24}"
+              Visibility="Collapsed"
+            />
+          </StackPanel>
+        </Grid>
+      </StackPanel>
+    </ScrollViewer>
 
-            </StackPanel>
-        </ScrollViewer>
+    <Border Grid.Row="2" Padding="15" BorderThickness="0,1,0,0">
+      <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+        <ui:Button
+          x:Name="SaveButton"
+          MinWidth="130"
+          Margin="0,0,10,0"
+          Appearance="Primary"
+          Click="SaveButton_Click"
+          Content="{DynamicResource Settings_Save}"
+          Icon="{ui:SymbolIcon Save24}"
+        />
 
-        <Border
-            Grid.Row="2"
-            Padding="15"
-            BorderThickness="0,1,0,0">
-            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
-                <ui:Button
-                    x:Name="SaveButton"
-                    MinWidth="130"
-                    Margin="0,0,10,0"
-                    Appearance="Primary"
-                    Click="SaveButton_Click"
-                    Content="{DynamicResource Settings_Save}"
-                    Icon="{ui:SymbolIcon Save24}" />
+        <ui:Button
+          x:Name="LogsButton"
+          MinWidth="80"
+          Margin="0,0,10,0"
+          Click="LogsButton_Click"
+          Content="{DynamicResource Settings_Logs}"
+          Icon="{ui:SymbolIcon DocumentText24}"
+        />
 
-                <ui:Button
-                    x:Name="ViewReportsButton"
-                    MinWidth="130"
-                    Margin="0,0,10,0"
-                    Click="ViewReportsButton_Click"
-                    Content="{DynamicResource Settings_ViewReports}"
-                    Icon="{ui:SymbolIcon List24}" />
-
-                <ui:Button
-                    x:Name="LogsButton"
-                    MinWidth="80"
-                    Margin="0,0,10,0"
-                    Click="LogsButton_Click"
-                    Content="{DynamicResource Settings_Logs}"
-                    Icon="{ui:SymbolIcon DocumentText24}" />
-
-                <ui:Button
-                    x:Name="CloseButton"
-                    MinWidth="80"
-                    Click="CloseButton_Click"
-                    Content="{DynamicResource Settings_Cancel}"
-                    IsCancel="True" />
-            </StackPanel>
-        </Border>
-    </Grid>
+        <ui:Button
+          x:Name="CloseButton"
+          MinWidth="80"
+          Click="CloseButton_Click"
+          Content="{DynamicResource Settings_Cancel}"
+          IsCancel="True"
+        />
+      </StackPanel>
+    </Border>
+  </Grid>
 </ui:FluentWindow>

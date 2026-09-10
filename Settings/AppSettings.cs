@@ -1,32 +1,30 @@
-using Automatization.Hotkeys;
-using Automatization.Services;
-using Automatization.Types;
 using System.IO;
 using System.Text.Json;
 using System.Windows.Input;
+using Automatization.Hotkeys;
+using Automatization.Services;
+using Automatization.Types;
 using Point = System.Windows.Point;
 
 namespace Automatization.Settings;
 
 public class AppSettings
 {
-    private static readonly JsonSerializerOptions _jsonWriteOption = new()
-    {
-        WriteIndented = true
-    };
+    private static readonly JsonSerializerOptions _jsonWriteOption = new() { WriteIndented = true };
     private static readonly JsonSerializerOptions _jsonReadOption = new()
     {
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
     };
     public Dictionary<PowerupType, double> PowerupDelays { get; set; } = [];
-    public Dictionary<PowerupType, Key> PowerupKeys { get; set; } = new()
-    {
-        { PowerupType.RepairKit, Key.D1 },
-        { PowerupType.DoubleArmor, Key.D2 },
-        { PowerupType.DoubleDamage, Key.D3 },
-        { PowerupType.SpeedBoost, Key.D4 },
-        { PowerupType.Mine, Key.D5 }
-    };
+    public Dictionary<PowerupType, Key> PowerupKeys { get; set; } =
+        new()
+        {
+            { PowerupType.RepairKit, Key.D1 },
+            { PowerupType.DoubleArmor, Key.D2 },
+            { PowerupType.DoubleDamage, Key.D3 },
+            { PowerupType.SpeedBoost, Key.D4 },
+            { PowerupType.Mine, Key.D5 },
+        };
     public HotKey GlobalHotKey { get; set; } = new(Key.F5, ModifierKeys.None);
     public HotKey RedTeamHotKey { get; set; } = new(Key.F6, ModifierKeys.None);
     public HotKey BlueTeamHotKey { get; set; } = new(Key.F7, ModifierKeys.None);
@@ -37,6 +35,7 @@ public class AppSettings
     public ThemeType Theme { get; set; } = ThemeType.Dark;
     public string? GameExecutablePath { get; set; } = null;
     public double ClickSpeed { get; set; } = 10;
+    public ClickType TeamClickType { get; set; } = ClickType.Left;
     public bool HotkeysPaused { get; set; } = false;
     public bool IsTimerWindowTransparent { get; set; } = false;
     public string GameProcessName { get; set; } = "ProTanki";
@@ -55,22 +54,16 @@ public class AppSettings
     public Key SmartRepairKey { get; set; } = Key.D1;
     public int SmartRepairFps { get; set; } = 60;
     public string Language { get; set; } = "en-US";
-    public ulong DiscordIssueTagId { get; set; } = 1447898377009365002;
-    public ulong DiscordIdeaTagId { get; set; } = 1447898389046890497;
-    public string DiscordWebhookUrl { get; set; } = string.Empty;
-    public string AdminPassword { get; set; } = "test";
 
     public string? GetActionForHotKey(HotKey hotKey)
     {
-        return hotKey == GlobalHotKey
-            ? "ToggleAll"
-            : hotKey == RedTeamHotKey
-            ? "RedTeam"
-            : hotKey == BlueTeamHotKey
-            ? "BlueTeam"
-            : hotKey == GoldBoxTimerHotKey
-            ? "StartTimer"
-            : hotKey == SmartRepairToggleHotKey ? "SmartRepairToggle" : hotKey == SmartRepairDebugHotKey ? "SmartRepairDebug" : null;
+        return hotKey == GlobalHotKey ? "ToggleAll"
+            : hotKey == RedTeamHotKey ? "RedTeam"
+            : hotKey == BlueTeamHotKey ? "BlueTeam"
+            : hotKey == GoldBoxTimerHotKey ? "StartTimer"
+            : hotKey == SmartRepairToggleHotKey ? "SmartRepairToggle"
+            : hotKey == SmartRepairDebugHotKey ? "SmartRepairDebug"
+            : null;
     }
 
     public static AppSettings Load()
@@ -84,34 +77,14 @@ public class AppSettings
             if (File.Exists(settingsPath))
             {
                 string json = File.ReadAllText(settingsPath);
-                settings = JsonSerializer.Deserialize<AppSettings>(json, _jsonReadOption) ?? new AppSettings();
+                settings =
+                    JsonSerializer.Deserialize<AppSettings>(json, _jsonReadOption)
+                    ?? new AppSettings();
             }
         }
         catch (Exception ex)
         {
             LogService.LogError("Failed to load settings.", ex);
-        }
-
-        if (string.IsNullOrEmpty(settings.DiscordWebhookUrl))
-        {
-            string secretsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "secrets.json");
-            if (File.Exists(secretsPath))
-            {
-                try
-                {
-                    string secretsJson = File.ReadAllText(secretsPath);
-                    using JsonDocument doc = JsonDocument.Parse(secretsJson);
-                    if (doc.RootElement.TryGetProperty(nameof(DiscordWebhookUrl), out JsonElement prop))
-                    {
-                        settings.DiscordWebhookUrl = prop.GetString() ?? string.Empty;
-                    }
-                    if (doc.RootElement.TryGetProperty(nameof(AdminPassword), out JsonElement passProp))
-                    {
-                        settings.AdminPassword = passProp.GetString() ?? "test";
-                    }
-                }
-                catch { }
-            }
         }
 
         return settings;

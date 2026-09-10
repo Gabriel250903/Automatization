@@ -8,14 +8,28 @@ namespace Automatization.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is int intValue)
+            long val = 0;
+            bool isNumeric = false;
+
+            if (value is int i)
             {
-                if (intValue < 0)
+                val = i;
+                isNumeric = true;
+            }
+            else if (value is long l)
+            {
+                val = l;
+                isNumeric = true;
+            }
+
+            if (isNumeric)
+            {
+                if (val < 0)
                 {
                     return Brushes.LightGreen;
                 }
 
-                if (intValue > 0)
+                if (val > 0)
                 {
                     return Brushes.IndianRed;
                 }
@@ -23,7 +37,12 @@ namespace Automatization.Converters
             return Brushes.Gray;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object ConvertBack(
+            object value,
+            Type targetType,
+            object parameter,
+            CultureInfo culture
+        )
         {
             throw new NotImplementedException();
         }

@@ -1,5 +1,5 @@
-using Automatization.Types;
 using System.Drawing.Imaging;
+using Automatization.Types;
 
 namespace Automatization.Services
 {
@@ -18,7 +18,7 @@ namespace Automatization.Services
         [
             new HealthColorStruct("#F03416", "#A11609", TeamMode.Red),
             new HealthColorStruct("#4797FF", "#2148FF", TeamMode.Blue),
-            new HealthColorStruct("#4BBF1D", "#255E0F", TeamMode.Green)
+            new HealthColorStruct("#4BBF1D", "#255E0F", TeamMode.Green),
         ];
 
         public void SetCustomColors(Color bright, Color dark)
@@ -26,7 +26,14 @@ namespace Automatization.Services
             lock (_lock)
             {
                 _colorModes.Clear();
-                _colorModes.Add(new HealthColorStruct { Bright = bright, Dark = dark, Mode = TeamMode.Unknown });
+                _colorModes.Add(
+                    new HealthColorStruct
+                    {
+                        Bright = bright,
+                        Dark = dark,
+                        Mode = TeamMode.Unknown,
+                    }
+                );
             }
         }
 
@@ -37,7 +44,11 @@ namespace Automatization.Services
         {
             lock (_lock)
             {
-                BitmapData data = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
+                BitmapData data = bmp.LockBits(
+                    new Rectangle(0, 0, bmp.Width, bmp.Height),
+                    ImageLockMode.ReadOnly,
+                    PixelFormat.Format24bppRgb
+                );
 
                 try
                 {
@@ -54,7 +65,11 @@ namespace Automatization.Services
 
                     if (!result.IsFound)
                     {
-                        result = ScanRegion(data, new Rectangle(0, 0, bmp.Width, bmp.Height), false);
+                        result = ScanRegion(
+                            data,
+                            new Rectangle(0, 0, bmp.Width, bmp.Height),
+                            false
+                        );
                     }
 
                     if (result.IsFound)
@@ -124,14 +139,23 @@ namespace Automatization.Services
                         HealthColorStruct mode = _colorModes[i];
                         if (IsColorMatch(r, g, b, mode.Bright))
                         {
-                            if (VerifyBar(data, x, y, mode, out Rectangle barBounds, out double health))
+                            if (
+                                VerifyBar(
+                                    data,
+                                    x,
+                                    y,
+                                    mode,
+                                    out Rectangle barBounds,
+                                    out double health
+                                )
+                            )
                             {
                                 return new HealthBarStruct
                                 {
                                     IsFound = true,
                                     Mode = mode.Mode,
                                     Bounds = barBounds,
-                                    HealthPercentage = health
+                                    HealthPercentage = health,
                                 };
                             }
                         }
@@ -142,7 +166,14 @@ namespace Automatization.Services
             return new HealthBarStruct { IsFound = false };
         }
 
-        private unsafe bool VerifyBar(BitmapData data, int hitX, int hitY, HealthColorStruct mode, out Rectangle bounds, out double health)
+        private unsafe bool VerifyBar(
+            BitmapData data,
+            int hitX,
+            int hitY,
+            HealthColorStruct mode,
+            out Rectangle bounds,
+            out double health
+        )
         {
             bounds = Rectangle.Empty;
             health = 0;
@@ -161,7 +192,9 @@ namespace Automatization.Services
             while (left > 0)
             {
                 byte* p = ptr + (hitY * stride) + ((left - 1) * 3);
-                if (!IsColorMatch(p[2], p[1], p[0], bright) && !IsColorMatch(p[2], p[1], p[0], dark))
+                if (
+                    !IsColorMatch(p[2], p[1], p[0], bright) && !IsColorMatch(p[2], p[1], p[0], dark)
+                )
                 {
                     break;
                 }
@@ -172,7 +205,9 @@ namespace Automatization.Services
             while (right < width - 1)
             {
                 byte* p = ptr + (hitY * stride) + ((right + 1) * 3);
-                if (!IsColorMatch(p[2], p[1], p[0], bright) && !IsColorMatch(p[2], p[1], p[0], dark))
+                if (
+                    !IsColorMatch(p[2], p[1], p[0], bright) && !IsColorMatch(p[2], p[1], p[0], dark)
+                )
                 {
                     break;
                 }
@@ -193,7 +228,9 @@ namespace Automatization.Services
             while (top > 0)
             {
                 byte* p = ptr + ((top - 1) * stride) + (midX * 3);
-                if (!IsColorMatch(p[2], p[1], p[0], bright) && !IsColorMatch(p[2], p[1], p[0], dark))
+                if (
+                    !IsColorMatch(p[2], p[1], p[0], bright) && !IsColorMatch(p[2], p[1], p[0], dark)
+                )
                 {
                     break;
                 }
@@ -204,7 +241,9 @@ namespace Automatization.Services
             while (bottom < height - 1)
             {
                 byte* p = ptr + ((bottom + 1) * stride) + (midX * 3);
-                if (!IsColorMatch(p[2], p[1], p[0], bright) && !IsColorMatch(p[2], p[1], p[0], dark))
+                if (
+                    !IsColorMatch(p[2], p[1], p[0], bright) && !IsColorMatch(p[2], p[1], p[0], dark)
+                )
                 {
                     break;
                 }
@@ -268,7 +307,8 @@ namespace Automatization.Services
             int gDiff = g1 - c2.G;
             int bDiff = b1 - c2.B;
 
-            return ((rDiff * rDiff) + (gDiff * gDiff) + (bDiff * bDiff)) < (ColorTolerance * ColorTolerance);
+            return ((rDiff * rDiff) + (gDiff * gDiff) + (bDiff * bDiff))
+                < (ColorTolerance * ColorTolerance);
         }
     }
 }

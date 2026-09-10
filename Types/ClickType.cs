@@ -5,6 +5,6 @@ namespace Automatization.Types
         Left,
         Right,
         Middle,
-        DoubleClick
+        DoubleClick,
     }
 }
